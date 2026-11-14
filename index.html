@@ -161,71 +161,133 @@
 
     <!-- Hero Section -->
     <section class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
-          <div class="lg:col-span-7 flex flex-col justify-center">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14 space-y-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
+          <div class="lg:col-span-6 flex flex-col justify-center">
             <p class="text-xs font-medium text-slate-500 tracking-wide mb-3">
-              Percetakan Digital &amp; Offset · Produksi Harian Terukur
+              Jasa Percetakan Digital &amp; Offset · Satuan hingga Partai Besar
             </p>
-            <h1 class="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 leading-[1.12] text-balance">
-              Hitung presisi biaya cetak Anda, unggah desain, dan pantau produksi secara langsung.
+            <h1 class="font-display text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight text-slate-900 leading-[1.12] text-balance">
+              Percetakan spanduk, stiker, brosur, dan dokumen dengan harga langsung terlihat.
             </h1>
-            <p class="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl leading-relaxed">
-              Mulai dari spanduk outdoor per meter persegi hingga stiker label A3+ dan dokumen premium. Kalkulator harga transparan tanpa biaya tersembunyi.
+            <p class="mt-4 text-base text-slate-600 max-w-xl leading-relaxed">
+              Pilih bahan cetak, hitung biaya otomatis berdasarkan ukuran atau jumlah, unggah file desain siap cetak, dan pantau proses produksi hingga siap diambil.
             </p>
-            <div class="mt-8 flex flex-wrap items-center gap-4">
+            <div class="mt-7 flex flex-wrap items-center gap-3.5">
               <a href="#kalkulator" class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors whitespace-nowrap shrink-0">
                 <i data-lucide="calculator" class="w-4 h-4"></i>
-                <span>Mulai Hitung &amp; Pesan</span>
+                <span>Hitung Harga &amp; Pesan</span>
               </a>
-              <a href="#lacak" class="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap shrink-0">
-                <i data-lucide="search" class="w-4 h-4"></i>
-                <span>Lacak Pesanan</span>
+              <a href="#katalog" class="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap shrink-0">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+                <span>Lihat Katalog Cetak</span>
               </a>
+            </div>
+
+            <!-- 4 Langkah Singkat -->
+            <div class="mt-8 pt-6 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+              <div>
+                <span class="font-mono font-semibold text-press-700 tabular-nums">01</span>
+                <p class="font-semibold text-slate-900 mt-0.5">Pilih Bahan</p>
+                <p class="text-slate-500 mt-0.5">Banner, stiker, kertas</p>
+              </div>
+              <div>
+                <span class="font-mono font-semibold text-press-700 tabular-nums">02</span>
+                <p class="font-semibold text-slate-900 mt-0.5">Atur Ukuran</p>
+                <p class="text-slate-500 mt-0.5">Luas m² atau lembar</p>
+              </div>
+              <div>
+                <span class="font-mono font-semibold text-press-700 tabular-nums">03</span>
+                <p class="font-semibold text-slate-900 mt-0.5">Kirim Desain</p>
+                <p class="text-slate-500 mt-0.5">PDF, JPG, AI, CDR</p>
+              </div>
+              <div>
+                <span class="font-mono font-semibold text-press-700 tabular-nums">04</span>
+                <p class="font-semibold text-slate-900 mt-0.5">Pantau Order</p>
+                <p class="text-slate-500 mt-0.5">Cek status selesai</p>
+              </div>
             </div>
           </div>
 
-          <!-- Architectural Print Press Spec Visual -->
-          <div class="lg:col-span-5 bg-slate-100 border border-slate-200 rounded-xl p-6 flex flex-col justify-between">
-            <div class="flex items-center justify-between text-xs text-slate-500 border-b border-slate-200 pb-3">
-              <span class="font-medium text-slate-700">Alur Pemesanan Cetak</span>
-              <span class="font-mono tabular-nums">4 Tahap</span>
+          <!-- Visual Utama Studio Percetakan -->
+          <div class="lg:col-span-6 relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 min-h-[280px] sm:min-h-[340px]">
+            <img
+              src="/assets/images/hero_print_studio_1794676643750.jpg"
+              alt="Studio produksi percetakan digital Wajibku Fast dengan mesin cetak spanduk, brosur, kartu nama, dan stiker vinyl"
+              referrerPolicy="no-referrer"
+              onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
+              class="w-full h-full object-cover lg:absolute lg:inset-0"
+            />
+            <div class="hidden w-full h-full min-h-[280px] bg-gradient-to-br from-slate-800 via-slate-900 to-press-900 flex flex-col items-center justify-center p-8 text-center text-white">
+              <i data-lucide="printer" class="w-12 h-12 text-press-100 mb-3"></i>
+              <p class="font-display text-lg font-bold">Studio Percetakan Wajibku Fast</p>
+              <p class="text-xs text-slate-300 mt-1 max-w-xs">Mesin Large Format, Stiker Vinyl A3+, dan Cetak Offset Dokumen</p>
             </div>
-            <div class="my-6 space-y-4">
-              <div class="flex items-start gap-3">
-                <span class="font-mono text-xs font-semibold text-press-700 pt-0.5 tabular-nums">01</span>
-                <div>
-                  <p class="text-sm font-semibold text-slate-900">Pilih Bahan &amp; Ukuran</p>
-                  <p class="text-xs text-slate-600 mt-0.5">Perhitungan otomatis berdasarkan luas m² atau jumlah unit cetak.</p>
-                </div>
-              </div>
-              <div class="flex items-start gap-3">
-                <span class="font-mono text-xs font-semibold text-press-700 pt-0.5 tabular-nums">02</span>
-                <div>
-                  <p class="text-sm font-semibold text-slate-900">Tambahkan Finishing &amp; Desain</p>
-                  <p class="text-xs text-slate-600 mt-0.5">Mata ayam, laminasi, atau cutting pola dengan unggahan file langsung.</p>
-                </div>
-              </div>
-              <div class="flex items-start gap-3">
-                <span class="font-mono text-xs font-semibold text-press-700 pt-0.5 tabular-nums">03</span>
-                <div>
-                  <p class="text-sm font-semibold text-slate-900">Checkout Multi-Item &amp; Bayar</p>
-                  <p class="text-xs text-slate-600 mt-0.5">Gabungkan berbagai item cetakan dalam satu ID Pesanan.</p>
-                </div>
-              </div>
-              <div class="flex items-start gap-3">
-                <span class="font-mono text-xs font-semibold text-press-700 pt-0.5 tabular-nums">04</span>
-                <div>
-                  <p class="text-sm font-semibold text-slate-900">Lacak Status Produksi</p>
-                  <p class="text-xs text-slate-600 mt-0.5">Cek progres verifikasi pembayaran hingga pesanan siap diambil.</p>
-                </div>
-              </div>
-            </div>
-            <div class="pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-              <span>Format File: PDF, JPG, PNG, AI, CDR</span>
-              <span class="font-mono tabular-nums">Min. Order Transparan</span>
+            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent p-5 sm:p-6 text-white">
+              <p class="text-xs font-medium text-press-100">Produksi Cetak Dalam 1 Tempat</p>
+              <p class="font-display text-base sm:text-lg font-bold mt-0.5">Spanduk Large Format · Stiker Vinyl A3+ · Brosur &amp; Kartu Nama</p>
             </div>
           </div>
+        </div>
+
+        <!-- 3 Layanan Cetak Utama (Visual Showcase) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <button type="button" onclick="jumpToCatalogCategory('Outdoor')" class="group text-left bg-slate-50 border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 transition-colors">
+            <div class="aspect-[4/3] w-full bg-slate-200 overflow-hidden relative">
+              <img
+                src="/assets/images/service_banner_outdoor_1794676644117.jpg"
+                alt="Cetak spanduk outdoor flexi dan X-banner dengan finishing mata ayam"
+                referrerPolicy="no-referrer"
+                onerror="this.style.display='none';"
+                class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
+              />
+            </div>
+            <div class="p-4 flex items-center justify-between gap-3">
+              <div>
+                <p class="font-display text-sm font-bold text-slate-900">Spanduk &amp; X-Banner</p>
+                <p class="text-xs text-slate-600 mt-0.5">Hitung per meter persegi atau per set</p>
+              </div>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-400 group-hover:text-press-700 shrink-0"></i>
+            </div>
+          </button>
+
+          <button type="button" onclick="jumpToCatalogCategory('Stiker')" class="group text-left bg-slate-50 border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 transition-colors">
+            <div class="aspect-[4/3] w-full bg-slate-200 overflow-hidden relative">
+              <img
+                src="/assets/images/service_sticker_label_1794676644075.jpg"
+                alt="Cetak stiker vinyl label kemasan custom dan cutting pola"
+                referrerPolicy="no-referrer"
+                onerror="this.style.display='none';"
+                class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
+              />
+            </div>
+            <div class="p-4 flex items-center justify-between gap-3">
+              <div>
+                <p class="font-display text-sm font-bold text-slate-900">Stiker &amp; Label Kemasan</p>
+                <p class="text-xs text-slate-600 mt-0.5">Vinyl tahan air, laminasi &amp; cutting pola</p>
+              </div>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-400 group-hover:text-press-700 shrink-0"></i>
+            </div>
+          </button>
+
+          <button type="button" onclick="jumpToCatalogCategory('Dokumen')" class="group text-left bg-slate-50 border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 transition-colors">
+            <div class="aspect-[4/3] w-full bg-slate-200 overflow-hidden relative">
+              <img
+                src="/assets/images/service_offset_print_1794676644833.jpg"
+                alt="Cetak brosur, kartu nama, dan dokumen kertas Concorde"
+                referrerPolicy="no-referrer"
+                onerror="this.style.display='none';"
+                class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
+              />
+            </div>
+            <div class="p-4 flex items-center justify-between gap-3">
+              <div>
+                <p class="font-display text-sm font-bold text-slate-900">Brosur, Kartu &amp; Dokumen</p>
+                <p class="text-xs text-slate-600 mt-0.5">Cetak A3+, sertifikat, dan media promosi</p>
+              </div>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-400 group-hover:text-press-700 shrink-0"></i>
+            </div>
+          </button>
         </div>
       </div>
     </section>
@@ -453,15 +515,26 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
       <!-- Admin Header & Sub-tabs -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-        <div>
-          <p id="admin-role-subtitle" class="text-xs font-medium text-slate-500">Workspace Pengelola · Wajibku Fast</p>
-          <h1 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mt-0.5">Dashboard Admin Percetakan</h1>
+      <div class="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <div class="flex items-center gap-4 min-w-0">
+          <div class="hidden sm:block w-20 h-14 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+            <img
+              src="/assets/images/hero_print_studio_1794676643750.jpg"
+              alt="Studio Percetakan Wajibku Fast"
+              referrerPolicy="no-referrer"
+              onerror="this.style.display='none';"
+              class="w-full h-full object-cover"
+            />
+          </div>
+          <div class="min-w-0">
+            <p id="admin-role-subtitle" class="text-xs font-medium text-slate-500 truncate">Panel Pengelola Percetakan · Wajibku Fast</p>
+            <h1 class="font-display text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-0.5">Dashboard Operasional Percetakan</h1>
+          </div>
         </div>
 
-        <div class="flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg overflow-x-auto">
-          <button type="button" onclick="switchAdminTab('pesanan')" id="admin-tab-pesanan" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-md bg-white text-slate-900 shadow-sm whitespace-nowrap shrink-0">
-            Manajemen Pesanan
+        <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-lg overflow-x-auto">
+          <button type="button" onclick="switchAdminTab('pesanan')" id="admin-tab-pesanan" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-md bg-white text-slate-900 shadow-xs whitespace-nowrap shrink-0">
+            Pesanan
           </button>
           <button type="button" onclick="switchAdminTab('produk')" id="admin-tab-produk" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">
             Katalog Produk
@@ -473,7 +546,7 @@
             Akses Pengguna
           </button>
           <button type="button" onclick="switchAdminTab('pengaturan')" id="admin-tab-pengaturan" class="hidden px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">
-            Koneksi Database
+            Database
           </button>
         </div>
       </div>
@@ -485,115 +558,127 @@
 
       <!-- Summary Metrics (4 KPI Cards) -->
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <p class="text-xs font-medium text-slate-500">Total Pesanan Masuk</p>
-          <p id="metric-total-orders" class="mt-2 font-mono text-2xl font-bold text-slate-900 tabular-nums">0</p>
-          <p class="mt-1 text-xs text-slate-500">Semua status order</p>
+        <div class="bg-white border border-slate-200 rounded-xl p-5 flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs font-medium text-slate-500">Total Pesanan Masuk</p>
+            <p id="metric-total-orders" class="mt-2 font-mono text-2xl font-bold text-slate-900 tabular-nums">0</p>
+            <p class="mt-1 text-xs text-slate-500">Semua status order</p>
+          </div>
+          <i data-lucide="clipboard-list" class="w-5 h-5 text-slate-400 shrink-0"></i>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <p class="text-xs font-medium text-slate-500">Menunggu Verifikasi Bayar</p>
-          <p id="metric-pending-verify" class="mt-2 font-mono text-2xl font-bold text-amber-700 tabular-nums">0</p>
-          <p class="mt-1 text-xs text-slate-500">Perlu pengecekan bukti</p>
+        <div class="bg-white border border-slate-200 rounded-xl p-5 flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs font-medium text-slate-500">Perlu Cek Pembayaran</p>
+            <p id="metric-pending-verify" class="mt-2 font-mono text-2xl font-bold text-amber-700 tabular-nums">0</p>
+            <p class="mt-1 text-xs text-slate-500">Menunggu verifikasi bukti</p>
+          </div>
+          <i data-lucide="clock" class="w-5 h-5 text-amber-600 shrink-0"></i>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <p class="text-xs font-medium text-slate-500">Sedang Diproses</p>
-          <p id="metric-in-progress" class="mt-2 font-mono text-2xl font-bold text-press-700 tabular-nums">0</p>
-          <p class="mt-1 text-xs text-slate-500">Dalam antrean cetak</p>
+        <div class="bg-white border border-slate-200 rounded-xl p-5 flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs font-medium text-slate-500">Sedang Diproduksi</p>
+            <p id="metric-in-progress" class="mt-2 font-mono text-2xl font-bold text-press-700 tabular-nums">0</p>
+            <p class="mt-1 text-xs text-slate-500">Dalam antrean mesin cetak</p>
+          </div>
+          <i data-lucide="printer" class="w-5 h-5 text-press-700 shrink-0"></i>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <p class="text-xs font-medium text-slate-500">Total Omzet (Lunas)</p>
-          <p id="metric-revenue" class="mt-2 font-mono text-2xl font-bold text-emerald-700 tabular-nums">Rp 0</p>
-          <p class="mt-1 text-xs text-slate-500">Akumulasi tagihan lunas</p>
+        <div class="bg-white border border-slate-200 rounded-xl p-5 flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs font-medium text-slate-500">Total Omzet (Lunas)</p>
+            <p id="metric-revenue" class="mt-2 font-mono text-2xl font-bold text-emerald-700 tabular-nums">Rp 0</p>
+            <p class="mt-1 text-xs text-slate-500">Akumulasi tagihan lunas</p>
+          </div>
+          <i data-lucide="wallet" class="w-5 h-5 text-emerald-700 shrink-0"></i>
         </div>
       </section>
 
-      <!-- Panel Grafik Batang Pendapatan Bulanan (Sheet Pesanan) -->
-      <section id="admin-revenue-chart-panel" class="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 space-y-5">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-          <div>
-            <h2 class="font-display text-lg font-bold text-slate-900">Grafik Pendapatan Bulanan</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Rekapitulasi tren omzet per bulan langsung dari data sheet Pesanan.</p>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2.5">
-            <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
-              <button type="button" id="rev-mode-lunas" onclick="setRevenueChartMode('lunas')" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs whitespace-nowrap shrink-0">
-                Omzet Lunas
-              </button>
-              <button type="button" id="rev-mode-all" onclick="setRevenueChartMode('all')" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">
-                Semua Tagihan
-              </button>
+      <!-- Admin Tab 1: Manajemen Pesanan (Grafik Pendapatan + Tabel Order) -->
+      <section id="admin-panel-pesanan" class="space-y-6">
+        <!-- Panel Grafik Batang Pendapatan Bulanan -->
+        <div id="admin-revenue-chart-panel" class="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 space-y-5">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <h2 class="font-display text-lg font-bold text-slate-900">Ringkasan Pendapatan Bulanan</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Klik atau arahkan kursor ke batang bulan untuk melihat detail omzet &amp; jumlah pesanan.</p>
             </div>
 
-            <select id="revenue-chart-year" onchange="renderMonthlyRevenueChart()" aria-label="Pilih tahun pendapatan" class="px-3 py-1.5 text-xs font-mono font-semibold bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700">
-              <!-- Populated dynamically -->
-            </select>
+            <div class="flex flex-wrap items-center gap-2.5">
+              <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
+                <button type="button" id="rev-mode-lunas" onclick="setRevenueChartMode('lunas')" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs whitespace-nowrap shrink-0">
+                  Omzet Lunas
+                </button>
+                <button type="button" id="rev-mode-all" onclick="setRevenueChartMode('all')" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">
+                  Semua Tagihan
+                </button>
+              </div>
+
+              <select id="revenue-chart-year" onchange="renderMonthlyRevenueChart()" aria-label="Pilih tahun pendapatan" class="px-3 py-1.5 text-xs font-mono font-semibold bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-2">
+            <div>
+              <p class="text-xs text-slate-500">Total Tahun Terpilih</p>
+              <p id="rev-stat-total" class="font-mono text-lg font-bold text-slate-900 tabular-nums mt-0.5">Rp 0</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500">Bulan Tertinggi</p>
+              <p id="rev-stat-peak" class="font-mono text-lg font-bold text-press-700 tabular-nums mt-0.5">-</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500">Rata-rata Bulan Aktif</p>
+              <p id="rev-stat-avg" class="font-mono text-lg font-bold text-slate-900 tabular-nums mt-0.5">Rp 0</p>
+            </div>
+          </div>
+
+          <div id="revenue-chart-container" class="overflow-x-auto pb-2">
+            <!-- Populated dynamically -->
+          </div>
+
+          <div id="revenue-chart-detail" class="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+            <span>Arahkan kursor atau klik batang bulan untuk melihat rincian jumlah pesanan dan total nominal.</span>
           </div>
         </div>
 
-        <!-- Ringkasan Angka Tahunan -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-2">
-          <div>
-            <p class="text-xs text-slate-500">Total Periode Terpilih</p>
-            <p id="rev-stat-total" class="font-mono text-lg font-bold text-slate-900 tabular-nums mt-0.5">Rp 0</p>
+        <!-- Tabel Daftar Pesanan -->
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="font-display text-lg font-bold text-slate-900">Daftar Pesanan Pelanggan</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Ubah status pembayaran atau status produksi langsung dari tabel di bawah.</p>
+            </div>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <input type="text" id="admin-order-search" oninput="renderAdminOrders()" placeholder="Cari Order ID / Nama / WA..." class="px-3.5 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <select id="admin-order-filter" onchange="renderAdminOrders()" class="px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700">
+                <option value="ALL">Semua Status Order</option>
+                <option value="Menunggu Bayar">Menunggu Bayar</option>
+                <option value="Diproses">Diproses</option>
+                <option value="Selesai">Selesai</option>
+                <option value="Diambil">Diambil</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <p class="text-xs text-slate-500">Puncak Pendapatan Bulanan</p>
-            <p id="rev-stat-peak" class="font-mono text-lg font-bold text-press-700 tabular-nums mt-0.5">-</p>
-          </div>
-          <div>
-            <p class="text-xs text-slate-500">Rata-rata Bulan Aktif</p>
-            <p id="rev-stat-avg" class="font-mono text-lg font-bold text-slate-900 tabular-nums mt-0.5">Rp 0</p>
-          </div>
-        </div>
 
-        <!-- Area Grafik Batang 12 Bulan -->
-        <div id="revenue-chart-container" class="overflow-x-auto pb-2">
-          <!-- Populated dynamically -->
-        </div>
-
-        <!-- Detail Bulan Terpilih -->
-        <div id="revenue-chart-detail" class="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
-          <span>Arahkan kursor atau klik batang bulan untuk melihat rincian jumlah pesanan dan total nominal.</span>
-        </div>
-      </section>
-
-      <!-- Admin Tab 1: Manajemen Pesanan -->
-      <section id="admin-panel-pesanan" class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 class="font-display text-lg font-bold text-slate-900">Daftar Pesanan Pelanggan</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Ubah Status Bayar atau Status Order langsung untuk mengirim pembaruan ke Google Sheets.</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                  <th class="py-3 px-4 whitespace-nowrap">ID Pesanan</th>
+                  <th class="py-3 px-4 whitespace-nowrap">Tanggal</th>
+                  <th class="py-3 px-4 whitespace-nowrap">Pelanggan</th>
+                  <th class="py-3 px-4 whitespace-nowrap text-right">Total Tagihan</th>
+                  <th class="py-3 px-4 whitespace-nowrap">Pembayaran</th>
+                  <th class="py-3 px-4 whitespace-nowrap">Status Cetak</th>
+                  <th class="py-3 px-4 whitespace-nowrap text-right">Rincian</th>
+                </tr>
+              </thead>
+              <tbody id="admin-orders-tbody" class="divide-y divide-slate-200 text-sm">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
           </div>
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-            <input type="text" id="admin-order-search" oninput="renderAdminOrders()" placeholder="Cari Order ID / Nama / WA..." class="px-3.5 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-            <select id="admin-order-filter" onchange="renderAdminOrders()" class="px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700">
-              <option value="ALL">Semua Status Order</option>
-              <option value="Menunggu Bayar">Menunggu Bayar</option>
-              <option value="Diproses">Diproses</option>
-              <option value="Selesai">Selesai</option>
-              <option value="Diambil">Diambil</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
-                <th class="py-3 px-4 whitespace-nowrap">Order_ID</th>
-                <th class="py-3 px-4 whitespace-nowrap">Tanggal</th>
-                <th class="py-3 px-4 whitespace-nowrap">Pelanggan (User_ID)</th>
-                <th class="py-3 px-4 whitespace-nowrap text-right">Total_Tagihan</th>
-                <th class="py-3 px-4 whitespace-nowrap">Status_Bayar</th>
-                <th class="py-3 px-4 whitespace-nowrap">Status_Order</th>
-                <th class="py-3 px-4 whitespace-nowrap text-right">Rincian</th>
-              </tr>
-            </thead>
-            <tbody id="admin-orders-tbody" class="divide-y divide-slate-200 text-sm">
-              <!-- Populated dynamically -->
-            </tbody>
-          </table>
         </div>
       </section>
 
@@ -841,58 +926,16 @@
       </section>
       <!-- Admin Tab 4: Manajemen Akses Pengguna (Khusus Super Admin) -->
       <section id="admin-panel-pengguna" class="hidden space-y-6">
-        <!-- Panel Ringkasan Akun Admin / Super Admin & Kode Pemulihan Pemilik -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 space-y-3">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
-              <div>
-                <h2 class="font-display text-base font-bold text-slate-900">Akses Akun Admin &amp; Super Admin</h2>
-                <p class="text-xs text-slate-500 mt-0.5">Kata sandi disimpan sebagai hash SHA-256 satu arah. Klik <strong>Reset Sandi</strong> untuk membuat kata sandi baru.</p>
-              </div>
-            </div>
-            <div id="admin-privileged-accounts-list" class="space-y-2 text-xs">
-              <!-- Populated dynamically by renderAdminUsers() -->
-            </div>
-            <div id="admin-saved-credential-box" class="hidden rounded-lg border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-950 space-y-1.5">
-              <div class="flex items-center justify-between gap-2">
-                <span class="font-bold">Kredensial Baru Tersimpan (Catat / Salin Sekarang)</span>
-                <button type="button" onclick="document.getElementById('admin-saved-credential-box').classList.add('hidden')" class="text-emerald-700 hover:underline font-medium">Tutup</button>
-              </div>
-              <p id="admin-saved-credential-text" class="font-mono break-all"></p>
-              <button type="button" id="btn-copy-saved-cred" class="inline-flex items-center gap-1.5 px-3 py-1.5 font-semibold bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 rounded-md">
-                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                <span>Salin Email &amp; Kata Sandi</span>
-              </button>
-            </div>
+        <div id="admin-saved-credential-box" class="hidden rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-950 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-bold">Kredensial Baru Tersimpan (Catat / Salin Sekarang)</span>
+            <button type="button" onclick="document.getElementById('admin-saved-credential-box').classList.add('hidden')" class="text-emerald-700 hover:underline font-medium">Tutup</button>
           </div>
-
-          <div class="lg:col-span-5 bg-slate-900 text-white rounded-xl p-5 space-y-3 flex flex-col justify-between">
-            <div class="space-y-2">
-              <div class="flex items-center justify-between gap-2">
-                <h3 class="font-display text-sm font-bold">Kode Pemulihan Pemilik (Darurat)</h3>
-                <span class="font-mono text-[11px] text-slate-300">Khusus Super Admin</span>
-              </div>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Simpan kode ini untuk mereset kata sandi <strong>Super Admin / Admin</strong> langsung dari tab <strong>Lupa Sandi</strong> jika suatu saat lupa.
-              </p>
-              <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
-                <span id="owner-recovery-key-display" class="font-mono text-xs sm:text-sm font-semibold tracking-wide flex-1 truncate">••••••••••••••••</span>
-                <button type="button" onclick="toggleRecoveryKeyVisibility()" class="text-xs font-medium text-slate-300 hover:text-white px-2 py-1">
-                  <span id="owner-recovery-key-toggle-label">Lihat</span>
-                </button>
-              </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 pt-1">
-              <button type="button" onclick="copyRecoveryKey()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-white text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
-                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                <span>Salin Kode</span>
-              </button>
-              <button type="button" id="btn-regen-recovery-key" onclick="regenerateRecoveryKey()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-slate-800 border border-slate-600 text-white hover:bg-slate-700 rounded-lg transition-colors">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                <span>Buat Kode Baru</span>
-              </button>
-            </div>
-          </div>
+          <p id="admin-saved-credential-text" class="font-mono break-all"></p>
+          <button type="button" id="btn-copy-saved-cred" class="inline-flex items-center gap-1.5 px-3 py-1.5 font-semibold bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 rounded-md">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Salin Email &amp; Kata Sandi</span>
+          </button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -1139,14 +1182,14 @@
   </div>
 
   <!-- ===================================================================== -->
-  <!-- MODAL LOGIN BERDASARKAN HAK AKSES (USER / ADMIN / SUPER ADMIN)        -->
+  <!-- MODAL MASUK SATU PINTU (PELANGGAN & PENGELOLA)                        -->
   <!-- ===================================================================== -->
   <div id="login-modal-backdrop" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white border border-slate-200 rounded-xl max-w-md w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
       <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
         <div>
-          <h3 id="auth-modal-title" class="font-display text-lg font-bold text-slate-900">Masuk Akun Wajibku Fast</h3>
-          <p id="login-modal-subtitle" class="text-xs text-slate-500 mt-0.5">Masuk atau daftar sebagai member baru tanpa perlu bantuan Admin.</p>
+          <h3 id="auth-modal-title" class="font-display text-lg font-bold text-slate-900">Masuk ke Wajibku Fast</h3>
+          <p id="login-modal-subtitle" class="text-xs text-slate-500 mt-0.5">Satu pintu masuk — tampilan menyesuaikan akun Anda.</p>
         </div>
         <button type="button" onclick="closeLoginModal()" aria-label="Tutup login" class="w-9 h-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -1169,20 +1212,20 @@
       </div>
 
       <div class="overflow-y-auto flex-1">
-        <!-- Form Login -->
+        <!-- Form Login Tunggal -->
         <form id="login-form" onsubmit="handleLoginSubmit(event)" class="p-6 space-y-4">
           <div id="login-error-box" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs font-medium text-rose-700"></div>
 
           <div>
-            <label for="login-identifier" class="block text-xs font-semibold text-slate-700 mb-1">Email atau Nomor WhatsApp</label>
-            <input type="text" id="login-identifier" required placeholder="Contoh: budi.santoso@gmail.com atau 0857..." class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            <label for="login-identifier" class="block text-xs font-semibold text-slate-700 mb-1">Email, No. WhatsApp, atau ID Akun</label>
+            <input type="text" id="login-identifier" required placeholder="Contoh: budi@gmail.com atau 0857..." class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
           </div>
 
           <div>
             <div class="flex items-center justify-between mb-1">
               <label for="login-password" class="block text-xs font-semibold text-slate-700">Kata Sandi / PIN</label>
               <button type="button" onclick="switchAuthMode('forgot')" class="text-xs font-semibold text-press-700 hover:underline">
-                Lupa password?
+                Lupa sandi?
               </button>
             </div>
             <input type="password" id="login-password" required placeholder="Masukkan kata sandi" class="w-full px-3.5 py-2.5 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
@@ -1193,16 +1236,8 @@
             <span>Masuk Sekarang</span>
           </button>
 
-          <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1.5">
-            <p class="font-semibold text-slate-800">Info Akses Admin &amp; Super Admin</p>
-            <p>Email Super Admin bawaan: <span class="font-mono font-semibold text-slate-900">superadmin@wajibkufast.id</span> (<span class="font-mono">SUP-001</span>). Demi keamanan, kata sandi dienkripsi (hash SHA-256) dan tidak ditampilkan ke publik.</p>
-            <button type="button" onclick="openAdminRecoveryFlow()" class="font-semibold text-press-700 hover:underline">
-              Lupa sandi Super Admin / Admin? Lihat solusi &amp; reset &rarr;
-            </button>
-          </div>
-
           <p class="pt-1 text-[11px] text-slate-500 text-center">
-            Belum punya akun pelanggan? Pilih tab <strong>Daftar Member</strong>.
+            Belum punya akun pelanggan? Pilih tab <strong>Daftar Member</strong>. Halaman otomatis menyesuaikan akun setelah masuk.
           </p>
         </form>
 
@@ -1247,40 +1282,25 @@
             <span>Daftar Jadi Member</span>
           </button>
 
-          <p class="text-[11px] text-slate-500 text-center">Akun baru otomatis terdaftar sebagai <strong>User (Member)</strong> di sheet `Users`.</p>
+          <p class="text-[11px] text-slate-500 text-center">Akun baru otomatis terdaftar sebagai member pelanggan.</p>
         </form>
 
-        <!-- Form Lupa Password (Pelanggan & Admin/Super Admin) -->
+        <!-- Form Lupa Password (Khusus Pelanggan / User) -->
         <form id="forgot-form" onsubmit="handleForgotPasswordSubmit(event)" novalidate class="hidden p-6 space-y-3.5">
           <div id="forgot-error-box" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs font-medium text-rose-700"></div>
 
-          <!-- Switcher Tipe Akun -->
-          <div class="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-lg">
-            <button type="button" id="forgot-type-user" onclick="switchForgotAccountType('User')" class="py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs">
-              Pelanggan (User)
-            </button>
-            <button type="button" id="forgot-type-admin" onclick="switchForgotAccountType('Admin')" class="py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900">
-              Admin / Super Admin
-            </button>
-          </div>
-
-          <p id="forgot-helper-text" class="text-xs text-slate-600 leading-relaxed">
-            Masukkan <strong>Nama Lengkap</strong> dan <strong>Email</strong> yang sama dengan data terdaftar di akun Anda untuk membuat kata sandi baru.
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Khusus akun pelanggan. Masukkan <strong>Nama Lengkap</strong> dan <strong>Email</strong> yang sama dengan data terdaftar di akun Anda untuk membuat kata sandi baru.
           </p>
 
-          <div id="forgot-nama-wrapper">
+          <div>
             <label for="forgot-nama" class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap Terdaftar *</label>
-            <input type="text" id="forgot-nama" placeholder="Contoh: Budi Santoso" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            <input type="text" id="forgot-nama" required placeholder="Contoh: Budi Santoso" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
           </div>
 
           <div>
-            <label id="forgot-email-label" for="forgot-email" class="block text-xs font-semibold text-slate-700 mb-1">Email Terdaftar *</label>
-            <input type="text" id="forgot-email" placeholder="nama@email.com" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-          </div>
-
-          <div id="forgot-recovery-wrapper" class="hidden">
-            <label for="forgot-recovery-key" class="block text-xs font-semibold text-slate-700 mb-1">Kode Pemulihan Pemilik (Owner Recovery Key) *</label>
-            <input type="text" id="forgot-recovery-key" placeholder="Contoh: WF-KEY-XXXXXXXXXXXX" class="w-full px-3.5 py-2 text-sm font-mono uppercase bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            <label for="forgot-email" class="block text-xs font-semibold text-slate-700 mb-1">Email Terdaftar *</label>
+            <input type="email" id="forgot-email" required placeholder="nama@email.com" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1298,16 +1318,6 @@
             <i data-lucide="key-round" class="w-4 h-4"></i>
             <span>Simpan Kata Sandi Baru</span>
           </button>
-
-          <!-- Panduan Solusi Jika Lupa Sandi Admin / Super Admin & Belum Punya Kode Pemulihan -->
-          <div id="forgot-admin-guide" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-950 space-y-1.5 leading-relaxed">
-            <p class="font-bold">Belum menyimpan Kode Pemulihan? 3 Cara Pemulihan Pemilik:</p>
-            <ol class="list-decimal pl-4 space-y-1">
-              <li><strong>Cara Tercepat (Via Google Sheets):</strong> Buka tab <span class="font-mono font-semibold">Users</span> di Google Sheets Anda, ketik kata sandi baru pilihan Anda langsung pada sel kolom <span class="font-mono font-semibold">Password</span> baris Super Admin/Admin, lalu langsung <strong>Masuk Akun</strong> (server otomatis mengenkripsi ulang saat login).</li>
-              <li><strong>Via Google Apps Script:</strong> Buka editor Apps Script &rarr; pilih fungsi <span class="font-mono font-semibold">resetSuperAdminAccess</span> &rarr; klik <strong>Run</strong> &rarr; cek <strong>Execution Log</strong> untuk melihat Email, Kata Sandi Baru, dan Kode Pemulihan Pemilik.</li>
-              <li><strong>Khusus Admin Biasa:</strong> Minta <strong>Super Admin</strong> login lalu atur ulang kata sandi di menu <em>Dashboard Admin &rarr; Akses Pengguna</em>.</li>
-            </ol>
-          </div>
         </form>
       </div>
     </div>
@@ -1454,9 +1464,6 @@
       authToken: null,
       adminDataLoaded: false,
       adminTab: "pesanan",
-      forgotAccountType: "User",
-      ownerRecoveryKey: "",
-      showRecoveryKey: false,
       lastSavedCredential: null,
       revenueChartMode: "lunas",
       selectedMonthIndex: null,
@@ -1621,7 +1628,33 @@
       }
     }
 
-    // Ilustrasi Produk Cetak (SVG Presisi Tanpa Ketergantungan URL Eksternal)
+    function getProductMediaHtml(produk) {
+      const tipe = produk.Tipe_Hitung;
+      const kat = (produk.Kategori || "").toLowerCase();
+      const nama = (produk.Nama_Produk || "").toLowerCase();
+      let imgSrc = "/assets/images/service_offset_print_1794676644833.jpg";
+      if (tipe === "Dimensi" || kat.includes("banner") || kat.includes("outdoor") || kat.includes("display") || kat.includes("stand") || nama.includes("spanduk") || nama.includes("banner")) {
+        imgSrc = "/assets/images/service_banner_outdoor_1794676644117.jpg";
+      } else if (kat.includes("stiker") || kat.includes("label") || nama.includes("stiker")) {
+        imgSrc = "/assets/images/service_sticker_label_1794676644075.jpg";
+      }
+      return `
+        <div class="relative w-full h-full bg-slate-100">
+          <img
+            src="${imgSrc}"
+            alt="${escapeHtml(produk.Nama_Produk || "Produk Percetakan")} — ${escapeHtml(produk.Kategori || "Percetakan")}"
+            referrerPolicy="no-referrer"
+            onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
+            class="w-full h-full object-cover"
+          />
+          <div class="hidden w-full h-full">
+            ${getProductIllustrationSvg(produk)}
+          </div>
+        </div>
+      `;
+    }
+
+    // Ilustrasi Produk Cetak (Fallback jika gambar gagal dimuat)
     function getProductIllustrationSvg(produk) {
       const tipe = produk.Tipe_Hitung;
       const kat = (produk.Kategori || "").toLowerCase();
@@ -1813,7 +1846,6 @@
           state.pesanan = Array.isArray(json.data.pesanan) ? json.data.pesanan : [];
           state.detail_pesanan = Array.isArray(json.data.detail_pesanan) ? json.data.detail_pesanan : [];
           state.adminDataLoaded = true;
-          state.ownerRecoveryKey = (json.meta && json.meta.ownerRecoveryKey) ? String(json.meta.ownerRecoveryKey) : "";
           if (json.meta && json.meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
             SHEET_URL = json.meta.spreadsheetUrl;
             localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
@@ -2007,15 +2039,15 @@
 
       if (mode === "register") {
         regForm?.classList.remove("hidden");
-        if (titleEl) titleEl.textContent = "Daftar Member Wajibku Fast";
+        if (titleEl) titleEl.textContent = "Daftar Member Baru";
         if (tabReg) tabReg.className = activeCls;
       } else if (mode === "forgot") {
         forgotForm?.classList.remove("hidden");
-        if (titleEl) titleEl.textContent = "Reset Kata Sandi Pelanggan";
+        if (titleEl) titleEl.textContent = "Lupa Sandi Pelanggan";
         if (tabForgot) tabForgot.className = activeCls;
       } else {
         loginForm?.classList.remove("hidden");
-        if (titleEl) titleEl.textContent = "Masuk Akun Wajibku Fast";
+        if (titleEl) titleEl.textContent = "Masuk ke Wajibku Fast";
         if (tabLogin) tabLogin.className = activeCls;
       }
       refreshIcons();
@@ -2023,7 +2055,7 @@
 
     function openLoginModal(subtitleText, mode = "login") {
       const subtitleEl = document.getElementById("login-modal-subtitle");
-      subtitleEl.textContent = subtitleText || "Masuk, daftar member baru, atau reset sandi jika lupa.";
+      subtitleEl.textContent = subtitleText || "Satu pintu masuk — tampilan menyesuaikan akun Anda.";
       switchAuthMode(mode);
       document.getElementById("login-modal-backdrop").classList.remove("hidden");
       refreshIcons();
@@ -2162,89 +2194,26 @@
       }
     }
 
-    function switchForgotAccountType(type) {
-      const nextType = type === "Admin" ? "Admin" : "User";
-      state.forgotAccountType = nextType;
-      const btnUser = document.getElementById("forgot-type-user");
-      const btnAdmin = document.getElementById("forgot-type-admin");
-      const namaWrap = document.getElementById("forgot-nama-wrapper");
-      const recWrap = document.getElementById("forgot-recovery-wrapper");
-      const guideBox = document.getElementById("forgot-admin-guide");
-      const helperEl = document.getElementById("forgot-helper-text");
-      const emailLabel = document.getElementById("forgot-email-label");
-      const emailInput = document.getElementById("forgot-email");
-      const errBox = document.getElementById("forgot-error-box");
-
-      if (errBox) errBox.classList.add("hidden");
-      const activeCls = "py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs";
-      const idleCls = "py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900";
-
-      if (nextType === "Admin") {
-        if (btnUser) btnUser.className = idleCls;
-        if (btnAdmin) btnAdmin.className = activeCls;
-        namaWrap?.classList.add("hidden");
-        recWrap?.classList.remove("hidden");
-        guideBox?.classList.remove("hidden");
-        if (helperEl) helperEl.innerHTML = "Masukkan <strong>Email / User_ID</strong> dan <strong>Kode Pemulihan Pemilik</strong> untuk mereset kata sandi Admin atau Super Admin langsung dari web.";
-        if (emailLabel) emailLabel.textContent = "Email atau User_ID Admin / Super Admin *";
-        if (emailInput) emailInput.placeholder = "Contoh: superadmin@wajibkufast.id atau SUP-001";
-      } else {
-        if (btnUser) btnUser.className = activeCls;
-        if (btnAdmin) btnAdmin.className = idleCls;
-        namaWrap?.classList.remove("hidden");
-        recWrap?.classList.add("hidden");
-        guideBox?.classList.add("hidden");
-        if (helperEl) helperEl.innerHTML = "Masukkan <strong>Nama Lengkap</strong> dan <strong>Email</strong> yang sama dengan data terdaftar di akun Anda untuk membuat kata sandi baru.";
-        if (emailLabel) emailLabel.textContent = "Email Terdaftar *";
-        if (emailInput) emailInput.placeholder = "nama@email.com";
-      }
-    }
-
-    function openAdminRecoveryFlow() {
-      switchAuthMode("forgot");
-      switchForgotAccountType("Admin");
-      const emailInput = document.getElementById("forgot-email");
-      if (emailInput && !emailInput.value) {
-        emailInput.value = "superadmin@wajibkufast.id";
-      }
-    }
-
     async function handleForgotPasswordSubmit(e) {
       e.preventDefault();
-      const accountType = state.forgotAccountType === "Admin" ? "Admin" : "User";
       const nama = document.getElementById("forgot-nama").value.trim();
-      const emailOrId = document.getElementById("forgot-email").value.trim().toLowerCase();
-      const recoveryKey = document.getElementById("forgot-recovery-key")?.value.trim() || "";
+      const email = document.getElementById("forgot-email").value.trim().toLowerCase();
       const newPassword = document.getElementById("forgot-password").value;
       const confirmPass = document.getElementById("forgot-password-confirm").value;
       const errBox = document.getElementById("forgot-error-box");
 
       errBox.classList.add("hidden");
       if (!isApiConfigured()) {
-        errBox.textContent = "Reset kata sandi membutuhkan koneksi aktif ke Google Apps Script Web App (/exec).";
+        errBox.textContent = "Reset kata sandi membutuhkan koneksi aktif ke server.";
         errBox.classList.remove("hidden");
         return;
       }
 
-      if (accountType === "Admin") {
-        if (!emailOrId) {
-          errBox.textContent = "Email atau User_ID Admin/Super Admin wajib diisi.";
-          errBox.classList.remove("hidden");
-          return;
-        }
-        if (!recoveryKey) {
-          errBox.textContent = "Masukkan Kode Pemulihan Pemilik, atau ikuti panduan reset via Google Sheets / Apps Script di bawah.";
-          errBox.classList.remove("hidden");
-          return;
-        }
-      } else {
-        if (!nama || !emailOrId || emailOrId.indexOf("@") === -1) {
-          errBox.textContent = "Nama lengkap dan Email terdaftar wajib diisi.";
-          errBox.classList.remove("hidden");
-          return;
-        }
+      if (!nama || !email || email.indexOf("@") === -1) {
+        errBox.textContent = "Nama lengkap dan Email terdaftar wajib diisi.";
+        errBox.classList.remove("hidden");
+        return;
       }
-
       if (newPassword.length < 6) {
         errBox.textContent = "Kata sandi baru minimal 6 karakter.";
         errBox.classList.remove("hidden");
@@ -2262,10 +2231,8 @@
       try {
         const res = await postToGas({
           action: "forgotPassword",
-          accountType: accountType,
           Nama: nama,
-          Email: emailOrId,
-          recoveryKey: recoveryKey,
+          Email: email,
           Password: newPassword
         });
         if (!res || res.status !== "success") {
@@ -2274,7 +2241,7 @@
         document.getElementById("forgot-form").reset();
         switchAuthMode("login");
         const idInput = document.getElementById("login-identifier");
-        if (idInput) idInput.value = emailOrId;
+        if (idInput) idInput.value = email;
         showToast(res.message || "Kata sandi berhasil diperbarui. Silakan masuk.", "success");
       } catch (err) {
         errBox.textContent = err?.message || "Gagal mereset kata sandi.";
@@ -2288,8 +2255,6 @@
       state.authToken = null;
       state.currentUser = null;
       state.adminDataLoaded = false;
-      state.ownerRecoveryKey = "";
-      state.showRecoveryKey = false;
       state.lastSavedCredential = null;
       state.users = [];
       state.pesanan = [];
@@ -2385,10 +2350,10 @@
       } else {
         const authLinkDesktop = state.currentUser
           ? `<button type="button" onclick="logoutUser()" class="py-1 border-b-2 border-transparent text-slate-700 hover:text-rose-700 transition-colors whitespace-nowrap shrink-0">${escapeHtml(state.currentUser.Nama)} (Keluar)</button>`
-          : `<button type="button" onclick="openLoginModal()" class="py-1 border-b-2 border-transparent text-press-700 hover:text-press-800 font-semibold transition-colors whitespace-nowrap shrink-0">Masuk / Daftar</button>`;
+          : `<button type="button" onclick="openLoginModal()" class="py-1 border-b-2 border-transparent text-press-700 hover:text-press-800 font-semibold transition-colors whitespace-nowrap shrink-0">Masuk</button>`;
         const authLinkMobile = state.currentUser
           ? `<button type="button" onclick="logoutUser(); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 rounded-lg">Keluar (${escapeHtml(state.currentUser.Nama)})</button>`
-          : `<button type="button" onclick="openLoginModal(); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-semibold text-press-700 hover:bg-press-50 rounded-lg">Masuk / Daftar Member</button>`;
+          : `<button type="button" onclick="openLoginModal(); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-semibold text-press-700 hover:bg-press-50 rounded-lg">Masuk Akun</button>`;
 
         desktopHtml = `
           <button type="button" onclick="navigateCustomerSection('katalog')" id="nav-katalog" class="nav-link py-1 border-b-2 border-press-700 text-slate-900 transition-colors whitespace-nowrap shrink-0">
@@ -2409,8 +2374,8 @@
           ${authLinkMobile}
         `;
         footerHtml = state.currentUser
-          ? `<span class="text-slate-500">Pelanggan: ${escapeHtml(state.currentUser.Nama)}</span><button type="button" onclick="logoutUser()" class="hover:text-slate-900">Keluar</button>`
-          : `<button type="button" onclick="openLoginModal('Masuk sebagai Admin atau Super Admin untuk membuka Dashboard Admin.')" class="hover:text-slate-900">Login Admin / Super Admin</button>`;
+          ? `<span class="text-slate-500">Akun: ${escapeHtml(state.currentUser.Nama)}</span><button type="button" onclick="logoutUser()" class="hover:text-slate-900">Keluar</button>`
+          : `<button type="button" onclick="navigateCustomerSection('katalog')" class="hover:text-slate-900">Katalog</button><button type="button" onclick="navigateCustomerSection('kalkulator')" class="hover:text-slate-900">Kalkulator</button><button type="button" onclick="navigateCustomerSection('lacak')" class="hover:text-slate-900">Lacak Pesanan</button>`;
 
         primaryLabel.textContent = `Keranjang (${state.cart.length})`;
         primaryBtn.querySelector("i")?.setAttribute("data-lucide", "shopping-bag");
@@ -2435,7 +2400,7 @@
     async function switchRole(role) {
       if (role === "admin") {
         if (!canAccessAdmin()) {
-          openLoginModal("Akses Dashboard Admin memerlukan login Admin atau Super Admin.");
+          openLoginModal("Masuk dengan akun pengelola untuk membuka Dashboard.");
           return;
         }
         if (!state.adminDataLoaded) {
@@ -2528,6 +2493,14 @@
       }).join("");
     }
 
+    function jumpToCatalogCategory(keyword) {
+      const k = String(keyword || "").toLowerCase();
+      const cats = [...new Set(state.produk.filter((p) => p.Status === "Tersedia").map((p) => p.Kategori).filter(Boolean))];
+      const matchedCat = cats.find((c) => c.toLowerCase().includes(k)) || "Semua";
+      setCategoryFilter(matchedCat);
+      navigateCustomerSection("katalog");
+    }
+
     function setCategoryFilter(cat) {
       state.activeCategory = cat;
       renderCategoryTabs();
@@ -2561,7 +2534,7 @@
         <article class="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <div>
             <div class="aspect-[4/3] w-full bg-slate-100 border-b border-slate-200 overflow-hidden">
-              ${getProductIllustrationSvg(p)}
+              ${getProductMediaHtml(p)}
             </div>
             <div class="p-5">
               <p class="text-xs text-slate-500 truncate">
@@ -4379,93 +4352,7 @@
     // -----------------------------------------------------------------------
     // 11B. MANAJEMEN AKUN & ROLE (KHUSUS SUPER ADMIN)
     // -----------------------------------------------------------------------
-    function renderOwnerRecoveryKeyUi() {
-      const disp = document.getElementById("owner-recovery-key-display");
-      const toggleLbl = document.getElementById("owner-recovery-key-toggle-label");
-      if (!disp) return;
-      if (!state.ownerRecoveryKey) {
-        disp.textContent = "Belum dimuat (perlu Code.gs terbaru)";
-      } else if (state.showRecoveryKey) {
-        disp.textContent = state.ownerRecoveryKey;
-      } else {
-        disp.textContent = state.ownerRecoveryKey.slice(0, 7) + "••••••••••";
-      }
-      if (toggleLbl) {
-        toggleLbl.textContent = state.showRecoveryKey ? "Sembunyikan" : "Lihat";
-      }
-    }
-
-    function toggleRecoveryKeyVisibility() {
-      state.showRecoveryKey = !state.showRecoveryKey;
-      renderOwnerRecoveryKeyUi();
-    }
-
-    function copyRecoveryKey() {
-      if (!state.ownerRecoveryKey) {
-        showToast("Kode pemulihan belum tersedia. Pastikan Code.gs terbaru sudah di-deploy.", "info");
-        return;
-      }
-      navigator.clipboard.writeText(state.ownerRecoveryKey).then(() => {
-        showToast("Kode Pemulihan Pemilik disalin ke clipboard.", "success");
-      }).catch(() => {
-        showToast("Gagal menyalin kode pemulihan.", "error");
-      });
-    }
-
-    async function regenerateRecoveryKey() {
-      if (!isSuperAdmin()) return;
-      const btn = document.getElementById("btn-regen-recovery-key");
-      if (btn) btn.disabled = true;
-      try {
-        const res = await postToGas({ action: "regenerateOwnerRecoveryKey" });
-        if (!res || res.status !== "success" || !res.data || !res.data.ownerRecoveryKey) {
-          throw new Error(res?.message || "Gagal membuat kode pemulihan baru.");
-        }
-        state.ownerRecoveryKey = res.data.ownerRecoveryKey;
-        state.showRecoveryKey = true;
-        renderOwnerRecoveryKeyUi();
-        showToast("Kode Pemulihan Pemilik baru berhasil dibuat. Segera catat di tempat aman.", "success");
-      } catch (err) {
-        showToast(err?.message || "Gagal membuat kode pemulihan baru.", "error");
-      } finally {
-        if (btn) btn.disabled = false;
-      }
-    }
-
     function renderAdminUsers() {
-      renderOwnerRecoveryKeyUi();
-      const privContainer = document.getElementById("admin-privileged-accounts-list");
-      if (privContainer) {
-        const privileged = state.users.filter((u) => {
-          const r = getNormalizedRole(u);
-          return r === "Super Admin" || r === "Admin";
-        });
-        if (!privileged.length) {
-          privContainer.innerHTML = `<p class="text-slate-500">Belum ada akun Admin / Super Admin.</p>`;
-        } else {
-          privContainer.innerHTML = privileged.map((u) => {
-            const roleNorm = getNormalizedRole(u);
-            const hasPass = u.Has_Password !== false;
-            return `
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <div class="min-w-0">
-                  <p class="font-semibold text-slate-900">
-                    ${escapeHtml(u.Nama)}
-                    <span class="font-mono text-[11px] text-slate-500">(${escapeHtml(u.User_ID)})</span>
-                    · <span class="${roleNorm === "Super Admin" ? "text-press-700" : "text-emerald-700"}">${escapeHtml(roleNorm)}</span>
-                  </p>
-                  <p class="font-mono text-[11px] text-slate-600 truncate">
-                    Login: ${escapeHtml(u.Email || u.No_WA || "-")} · Sandi: ${hasPass ? "Hash SHA-256 Aktif" : "Belum Diatur"}
-                  </p>
-                </div>
-                <button type="button" data-action="edit-user" data-id="${escapeHtml(u.User_ID)}" class="shrink-0 px-3 py-1.5 text-xs font-semibold text-press-700 bg-white border border-press-200 hover:bg-press-50 rounded-md">
-                  Reset Sandi
-                </button>
-              </div>
-            `;
-          }).join("");
-        }
-      }
 
       const tbody = document.getElementById("admin-users-tbody");
       if (!tbody) return;

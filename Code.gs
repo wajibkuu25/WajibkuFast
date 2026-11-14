@@ -122,16 +122,6 @@ function normalizeRole_(roleVal) {
   return "User";
 }
 
-function getOrCreateOwnerRecoveryKey_() {
-  const props = PropertiesService.getScriptProperties();
-  let key = props.getProperty("OWNER_RECOVERY_KEY");
-  if (!key || key.length < 12) {
-    key = "WF-KEY-" + Utilities.getUuid().replace(/-/g, "").slice(0, 12).toUpperCase();
-    props.setProperty("OWNER_RECOVERY_KEY", key);
-  }
-  return key;
-}
-
 function sanitizeUser_(u) {
   if (!u) return null;
   return {
@@ -704,9 +694,7 @@ function setupDatabaseSheets() {
   const ss = getSpreadsheet_();
   const result = ensureSheetsInitialized_(ss);
   const migrated = migratePlaintextPasswords_(ss);
-  const recoveryKey = getOrCreateOwnerRecoveryKey_();
   result.migratedPlaintextPasswords = migrated;
-  Logger.log("KODE PEMULIHAN PEMILIK (Simpan Rahasia untuk Reset Admin/Super Admin di Web): " + recoveryKey);
   Logger.log("Setup Database Selesai: " + JSON.stringify(result));
   return result;
 }
@@ -721,7 +709,6 @@ function resetSuperAdminAccess(customPassword) {
   const newPass = (typeof customPassword === "string" && customPassword.trim().length >= 6)
     ? customPassword.trim()
     : "123456";
-  const recoveryKey = getOrCreateOwnerRecoveryKey_();
 
   if (superAdmin) {
     updateUserPasswordCell_(ss, superAdmin.User_ID, hashPassword_(newPass));
@@ -738,11 +725,9 @@ function resetSuperAdminAccess(customPassword) {
     });
     Logger.log("AKUN SUPER ADMIN DIBUAT -> User_ID: SUP-001 | Email: superadmin@wajibkufast.id | Password Baru: " + newPass);
   }
-  Logger.log("KODE PEMULIHAN PEMILIK (OWNER RECOVERY KEY): " + recoveryKey);
   return {
     email: superAdmin ? superAdmin.Email : "superadmin@wajibkufast.id",
-    userId: superAdmin ? superAdmin.User_ID : "SUP-001",
-    recoveryKeyConfigured: true
+    userId: superAdmin ? superAdmin.User_ID : "SUP-001"
   };
 }
 
@@ -933,17 +918,19 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // 2B. LUPA PASSWORD MANDIRI
-    //     - Pelanggan (User): Nama + Email cocok
-    //     - Admin / Super Admin: Email/User_ID cocok + Kode Pemulihan Pemilik valid
+    // 2B. LUPA PASSWORD PELANGGAN (Hanya untuk Role "User": Nama + Email cocok)
     // ------------------------------------------------------------------------
     if (action === "forgotPassword") {
-      const accountType = String(body.accountType || "User").trim().toLowerCase();
       const nama = String(body.Nama || body.nama || "").trim();
-      const emailOrId = String(body.Email || body.email || body.identifier || "").trim().toLowerCase();
+      const email = String(body.Email || body.email || body.identifier || "").trim().toLowerCase();
       const newPassword = String(body.Password || body.newPassword || "");
-      const recoveryKey = String(body.recoveryKey || body.Kode_Pemulihan || "").trim();
 
+      if (!nama || !email || email.indexOf("@") === -1) {
+        return jsonResponse_({
+          status: "error",
+          message: "Nama lengkap dan Email terdaftar wajib diisi."
+        });
+      }
       if (newPassword.length < 6) {
         return jsonResponse_({
           status: "error",
@@ -952,64 +939,16 @@ function doPost(e) {
       }
 
       const existingUsers = sheetToObjects_(ss, "Users");
-
-      if (accountType === "admin" || recoveryKey) {
-        if (!emailOrId) {
-          return jsonResponse_({
-            status: "error",
-            message: "Email atau User_ID Admin/Super Admin wajib diisi."
-          });
-        }
-        if (!recoveryKey) {
-          return jsonResponse_({
-            status: "error",
-            message: "Kode Pemulihan Pemilik wajib diisi untuk mereset Admin / Super Admin."
-          });
-        }
-        const expectedKey = getOrCreateOwnerRecoveryKey_();
-        if (!constantTimeEqual_(recoveryKey, expectedKey)) {
-          return jsonResponse_({
-            status: "error",
-            message: "Kode Pemulihan Pemilik tidak cocok. Solusi: cek Execution Log Apps Script setelah menjalankan resetSuperAdminAccess(), atau ubah sel Password langsung di tab Users Google Sheets lalu login."
-          });
-        }
-
-        const matchedAdmin = existingUsers.find(function (u) {
-          const uEmail = String(u.Email || "").trim().toLowerCase();
-          const uId = String(u.User_ID || "").trim().toLowerCase();
-          return (uEmail && uEmail === emailOrId) || (uId && uId === emailOrId);
-        });
-        if (!matchedAdmin) {
-          return jsonResponse_({
-            status: "error",
-            message: "Akun dengan Email / User_ID tersebut tidak ditemukan di sheet Users."
-          });
-        }
-
-        updateUserPasswordCell_(ss, matchedAdmin.User_ID, hashPassword_(newPassword));
-        return jsonResponse_({
-          status: "success",
-          message: "Kata sandi " + normalizeRole_(matchedAdmin.Role) + " (" + matchedAdmin.Email + ") berhasil diperbarui. Silakan masuk."
-        });
-      }
-
-      if (!nama || !emailOrId || emailOrId.indexOf("@") === -1) {
-        return jsonResponse_({
-          status: "error",
-          message: "Nama lengkap dan Email terdaftar wajib diisi."
-        });
-      }
-
       const matched = existingUsers.find(function (u) {
         const uNama = String(u.Nama || "").trim().toLowerCase();
         const uEmail = String(u.Email || "").trim().toLowerCase();
-        return Boolean(uEmail && uEmail === emailOrId && uNama && uNama === nama.toLowerCase());
+        return Boolean(uEmail && uEmail === email && uNama && uNama === nama.toLowerCase());
       });
 
       if (!matched) {
         return jsonResponse_({
           status: "error",
-          message: "Nama dan Email tidak cocok dengan akun terdaftar."
+          message: "Nama dan Email tidak cocok dengan akun pelanggan terdaftar."
         });
       }
 
@@ -1017,7 +956,7 @@ function doPost(e) {
       if (roleNorm !== "User") {
         return jsonResponse_({
           status: "error",
-          message: "Akun " + roleNorm + " memerlukan Kode Pemulihan Pemilik. Pilih opsi 'Admin / Super Admin' pada tab Lupa Sandi."
+          message: "Fitur lupa kata sandi hanya tersedia untuk akun Pelanggan (User)."
         });
       }
 
@@ -1145,9 +1084,6 @@ function doPost(e) {
         driveFolderUrl: DRIVE_FOLDER_URL,
         role: auth.role
       };
-      if (auth.role === "Super Admin") {
-        metaObj.ownerRecoveryKey = getOrCreateOwnerRecoveryKey_();
-      }
       return jsonResponse_({
         status: "success",
         data: {
@@ -1158,18 +1094,6 @@ function doPost(e) {
           detail_pesanan: sheetToObjects_(ss, "Detail_Pesanan")
         },
         meta: metaObj
-      });
-    }
-
-    if (action === "regenerateOwnerRecoveryKey") {
-      requireRole_(ss, body, ["Super Admin"]);
-      const props = PropertiesService.getScriptProperties();
-      const nextKey = "WF-KEY-" + Utilities.getUuid().replace(/-/g, "").slice(0, 12).toUpperCase();
-      props.setProperty("OWNER_RECOVERY_KEY", nextKey);
-      return jsonResponse_({
-        status: "success",
-        message: "Kode Pemulihan Pemilik baru berhasil dibuat.",
-        data: { ownerRecoveryKey: nextKey }
       });
     }
 

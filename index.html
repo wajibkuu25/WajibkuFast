@@ -461,6 +461,11 @@
         </div>
       </div>
 
+      <!-- Banner Status Koneksi Database (Hanya tampil jika Mode Lokal / Error) -->
+      <div id="admin-connection-banner" class="hidden rounded-xl border p-4 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <!-- Populated dynamically -->
+      </div>
+
       <!-- Summary Metrics (4 KPI Cards) -->
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white border border-slate-200 rounded-xl p-5">
@@ -752,14 +757,18 @@
         <div class="bg-press-50/70 border border-press-100 rounded-lg p-4 text-xs text-slate-700 space-y-1.5">
           <p class="font-semibold text-press-800">Folder Database Google Drive Terhubung:</p>
           <p class="font-mono break-all text-slate-700">https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing</p>
-          <p class="text-slate-600">Catatan teknis: Browser tidak dapat menulis langsung ke tautan folder Google Drive tanpa otorisasi server. Deploy <span class="font-mono font-semibold">Code.gs</span> sebagai Web App (Execute as: Me) lalu tempelkan URL <span class="font-mono">/exec</span> di bawah agar seluruh transaksi, upload file, dan update database otomatis tersimpan di folder Drive tersebut.</p>
+          <p class="text-slate-600">Penting untuk <strong>GitHub Pages</strong>: Menyimpan URL di kolom bawah hanya berlaku di browser ini (<span class="font-mono">localStorage</span>). Agar seluruh pelanggan di <span class="font-mono">wajibkuu25.github.io/WajibkuFast/</span> otomatis menyimpan transaksi ke Drive Anda, salin URL Web App <span class="font-mono">/exec</span> lalu tempelkan langsung ke konstanta <span class="font-mono font-semibold">DEFAULT_API_URL</span> di dalam file <span class="font-mono">index.html</span> sebelum upload ke GitHub.</p>
+        </div>
+
+        <div id="setting-connection-status" class="rounded-lg border p-4 text-xs space-y-1">
+          <!-- Populated dynamically -->
         </div>
 
         <div class="space-y-4">
           <div>
             <label for="setting-api-url" class="block text-sm font-semibold text-slate-800 mb-1.5">URL Web App Google Apps Script (`API_URL`)</label>
             <input type="url" id="setting-api-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-            <p class="mt-1.5 text-xs text-slate-500">Saat belum diisi atau saat offline, aplikasi otomatis menggunakan data lokal (Mock Data) agar tetap dapat diuji penuh.</p>
+            <p class="mt-1.5 text-xs text-slate-500">Harus berakhiran <span class="font-mono">/exec</span> (bukan link folder Drive dan bukan <span class="font-mono">/dev</span>). Saat belum diisi, aplikasi berjalan dalam Mode Lokal (Mock Data).</p>
           </div>
 
           <div>
@@ -771,6 +780,11 @@
             <button type="button" onclick="saveApiSettings()" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">
               <i data-lucide="check" class="w-4 h-4"></i>
               <span>Simpan &amp; Muat Data</span>
+            </button>
+
+            <button type="button" id="btn-test-connection" onclick="testGasConnection()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-press-800 bg-press-50 border border-press-200 hover:bg-press-100 rounded-lg transition-colors">
+              <i data-lucide="activity" class="w-4 h-4"></i>
+              <span>Tes Koneksi Apps Script</span>
             </button>
 
             <button type="button" id="btn-init-sheets" onclick="initSpreadsheetHeaders()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors">
@@ -1198,7 +1212,18 @@
     // 1. KONFIGURASI API & FALLBACK MOCK DATA (Case-Sensitive Kolom Sheets)
     // -----------------------------------------------------------------------
     const DEFAULT_SHEET_URL = "https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing";
-    let API_URL = localStorage.getItem("GAS_API_URL") || "MASUKKAN_URL_APPS_SCRIPT_DI_SINI";
+    // PENTING UNTUK GITHUB PAGES: Tempelkan URL Web App (/exec) dari Deploy Code.gs di bawah ini
+    // sebelum mengunggah index.html ke GitHub, agar seluruh pengunjung otomatis terhubung ke Google Drive.
+    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzq8UzczX7g9lowvW_r32zEisZ_ZmoYHpZrosxw5QLwqZQBvBpRT-Gh_52-eiFwA2nd/exec";
+    (function syncApiFromQueryParam() {
+      try {
+        const paramApi = new URLSearchParams(window.location.search).get("api");
+        if (paramApi && paramApi.startsWith("http")) {
+          localStorage.setItem("GAS_API_URL", paramApi.trim());
+        }
+      } catch (e) {}
+    })();
+    let API_URL = localStorage.getItem("GAS_API_URL") || DEFAULT_API_URL;
     let SHEET_URL = localStorage.getItem("GAS_SHEET_URL") || DEFAULT_SHEET_URL;
     const AUTH_STORAGE_KEY = "WAJIBKU_AUTH_USER";
 
@@ -1484,6 +1509,8 @@
       selectedMonthIndex: null,
       activeCategory: "Semua",
       pendingDelete: null, // { sheetName, id, label }
+      connectionStatus: "idle", // "idle" | "mock" | "connected" | "error"
+      connectionMessage: "",
       users: [],
       produk: [],
       finishing: [],
@@ -1651,8 +1678,30 @@
       state.detail_pesanan = JSON.parse(JSON.stringify(MOCK_DATA.detail_pesanan));
     }
 
+    async function parseGasResponse(res) {
+      if (!res.ok) {
+        throw new Error(`Server mengembalikan HTTP ${res.status}.`);
+      }
+      const rawText = await res.text();
+      let json = null;
+      try {
+        json = JSON.parse(rawText);
+      } catch (parseErr) {
+        throw new Error("Respons Apps Script bukan JSON. Pastikan URL berakhiran /exec dan Deploy Web App diatur 'Execute as: Me' serta 'Who has access: Anyone'.");
+      }
+      if (!json || typeof json !== "object") {
+        throw new Error("Format respons Apps Script tidak valid.");
+      }
+      if (json.status === "error") {
+        throw new Error(json.message || "Terjadi kesalahan pada Google Apps Script.");
+      }
+      return json;
+    }
+
     async function fetchInitData() {
       if (!isApiConfigured()) {
+        state.connectionStatus = "mock";
+        state.connectionMessage = "API_URL belum diisi. Transaksi saat ini hanya tersimpan di browser lokal (Mock Data), belum ke Google Drive.";
         loadMockData();
         renderAll();
         return;
@@ -1660,7 +1709,7 @@
 
       try {
         const res = await fetch(API_URL + "?action=getInitData");
-        const json = await res.json();
+        const json = await parseGasResponse(res);
         if (json && json.status === "success" && json.data) {
           state.users = Array.isArray(json.data.users) && json.data.users.length ? json.data.users : MOCK_DATA.users;
           state.produk = Array.isArray(json.data.produk) && json.data.produk.length ? json.data.produk : MOCK_DATA.produk;
@@ -1671,14 +1720,18 @@
             SHEET_URL = json.meta.spreadsheetUrl;
             localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
           }
+          state.connectionStatus = "connected";
+          state.connectionMessage = `Terhubung live ke Google Sheets & Folder Drive (${json.data.pesanan?.length || 0} pesanan dimuat).`;
           showToast("Data berhasil disinkronkan dari Google Drive/Sheets.", "success");
         } else {
           throw new Error(json?.message || "Respons server tidak valid");
         }
       } catch (err) {
-        console.warn("Fallback ke Mock Data:", err);
+        console.warn("Gagal sinkron ke Apps Script, fallback ke Mock Data:", err);
+        state.connectionStatus = "error";
+        state.connectionMessage = err.message || "Gagal terhubung ke Apps Script.";
         loadMockData();
-        showToast("Menggunakan data lokal (Mock Data). Periksa API_URL di menu Admin jika ingin live.", "info");
+        showToast("Gagal sinkron ke Google Drive: " + state.connectionMessage, "error");
       }
       renderAll();
     }
@@ -1692,7 +1745,7 @@
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
       });
-      return await res.json();
+      return await parseGasResponse(res);
     }
 
     // -----------------------------------------------------------------------
@@ -1908,7 +1961,7 @@
         showToast(`Pendaftaran berhasil! Selamat datang, ${savedUser.Nama}.`, "success");
       } catch (err) {
         console.error(err);
-        errBox.textContent = "Gagal menghubungi server pendaftaran. Coba beberapa saat lagi.";
+        errBox.textContent = err?.message || "Gagal menghubungi server pendaftaran. Coba beberapa saat lagi.";
         errBox.classList.remove("hidden");
       } finally {
         if (btn) btn.disabled = false;
@@ -2577,20 +2630,21 @@
       const totalTagihan = state.cart.reduce((sum, i) => sum + i.Subtotal, 0);
       const hasProof = Boolean(state.currentPaymentProof && state.currentPaymentProof.base64);
 
-      // Cari atau buat User_ID lokal
-      let existingUser = state.users.find((u) => String(u.No_WA).trim() === noWa);
+      // Cari atau buat User_ID lokal berdasarkan No_WA ternormalisasi
+      const normNoWa = formatWaNumber(noWa) || noWa;
+      let existingUser = state.users.find((u) => {
+        const uWa = formatWaNumber(u.No_WA);
+        return (uWa && uWa === normNoWa) || String(u.No_WA).trim() === noWa;
+      });
       let userId = existingUser ? existingUser.User_ID : ("USR-" + Math.floor(100 + Math.random() * 900));
-      if (!existingUser) {
-        existingUser = {
-          User_ID: userId,
-          Nama: nama,
-          No_WA: noWa,
-          Email: email,
-          Role: "User",
-          Alamat: alamat
-        };
-        state.users.push(existingUser);
-      }
+      const userPayload = existingUser || {
+        User_ID: userId,
+        Nama: nama,
+        No_WA: normNoWa,
+        Email: email,
+        Role: "User",
+        Alamat: alamat
+      };
 
       const newOrder = {
         Order_ID: orderId,
@@ -2621,17 +2675,23 @@
       try {
         const result = await postToGas({
           action: "createOrder",
-          user: existingUser,
+          user: userPayload,
           pesanan: newOrder,
           detail_pesanan: newDetails
         });
 
-        // Simpan ke state lokal (gunakan URL Drive jika Apps Script mengembalikan data tersimpan)
+        // Pastikan sukses sesungguhnya ke Drive atau memang sedang Mode Mock Data
         if (result && result.status === "success" && result.data) {
+          if (!existingUser) {
+            state.users.push({ ...userPayload, User_ID: result.data.User_ID || userId });
+          }
           state.pesanan.unshift(result.data.pesanan);
           state.detail_pesanan.push(...result.data.detail_pesanan);
-        } else {
-          // Mode Mock Data atau fallback
+          showToast("Pesanan " + orderId + " berhasil tersimpan ke Google Drive & Sheets!", "success");
+        } else if (result && result.status === "mock") {
+          if (!existingUser) {
+            state.users.push(userPayload);
+          }
           state.pesanan.unshift({
             Order_ID: newOrder.Order_ID,
             Tanggal: newOrder.Tanggal,
@@ -2656,6 +2716,9 @@
               Subtotal: d.Subtotal
             });
           });
+          showToast("Pesanan " + orderId + " dibuat di Mode Lokal (API_URL belum terhubung ke Google Drive).", "info");
+        } else {
+          throw new Error(result?.message || "Server gagal menyimpan pesanan ke Google Drive.");
         }
 
         // Reset keranjang & tampilkan konfirmasi
@@ -2666,10 +2729,9 @@
         renderInlineCartPreview();
         closeCartDrawer();
         showOrderSuccessModal(orderId, totalTagihan, newOrder.Status_Bayar);
-        showToast("Pesanan " + orderId + " berhasil dibuat!", "success");
       } catch (err) {
         console.error(err);
-        showToast("Gagal mengirim pesanan ke server. Coba lagi.", "error");
+        showToast("Gagal menyimpan ke Google Drive: " + (err.message || "Periksa koneksi Apps Script."), "error");
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i><span>Buat Pesanan Sekarang</span>`;
@@ -2864,6 +2926,7 @@
       if (tabName === "pengaturan") {
         document.getElementById("setting-api-url").value = API_URL === "MASUKKAN_URL_APPS_SCRIPT_DI_SINI" ? "" : API_URL;
         document.getElementById("setting-sheet-url").value = SHEET_URL;
+        renderConnectionDiagnostics();
       }
       if (tabName === "finishing") {
         renderAdminFinishing();
@@ -3512,15 +3575,76 @@
     // -----------------------------------------------------------------------
     // 11. PENGATURAN KONEKSI DATABASE (localStorage)
     // -----------------------------------------------------------------------
+    function renderConnectionDiagnostics() {
+      const banner = document.getElementById("admin-connection-banner");
+      const statusBox = document.getElementById("setting-connection-status");
+      const configured = isApiConfigured();
+
+      if (banner) {
+        if (!configured || state.connectionStatus === "error") {
+          banner.className = "rounded-xl border border-amber-300 bg-amber-50 text-amber-900 p-4 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3";
+          const title = !configured
+            ? "Mode Lokal Aktif (Belum Terhubung ke Google Drive)"
+            : "Koneksi Google Apps Script Bermasalah";
+          const desc = !configured
+            ? "Transaksi hanya tersimpan di browser ini dan tidak masuk ke Google Drive. Hubungkan URL Web App (/exec) pada menu Koneksi Database atau tempel ke DEFAULT_API_URL di index.html sebelum deploy GitHub Pages."
+            : escapeHtml(state.connectionMessage || "Gagal menghubungi endpoint Apps Script.");
+          banner.innerHTML = `
+            <div>
+              <p class="font-bold">${title}</p>
+              <p class="text-xs mt-0.5 text-amber-800">${desc}</p>
+            </div>
+            ${isSuperAdmin() ? `
+              <button type="button" onclick="switchAdminTab('pengaturan')" class="shrink-0 px-3.5 py-2 text-xs font-semibold bg-amber-900 text-white hover:bg-amber-950 rounded-lg transition-colors">
+                Buka Koneksi Database
+              </button>
+            ` : ""}
+          `;
+        } else {
+          banner.className = "hidden";
+          banner.innerHTML = "";
+        }
+      }
+
+      if (statusBox) {
+        if (!configured) {
+          statusBox.className = "rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 space-y-1";
+          statusBox.innerHTML = `
+            <p class="font-bold">Status: Mode Lokal (Mock Data)</p>
+            <p>URL Apps Script (<span class="font-mono">API_URL</span>) belum diisi atau masih placeholder. Semua order dan perubahan hanya tersimpan sementara di memori browser.</p>
+          `;
+        } else if (state.connectionStatus === "connected") {
+          statusBox.className = "rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-900 space-y-1";
+          statusBox.innerHTML = `
+            <p class="font-bold">Status: Terhubung Live ke Google Drive &amp; Sheets</p>
+            <p>${escapeHtml(state.connectionMessage)}</p>
+          `;
+        } else if (state.connectionStatus === "error") {
+          statusBox.className = "rounded-lg border border-rose-200 bg-rose-50 p-4 text-xs text-rose-900 space-y-1";
+          statusBox.innerHTML = `
+            <p class="font-bold">Status: Gagal Terhubung ke Apps Script</p>
+            <p>${escapeHtml(state.connectionMessage)}</p>
+          `;
+        } else {
+          statusBox.className = "rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700 space-y-1";
+          statusBox.innerHTML = `<p class="font-semibold">Status: Memeriksa koneksi...</p>`;
+        }
+      }
+    }
+
     function saveApiSettings() {
       const apiInput = document.getElementById("setting-api-url").value.trim();
       const sheetInput = document.getElementById("setting-sheet-url").value.trim();
+
+      if (apiInput && !apiInput.includes("/exec")) {
+        showToast("Perhatian: URL Web App Apps Script biasanya berakhiran /exec (Deploy > Web app).", "info");
+      }
 
       if (apiInput) {
         API_URL = apiInput;
         localStorage.setItem("GAS_API_URL", apiInput);
       } else {
-        API_URL = "MASUKKAN_URL_APPS_SCRIPT_DI_SINI";
+        API_URL = DEFAULT_API_URL;
         localStorage.removeItem("GAS_API_URL");
       }
 
@@ -3535,6 +3659,34 @@
       syncSheetAnchorHref();
       showToast("Pengaturan koneksi disimpan. Memuat ulang data...", "info");
       fetchInitData();
+    }
+
+    async function testGasConnection() {
+      const apiInput = document.getElementById("setting-api-url")?.value.trim();
+      const targetUrl = apiInput || API_URL;
+      if (!targetUrl || !targetUrl.startsWith("http") || targetUrl === "MASUKKAN_URL_APPS_SCRIPT_DI_SINI") {
+        showToast("Masukkan URL Web App Apps Script (/exec) terlebih dahulu.", "error");
+        document.getElementById("setting-api-url")?.focus();
+        return;
+      }
+
+      const btn = document.getElementById("btn-test-connection");
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch(targetUrl + "?action=getInitData");
+        const json = await parseGasResponse(res);
+        state.connectionStatus = "connected";
+        state.connectionMessage = `Tes koneksi sukses! Spreadsheet aktif: ${json.meta?.spreadsheetUrl || "-"}`;
+        renderConnectionDiagnostics();
+        showToast("Koneksi ke Google Apps Script & Drive berhasil!", "success");
+      } catch (err) {
+        state.connectionStatus = "error";
+        state.connectionMessage = err.message || "Gagal terhubung.";
+        renderConnectionDiagnostics();
+        showToast("Tes koneksi gagal: " + state.connectionMessage, "error");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     async function initSpreadsheetHeaders() {
@@ -3557,7 +3709,7 @@
         }
       } catch (err) {
         console.error(err);
-        showToast("Gagal menjalankan inisialisasi sheet. Pastikan Code.gs terbaru sudah di-deploy.", "error");
+        showToast("Gagal menjalankan inisialisasi sheet: " + (err.message || "Pastikan Code.gs terbaru sudah di-deploy."), "error");
       } finally {
         if (btn) btn.disabled = false;
       }
@@ -3585,8 +3737,10 @@
 
     function resetToMockData() {
       localStorage.removeItem("GAS_API_URL");
-      API_URL = "MASUKKAN_URL_APPS_SCRIPT_DI_SINI";
+      API_URL = DEFAULT_API_URL;
       document.getElementById("setting-api-url").value = "";
+      state.connectionStatus = isApiConfigured() ? "idle" : "mock";
+      state.connectionMessage = isApiConfigured() ? "" : "API_URL belum diisi. Mode Lokal (Mock Data) aktif.";
       loadMockData();
       renderAll();
       showToast("Aplikasi kembali ke mode Mock Data lokal.", "success");
@@ -3964,6 +4118,7 @@
         state.adminTab = "pesanan";
       }
       switchAdminTab(state.adminTab);
+      renderConnectionDiagnostics();
       renderAdminMetrics();
       renderMonthlyRevenueChart();
       renderAdminOrders();

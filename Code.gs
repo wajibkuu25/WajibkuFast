@@ -138,12 +138,27 @@ function saveBase64ToDrive_(base64Data, fileNamePrefix, originalName) {
 
     const folder = getOrCreateUploadFolder_();
     const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (shareErr) {
+      Logger.log("Info setSharing Drive (file tetap tersimpan): " + shareErr.message);
+    }
     return file.getUrl();
   } catch (err) {
     Logger.log("Gagal simpan file ke Drive: " + err.message);
     return "";
   }
+}
+
+/**
+ * Normalisasi nomor WhatsApp menjadi format 628... untuk pencocokan akurat
+ */
+function normalizeWa_(val) {
+  const raw = String(val || "").replace(/\D/g, "");
+  if (!raw) return "";
+  if (raw.startsWith("0")) return "62" + raw.slice(1);
+  if (raw.startsWith("8")) return "62" + raw;
+  return raw;
 }
 
 /**
@@ -288,14 +303,83 @@ function ensureSheetsInitialized_(ss) {
         ];
         seedUsers.forEach(function (u) { appendObjectRow_(ss, "Users", u); });
       }
+      if (sheetName === "Produk" && sheet.getLastRow() <= 1) {
+        const seedProducts = [
+          {
+            Produk_ID: "PRD-001",
+            Nama_Produk: "Spanduk Flexi China 280gr",
+            Kategori: "Outdoor & Banner",
+            Tipe_Hitung: "Dimensi",
+            Harga_Dasar: 18000,
+            Satuan: "m2",
+            Min_Order: 1,
+            Status: "Tersedia"
+          },
+          {
+            Produk_ID: "PRD-002",
+            Nama_Produk: "X-Banner Flexi Korea",
+            Kategori: "Display & Stand",
+            Tipe_Hitung: "Unit",
+            Harga_Dasar: 85000,
+            Satuan: "Set",
+            Min_Order: 1,
+            Status: "Tersedia"
+          },
+          {
+            Produk_ID: "PRD-003",
+            Nama_Produk: "Stiker Vinyl Camel",
+            Kategori: "Stiker & Label",
+            Tipe_Hitung: "Unit",
+            Harga_Dasar: 12000,
+            Satuan: "Lembar A3+",
+            Min_Order: 5,
+            Status: "Tersedia"
+          },
+          {
+            Produk_ID: "PRD-004",
+            Nama_Produk: "Kertas Concorde 220gr",
+            Kategori: "Dokumen & Kartu",
+            Tipe_Hitung: "Unit",
+            Harga_Dasar: 5000,
+            Satuan: "Lembar A3+",
+            Min_Order: 10,
+            Status: "Tersedia"
+          }
+        ];
+        seedProducts.forEach(function (p) { appendObjectRow_(ss, "Produk", p); });
+      }
       if (sheetName === "Finishing" && sheet.getLastRow() <= 1) {
-        appendObjectRow_(ss, "Finishing", {
-          Finishing_ID: "FIN-000",
-          Nama_Finishing: "Tanpa Finishing",
-          Tipe_Biaya: "Tetap",
-          Tambahan_Harga: 0,
-          Keterangan: "Tanpa biaya tambahan"
-        });
+        const seedFinishing = [
+          {
+            Finishing_ID: "FIN-000",
+            Nama_Finishing: "Tanpa Finishing",
+            Tipe_Biaya: "Tetap",
+            Tambahan_Harga: 0,
+            Keterangan: "Potong keliling standar"
+          },
+          {
+            Finishing_ID: "FIN-001",
+            Nama_Finishing: "Mata Ayam",
+            Tipe_Biaya: "Per_Qty",
+            Tambahan_Harga: 2000,
+            Keterangan: "Lubang ring besi 4 sudut per pcs"
+          },
+          {
+            Finishing_ID: "FIN-002",
+            Nama_Finishing: "Laminasi",
+            Tipe_Biaya: "Per_Qty",
+            Tambahan_Harga: 3000,
+            Keterangan: "Laminasi Doff / Glossy per pcs"
+          },
+          {
+            Finishing_ID: "FIN-003",
+            Nama_Finishing: "Cutting Pola",
+            Tipe_Biaya: "Tetap",
+            Tambahan_Harga: 4000,
+            Keterangan: "Biaya potong pola khusus per item"
+          }
+        ];
+        seedFinishing.forEach(function (f) { appendObjectRow_(ss, "Finishing", f); });
       }
     }
   });
@@ -373,6 +457,9 @@ function doPost(e) {
     const body = JSON.parse(e.postData.contents);
     const action = body.action;
     const ss = getSpreadsheet_();
+    if (!ss.getSheetByName("Pesanan") || !ss.getSheetByName("Detail_Pesanan") || !ss.getSheetByName("Users")) {
+      ensureSheetsInitialized_(ss);
+    }
 
     // ------------------------------------------------------------------------
     // 1. CREATE ORDER (Simpan User baru jika belum ada, Pesanan, & Detail_Pesanan)
@@ -382,11 +469,15 @@ function doPost(e) {
       const orderPayload = body.pesanan || {};
       const detailsPayload = body.detail_pesanan || [];
 
-      // Cek / Simpan User berdasarkan No_WA
+      // Cek / Simpan User berdasarkan No_WA (ternormalisasi) atau Email
       const existingUsers = sheetToObjects_(ss, "Users");
+      const reqNormWa = normalizeWa_(userPayload.No_WA);
+      const reqEmail = String(userPayload.Email || "").trim().toLowerCase();
       let userId = userPayload.User_ID || "";
       const matchedUser = existingUsers.find(function (u) {
-        return String(u.No_WA).trim() === String(userPayload.No_WA || "").trim();
+        const uWa = normalizeWa_(u.No_WA);
+        const uEmail = String(u.Email || "").trim().toLowerCase();
+        return (reqNormWa && uWa === reqNormWa) || (reqEmail && uEmail === reqEmail);
       });
 
       if (matchedUser) {
@@ -396,10 +487,11 @@ function doPost(e) {
         appendObjectRow_(ss, "Users", {
           User_ID: userId,
           Nama: userPayload.Nama || "Pelanggan",
-          No_WA: "'" + String(userPayload.No_WA || ""),
-          Email: userPayload.Email || "",
+          No_WA: reqNormWa ? ("'" + reqNormWa) : ("'" + String(userPayload.No_WA || "")),
+          Email: reqEmail,
           Role: "User",
-          Alamat: userPayload.Alamat || ""
+          Alamat: userPayload.Alamat || "",
+          Password: userPayload.Password || ""
         });
       }
 

@@ -122,6 +122,16 @@ function normalizeRole_(roleVal) {
   return "User";
 }
 
+function getOrCreateOwnerRecoveryKey_() {
+  const props = PropertiesService.getScriptProperties();
+  let key = props.getProperty("OWNER_RECOVERY_KEY");
+  if (!key || key.length < 12) {
+    key = "WF-KEY-" + Utilities.getUuid().replace(/-/g, "").slice(0, 12).toUpperCase();
+    props.setProperty("OWNER_RECOVERY_KEY", key);
+  }
+  return key;
+}
+
 function sanitizeUser_(u) {
   if (!u) return null;
   return {
@@ -130,7 +140,8 @@ function sanitizeUser_(u) {
     No_WA: String(u.No_WA || "").replace(/^'/, ""),
     Email: String(u.Email || ""),
     Role: normalizeRole_(u.Role),
-    Alamat: String(u.Alamat || "")
+    Alamat: String(u.Alamat || ""),
+    Has_Password: Boolean(String(u.Password || "").trim())
   };
 }
 
@@ -225,6 +236,54 @@ function maskWaForTracking_(rawWa) {
   if (!norm) return "-";
   if (norm.length <= 4) return norm;
   return "••••••" + norm.slice(-4);
+}
+
+function parseSheetNumber_(val) {
+  if (typeof val === "number") return Number.isFinite(val) ? val : 0;
+  const raw = String(val || "").trim();
+  if (!raw) return 0;
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(raw)) {
+    const nId = Number(raw.replace(/\./g, "").replace(",", "."));
+    return Number.isFinite(nId) ? nId : 0;
+  }
+  if (/^\d+(\.\d+)?$/.test(raw)) return Number(raw) || 0;
+  let cleaned = raw.replace(/[^\d.,-]/g, "");
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(cleaned)) {
+    cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(cleaned)) {
+    cleaned = cleaned.replace(/,/g, "");
+  } else {
+    cleaned = cleaned.replace(",", ".");
+  }
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeProductRow_(p) {
+  const rawTipe = String(p.Tipe_Hitung || "").trim().toLowerCase();
+  const rawStatus = String(p.Status || "").trim().toLowerCase();
+  const minOrd = Math.floor(parseSheetNumber_(p.Min_Order));
+  return {
+    Produk_ID: String(p.Produk_ID || "").trim(),
+    Nama_Produk: String(p.Nama_Produk || "").trim(),
+    Kategori: String(p.Kategori || "").trim() || "Umum",
+    Tipe_Hitung: rawTipe === "dimensi" ? "Dimensi" : "Unit",
+    Harga_Dasar: Math.max(0, Math.round(parseSheetNumber_(p.Harga_Dasar))),
+    Satuan: String(p.Satuan || "").trim() || "Unit",
+    Min_Order: minOrd >= 1 ? minOrd : 1,
+    Status: rawStatus === "habis" ? "Habis" : "Tersedia"
+  };
+}
+
+function normalizeFinishingRow_(f) {
+  const rawTipe = String(f.Tipe_Biaya || "").trim().toLowerCase();
+  return {
+    Finishing_ID: String(f.Finishing_ID || "").trim(),
+    Nama_Finishing: String(f.Nama_Finishing || "").trim(),
+    Tipe_Biaya: rawTipe === "per_qty" || rawTipe === "per qty" ? "Per_Qty" : "Tetap",
+    Tambahan_Harga: Math.max(0, Math.round(parseSheetNumber_(f.Tambahan_Harga))),
+    Keterangan: String(f.Keterangan || "").trim()
+  };
 }
 
 // ============================================================================
@@ -645,9 +704,44 @@ function setupDatabaseSheets() {
   const ss = getSpreadsheet_();
   const result = ensureSheetsInitialized_(ss);
   const migrated = migratePlaintextPasswords_(ss);
+  const recoveryKey = getOrCreateOwnerRecoveryKey_();
   result.migratedPlaintextPasswords = migrated;
+  Logger.log("KODE PEMULIHAN PEMILIK (Simpan Rahasia untuk Reset Admin/Super Admin di Web): " + recoveryKey);
   Logger.log("Setup Database Selesai: " + JSON.stringify(result));
   return result;
+}
+
+function resetSuperAdminAccess() {
+  const ss = getSpreadsheet_();
+  ensureSheetsInitialized_(ss);
+  const users = sheetToObjects_(ss, "Users");
+  const superAdmin = users.find(function (u) {
+    return normalizeRole_(u.Role) === "Super Admin";
+  });
+  const newPass = "WF-" + Utilities.getUuid().replace(/-/g, "").slice(0, 10);
+  const recoveryKey = getOrCreateOwnerRecoveryKey_();
+
+  if (superAdmin) {
+    updateUserPasswordCell_(ss, superAdmin.User_ID, hashPassword_(newPass));
+    Logger.log("RESET SUPER ADMIN BERHASIL -> User_ID: " + superAdmin.User_ID + " | Email: " + superAdmin.Email + " | Password Baru: " + newPass);
+  } else {
+    appendObjectRow_(ss, "Users", {
+      User_ID: "SUP-001",
+      Nama: "Super Admin Wajibku Fast",
+      No_WA: "'6281100009999",
+      Email: "superadmin@wajibkufast.id",
+      Role: "Super Admin",
+      Alamat: "Kantor Pusat",
+      Password: hashPassword_(newPass)
+    });
+    Logger.log("AKUN SUPER ADMIN DIBUAT -> User_ID: SUP-001 | Email: superadmin@wajibkufast.id | Password Baru: " + newPass);
+  }
+  Logger.log("KODE PEMULIHAN PEMILIK (OWNER RECOVERY KEY): " + recoveryKey);
+  return {
+    email: superAdmin ? superAdmin.Email : "superadmin@wajibkufast.id",
+    userId: superAdmin ? superAdmin.User_ID : "SUP-001",
+    recoveryKeyConfigured: true
+  };
 }
 
 function migratePasswordsToHash() {
@@ -689,8 +783,8 @@ function doGet(e) {
       return jsonResponse_({
         status: "success",
         data: {
-          produk: sheetToObjects_(ss, "Produk"),
-          finishing: sheetToObjects_(ss, "Finishing")
+          produk: sheetToObjects_(ss, "Produk").map(normalizeProductRow_).filter(function (p) { return Boolean(p.Produk_ID); }),
+          finishing: sheetToObjects_(ss, "Finishing").map(normalizeFinishingRow_).filter(function (f) { return Boolean(f.Finishing_ID); })
         },
         meta: {
           driveFolderUrl: DRIVE_FOLDER_URL
@@ -837,6 +931,102 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
+    // 2B. LUPA PASSWORD MANDIRI
+    //     - Pelanggan (User): Nama + Email cocok
+    //     - Admin / Super Admin: Email/User_ID cocok + Kode Pemulihan Pemilik valid
+    // ------------------------------------------------------------------------
+    if (action === "forgotPassword") {
+      const accountType = String(body.accountType || "User").trim().toLowerCase();
+      const nama = String(body.Nama || body.nama || "").trim();
+      const emailOrId = String(body.Email || body.email || body.identifier || "").trim().toLowerCase();
+      const newPassword = String(body.Password || body.newPassword || "");
+      const recoveryKey = String(body.recoveryKey || body.Kode_Pemulihan || "").trim();
+
+      if (newPassword.length < 6) {
+        return jsonResponse_({
+          status: "error",
+          message: "Kata sandi baru minimal 6 karakter."
+        });
+      }
+
+      const existingUsers = sheetToObjects_(ss, "Users");
+
+      if (accountType === "admin" || recoveryKey) {
+        if (!emailOrId) {
+          return jsonResponse_({
+            status: "error",
+            message: "Email atau User_ID Admin/Super Admin wajib diisi."
+          });
+        }
+        if (!recoveryKey) {
+          return jsonResponse_({
+            status: "error",
+            message: "Kode Pemulihan Pemilik wajib diisi untuk mereset Admin / Super Admin."
+          });
+        }
+        const expectedKey = getOrCreateOwnerRecoveryKey_();
+        if (!constantTimeEqual_(recoveryKey, expectedKey)) {
+          return jsonResponse_({
+            status: "error",
+            message: "Kode Pemulihan Pemilik tidak cocok. Solusi: cek Execution Log Apps Script setelah menjalankan resetSuperAdminAccess(), atau ubah sel Password langsung di tab Users Google Sheets lalu login."
+          });
+        }
+
+        const matchedAdmin = existingUsers.find(function (u) {
+          const uEmail = String(u.Email || "").trim().toLowerCase();
+          const uId = String(u.User_ID || "").trim().toLowerCase();
+          return (uEmail && uEmail === emailOrId) || (uId && uId === emailOrId);
+        });
+        if (!matchedAdmin) {
+          return jsonResponse_({
+            status: "error",
+            message: "Akun dengan Email / User_ID tersebut tidak ditemukan di sheet Users."
+          });
+        }
+
+        updateUserPasswordCell_(ss, matchedAdmin.User_ID, hashPassword_(newPassword));
+        return jsonResponse_({
+          status: "success",
+          message: "Kata sandi " + normalizeRole_(matchedAdmin.Role) + " (" + matchedAdmin.Email + ") berhasil diperbarui. Silakan masuk."
+        });
+      }
+
+      if (!nama || !emailOrId || emailOrId.indexOf("@") === -1) {
+        return jsonResponse_({
+          status: "error",
+          message: "Nama lengkap dan Email terdaftar wajib diisi."
+        });
+      }
+
+      const matched = existingUsers.find(function (u) {
+        const uNama = String(u.Nama || "").trim().toLowerCase();
+        const uEmail = String(u.Email || "").trim().toLowerCase();
+        return Boolean(uEmail && uEmail === emailOrId && uNama && uNama === nama.toLowerCase());
+      });
+
+      if (!matched) {
+        return jsonResponse_({
+          status: "error",
+          message: "Nama dan Email tidak cocok dengan akun terdaftar."
+        });
+      }
+
+      const roleNorm = normalizeRole_(matched.Role);
+      if (roleNorm !== "User") {
+        return jsonResponse_({
+          status: "error",
+          message: "Akun " + roleNorm + " memerlukan Kode Pemulihan Pemilik. Pilih opsi 'Admin / Super Admin' pada tab Lupa Sandi."
+        });
+      }
+
+      updateUserPasswordCell_(ss, matched.User_ID, hashPassword_(newPassword));
+      return jsonResponse_({
+        status: "success",
+        message: "Kata sandi berhasil diperbarui. Silakan masuk dengan kata sandi baru Anda."
+      });
+    }
+
+    // ------------------------------------------------------------------------
     // 3. TRACK ORDER PUBLIK TERPROTEKSI (Wajib Order_ID persis + 4 digit WA)
     // ------------------------------------------------------------------------
     if (action === "trackOrder") {
@@ -948,20 +1138,36 @@ function doPost(e) {
     if (action === "adminGetData") {
       const auth = requireRole_(ss, body, ["Admin", "Super Admin"]);
       const users = sheetToObjects_(ss, "Users").map(sanitizeUser_);
+      const metaObj = {
+        spreadsheetUrl: ss.getUrl(),
+        driveFolderUrl: DRIVE_FOLDER_URL,
+        role: auth.role
+      };
+      if (auth.role === "Super Admin") {
+        metaObj.ownerRecoveryKey = getOrCreateOwnerRecoveryKey_();
+      }
       return jsonResponse_({
         status: "success",
         data: {
           users: users,
-          produk: sheetToObjects_(ss, "Produk"),
-          finishing: sheetToObjects_(ss, "Finishing"),
+          produk: sheetToObjects_(ss, "Produk").map(normalizeProductRow_).filter(function (p) { return Boolean(p.Produk_ID); }),
+          finishing: sheetToObjects_(ss, "Finishing").map(normalizeFinishingRow_).filter(function (f) { return Boolean(f.Finishing_ID); }),
           pesanan: sheetToObjects_(ss, "Pesanan"),
           detail_pesanan: sheetToObjects_(ss, "Detail_Pesanan")
         },
-        meta: {
-          spreadsheetUrl: ss.getUrl(),
-          driveFolderUrl: DRIVE_FOLDER_URL,
-          role: auth.role
-        }
+        meta: metaObj
+      });
+    }
+
+    if (action === "regenerateOwnerRecoveryKey") {
+      requireRole_(ss, body, ["Super Admin"]);
+      const props = PropertiesService.getScriptProperties();
+      const nextKey = "WF-KEY-" + Utilities.getUuid().replace(/-/g, "").slice(0, 12).toUpperCase();
+      props.setProperty("OWNER_RECOVERY_KEY", nextKey);
+      return jsonResponse_({
+        status: "success",
+        message: "Kode Pemulihan Pemilik baru berhasil dibuat.",
+        data: { ownerRecoveryKey: nextKey }
       });
     }
 
@@ -990,12 +1196,12 @@ function doPost(e) {
       }
 
       // Bangun lookup Produk & Finishing dari database server (abaikan harga dari klien)
-      const produkList = sheetToObjects_(ss, "Produk");
-      const finishingList = sheetToObjects_(ss, "Finishing");
+      const produkList = sheetToObjects_(ss, "Produk").map(normalizeProductRow_);
+      const finishingList = sheetToObjects_(ss, "Finishing").map(normalizeFinishingRow_);
       const produkMap = {};
-      produkList.forEach(function (p) { produkMap[String(p.Produk_ID).trim()] = p; });
+      produkList.forEach(function (p) { if (p.Produk_ID) produkMap[p.Produk_ID] = p; });
       const finishingMap = {};
-      finishingList.forEach(function (f) { finishingMap[String(f.Finishing_ID).trim()] = f; });
+      finishingList.forEach(function (f) { if (f.Finishing_ID) finishingMap[f.Finishing_ID] = f; });
 
       let serverTotal = 0;
       const computedItems = [];
@@ -1003,18 +1209,18 @@ function doPost(e) {
         const rawItem = detailsPayload[i] || {};
         const prodId = String(rawItem.Produk_ID || "").trim();
         const prod = produkMap[prodId];
-        if (!prod || String(prod.Status).trim() !== "Tersedia") {
+        if (!prod || prod.Status !== "Tersedia") {
           return jsonResponse_({
             status: "error",
             message: "Produk tidak valid atau sedang tidak tersedia: " + (prodId || "-")
           });
         }
 
-        const isDimensi = String(prod.Tipe_Hitung).trim() === "Dimensi";
+        const isDimensi = prod.Tipe_Hitung === "Dimensi";
         const panjang = isDimensi ? Number(rawItem.Panjang_m) : 0;
         const lebar = isDimensi ? Number(rawItem.Lebar_m) : 0;
         const qty = Math.floor(Number(rawItem.Qty));
-        const minOrder = Number(prod.Min_Order) || 1;
+        const minOrder = prod.Min_Order || 1;
 
         if (!Number.isFinite(qty) || qty < minOrder || qty > 100000) {
           return jsonResponse_({
@@ -1043,7 +1249,7 @@ function doPost(e) {
           ? Math.round(panjang * lebar * qty * hargaDasar)
           : Math.round(qty * hargaDasar);
         const finTambahan = fin ? (Number(fin.Tambahan_Harga) || 0) : 0;
-        const finCost = (fin && String(fin.Tipe_Biaya).trim() === "Per_Qty") ? (finTambahan * qty) : finTambahan;
+        const finCost = (fin && fin.Tipe_Biaya === "Per_Qty") ? (finTambahan * qty) : finTambahan;
         const serverSubtotal = baseCost + finCost;
 
         serverTotal += serverSubtotal;
@@ -1222,10 +1428,10 @@ function doPost(e) {
       if (!sheet) throw new Error("Sheet Produk tidak ditemukan.");
 
       const prodId = String(prod.Produk_ID || "").trim() || ("PRD-" + Date.now().toString().slice(-4));
-      const hargaDasar = Number(prod.Harga_Dasar);
-      const minOrder = Math.floor(Number(prod.Min_Order));
-      const tipeHitung = String(prod.Tipe_Hitung || "").trim() === "Dimensi" ? "Dimensi" : "Unit";
-      const statusProd = String(prod.Status || "").trim() === "Habis" ? "Habis" : "Tersedia";
+      const hargaDasar = Math.round(parseSheetNumber_(prod.Harga_Dasar));
+      const minOrder = Math.floor(parseSheetNumber_(prod.Min_Order));
+      const tipeHitung = String(prod.Tipe_Hitung || "").trim().toLowerCase() === "dimensi" ? "Dimensi" : "Unit";
+      const statusProd = String(prod.Status || "").trim().toLowerCase() === "habis" ? "Habis" : "Tersedia";
 
       if (!String(prod.Nama_Produk || "").trim() || !Number.isFinite(hargaDasar) || hargaDasar < 0 || !Number.isFinite(minOrder) || minOrder < 1) {
         return jsonResponse_({ status: "error", message: "Data produk tidak valid." });
@@ -1281,7 +1487,7 @@ function doPost(e) {
       if (!sheet) throw new Error("Sheet Finishing tidak ditemukan.");
 
       const finId = String(fin.Finishing_ID || "").trim() || ("FIN-" + Date.now().toString().slice(-4));
-      const tambahanHarga = Number(fin.Tambahan_Harga);
+      const tambahanHarga = Math.round(parseSheetNumber_(fin.Tambahan_Harga));
       if (!String(fin.Nama_Finishing || "").trim() || !Number.isFinite(tambahanHarga) || tambahanHarga < 0) {
         return jsonResponse_({ status: "error", message: "Data finishing tidak valid." });
       }

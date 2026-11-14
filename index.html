@@ -286,7 +286,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <!-- Left: Order Form Inputs -->
-          <form id="order-calculator-form" onsubmit="addItemToCart(event)" class="lg:col-span-7 bg-slate-50 border border-slate-200 rounded-xl p-6 space-y-5">
+          <form id="order-calculator-form" onsubmit="addItemToCart(event)" novalidate class="lg:col-span-7 bg-slate-50 border border-slate-200 rounded-xl p-6 space-y-5">
 
             <!-- Produk Select -->
             <div>
@@ -301,11 +301,11 @@
             <div id="calc-dimensi-wrapper" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label for="calc-panjang" class="block text-sm font-semibold text-slate-800 mb-1.5">Panjang (meter)</label>
-                <input type="number" id="calc-panjang" step="0.1" min="0.1" value="1" oninput="recalculateItem()" class="w-full px-3.5 py-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+                <input type="number" id="calc-panjang" step="any" min="0.01" value="1" oninput="recalculateItem()" class="w-full px-3.5 py-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
               </div>
               <div>
                 <label for="calc-lebar" class="block text-sm font-semibold text-slate-800 mb-1.5">Lebar (meter)</label>
-                <input type="number" id="calc-lebar" step="0.1" min="0.1" value="1" oninput="recalculateItem()" class="w-full px-3.5 py-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+                <input type="number" id="calc-lebar" step="any" min="0.01" value="1" oninput="recalculateItem()" class="w-full px-3.5 py-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
               </div>
             </div>
 
@@ -841,6 +841,60 @@
       </section>
       <!-- Admin Tab 4: Manajemen Akses Pengguna (Khusus Super Admin) -->
       <section id="admin-panel-pengguna" class="hidden space-y-6">
+        <!-- Panel Ringkasan Akun Admin / Super Admin & Kode Pemulihan Pemilik -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+              <div>
+                <h2 class="font-display text-base font-bold text-slate-900">Akses Akun Admin &amp; Super Admin</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Kata sandi disimpan sebagai hash SHA-256 satu arah. Klik <strong>Reset Sandi</strong> untuk membuat kata sandi baru.</p>
+              </div>
+            </div>
+            <div id="admin-privileged-accounts-list" class="space-y-2 text-xs">
+              <!-- Populated dynamically by renderAdminUsers() -->
+            </div>
+            <div id="admin-saved-credential-box" class="hidden rounded-lg border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-950 space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-bold">Kredensial Baru Tersimpan (Catat / Salin Sekarang)</span>
+                <button type="button" onclick="document.getElementById('admin-saved-credential-box').classList.add('hidden')" class="text-emerald-700 hover:underline font-medium">Tutup</button>
+              </div>
+              <p id="admin-saved-credential-text" class="font-mono break-all"></p>
+              <button type="button" id="btn-copy-saved-cred" class="inline-flex items-center gap-1.5 px-3 py-1.5 font-semibold bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 rounded-md">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Salin Email &amp; Kata Sandi</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 bg-slate-900 text-white rounded-xl p-5 space-y-3 flex flex-col justify-between">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="font-display text-sm font-bold">Kode Pemulihan Pemilik (Darurat)</h3>
+                <span class="font-mono text-[11px] text-slate-300">Khusus Super Admin</span>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Simpan kode ini untuk mereset kata sandi <strong>Super Admin / Admin</strong> langsung dari tab <strong>Lupa Sandi</strong> jika suatu saat lupa.
+              </p>
+              <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+                <span id="owner-recovery-key-display" class="font-mono text-xs sm:text-sm font-semibold tracking-wide flex-1 truncate">••••••••••••••••</span>
+                <button type="button" onclick="toggleRecoveryKeyVisibility()" class="text-xs font-medium text-slate-300 hover:text-white px-2 py-1">
+                  <span id="owner-recovery-key-toggle-label">Lihat</span>
+                </button>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              <button type="button" onclick="copyRecoveryKey()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-white text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Salin Kode</span>
+              </button>
+              <button type="button" id="btn-regen-recovery-key" onclick="regenerateRecoveryKey()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-slate-800 border border-slate-600 text-white hover:bg-slate-700 rounded-lg transition-colors">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Buat Kode Baru</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <form id="admin-user-form" onsubmit="saveAdminUser(event)" class="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
@@ -905,7 +959,7 @@
                   <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
                     <th class="py-3 px-4 whitespace-nowrap">User_ID</th>
                     <th class="py-3 px-4 whitespace-nowrap">Nama &amp; Kontak</th>
-                    <th class="py-3 px-4 whitespace-nowrap">Role</th>
+                    <th class="py-3 px-4 whitespace-nowrap">Role &amp; Sandi</th>
                     <th class="py-3 px-4 whitespace-nowrap text-right">Aksi</th>
                   </tr>
                 </thead>
@@ -1099,14 +1153,17 @@
         </button>
       </div>
 
-      <!-- Tab Switcher: Masuk | Daftar Member Baru -->
+      <!-- Tab Switcher: Masuk | Daftar Member | Lupa Sandi -->
       <div class="px-6 pt-4 shrink-0">
-        <div class="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-lg">
+        <div class="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-lg">
           <button type="button" id="auth-tab-login" onclick="switchAuthMode('login')" class="py-2 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs">
             Masuk Akun
           </button>
           <button type="button" id="auth-tab-register" onclick="switchAuthMode('register')" class="py-2 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900">
-            Daftar Member Baru
+            Daftar Member
+          </button>
+          <button type="button" id="auth-tab-forgot" onclick="switchAuthMode('forgot')" class="py-2 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900">
+            Lupa Sandi
           </button>
         </div>
       </div>
@@ -1122,7 +1179,12 @@
           </div>
 
           <div>
-            <label for="login-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi / PIN</label>
+            <div class="flex items-center justify-between mb-1">
+              <label for="login-password" class="block text-xs font-semibold text-slate-700">Kata Sandi / PIN</label>
+              <button type="button" onclick="switchAuthMode('forgot')" class="text-xs font-semibold text-press-700 hover:underline">
+                Lupa password?
+              </button>
+            </div>
             <input type="password" id="login-password" required placeholder="Masukkan kata sandi" class="w-full px-3.5 py-2.5 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
           </div>
 
@@ -1131,8 +1193,16 @@
             <span>Masuk Sekarang</span>
           </button>
 
-          <p class="pt-3 border-t border-slate-200 text-[11px] text-slate-500 text-center">
-            Autentikasi diverifikasi langsung oleh Google Apps Script. Belum punya akun? Pilih tab <strong>Daftar Member Baru</strong>.
+          <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1.5">
+            <p class="font-semibold text-slate-800">Info Akses Admin &amp; Super Admin</p>
+            <p>Email Super Admin bawaan: <span class="font-mono font-semibold text-slate-900">superadmin@wajibkufast.id</span> (<span class="font-mono">SUP-001</span>). Demi keamanan, kata sandi dienkripsi (hash SHA-256) dan tidak ditampilkan ke publik.</p>
+            <button type="button" onclick="openAdminRecoveryFlow()" class="font-semibold text-press-700 hover:underline">
+              Lupa sandi Super Admin / Admin? Lihat solusi &amp; reset &rarr;
+            </button>
+          </div>
+
+          <p class="pt-1 text-[11px] text-slate-500 text-center">
+            Belum punya akun pelanggan? Pilih tab <strong>Daftar Member</strong>.
           </p>
         </form>
 
@@ -1179,6 +1249,66 @@
 
           <p class="text-[11px] text-slate-500 text-center">Akun baru otomatis terdaftar sebagai <strong>User (Member)</strong> di sheet `Users`.</p>
         </form>
+
+        <!-- Form Lupa Password (Pelanggan & Admin/Super Admin) -->
+        <form id="forgot-form" onsubmit="handleForgotPasswordSubmit(event)" novalidate class="hidden p-6 space-y-3.5">
+          <div id="forgot-error-box" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs font-medium text-rose-700"></div>
+
+          <!-- Switcher Tipe Akun -->
+          <div class="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-lg">
+            <button type="button" id="forgot-type-user" onclick="switchForgotAccountType('User')" class="py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs">
+              Pelanggan (User)
+            </button>
+            <button type="button" id="forgot-type-admin" onclick="switchForgotAccountType('Admin')" class="py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900">
+              Admin / Super Admin
+            </button>
+          </div>
+
+          <p id="forgot-helper-text" class="text-xs text-slate-600 leading-relaxed">
+            Masukkan <strong>Nama Lengkap</strong> dan <strong>Email</strong> yang sama dengan data terdaftar di akun Anda untuk membuat kata sandi baru.
+          </p>
+
+          <div id="forgot-nama-wrapper">
+            <label for="forgot-nama" class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap Terdaftar *</label>
+            <input type="text" id="forgot-nama" placeholder="Contoh: Budi Santoso" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+          </div>
+
+          <div>
+            <label id="forgot-email-label" for="forgot-email" class="block text-xs font-semibold text-slate-700 mb-1">Email Terdaftar *</label>
+            <input type="text" id="forgot-email" placeholder="nama@email.com" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+          </div>
+
+          <div id="forgot-recovery-wrapper" class="hidden">
+            <label for="forgot-recovery-key" class="block text-xs font-semibold text-slate-700 mb-1">Kode Pemulihan Pemilik (Owner Recovery Key) *</label>
+            <input type="text" id="forgot-recovery-key" placeholder="Contoh: WF-KEY-XXXXXXXXXXXX" class="w-full px-3.5 py-2 text-sm font-mono uppercase bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="forgot-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Baru *</label>
+              <input type="password" id="forgot-password" required minlength="6" placeholder="Min. 6 karakter" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            </div>
+            <div>
+              <label for="forgot-password-confirm" class="block text-xs font-semibold text-slate-700 mb-1">Ulangi Sandi Baru *</label>
+              <input type="password" id="forgot-password-confirm" required minlength="6" placeholder="Ketik ulang sandi" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            </div>
+          </div>
+
+          <button type="submit" id="btn-submit-forgot" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">
+            <i data-lucide="key-round" class="w-4 h-4"></i>
+            <span>Simpan Kata Sandi Baru</span>
+          </button>
+
+          <!-- Panduan Solusi Jika Lupa Sandi Admin / Super Admin & Belum Punya Kode Pemulihan -->
+          <div id="forgot-admin-guide" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-950 space-y-1.5 leading-relaxed">
+            <p class="font-bold">Belum menyimpan Kode Pemulihan? 3 Cara Pemulihan Pemilik:</p>
+            <ol class="list-decimal pl-4 space-y-1">
+              <li><strong>Cara Tercepat (Via Google Sheets):</strong> Buka tab <span class="font-mono font-semibold">Users</span> di Google Sheets Anda, ketik kata sandi baru pilihan Anda langsung pada sel kolom <span class="font-mono font-semibold">Password</span> baris Super Admin/Admin, lalu langsung <strong>Masuk Akun</strong> (server otomatis mengenkripsi ulang saat login).</li>
+              <li><strong>Via Google Apps Script:</strong> Buka editor Apps Script &rarr; pilih fungsi <span class="font-mono font-semibold">resetSuperAdminAccess</span> &rarr; klik <strong>Run</strong> &rarr; cek <strong>Execution Log</strong> untuk melihat Email, Kata Sandi Baru, dan Kode Pemulihan Pemilik.</li>
+              <li><strong>Khusus Admin Biasa:</strong> Minta <strong>Super Admin</strong> login lalu atur ulang kata sandi di menu <em>Dashboard Admin &rarr; Akses Pengguna</em>.</li>
+            </ol>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -1224,7 +1354,8 @@
     const API_CONFIG_VERSION = "2026-11-15-sec-v2";
     const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbw2w-qDPo2ZXp2phIWISlWi0pNciiViEwUaA4NuTaS1o4SvKSfo2QIRwwPTaEc3XJJHpg/exec";
     const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
-    const MAX_PAYLOAD_CHARS = 5.8 * 1024 * 1024;
+    const MAX_IMAGE_INPUT_BYTES = 15 * 1024 * 1024;
+    const MAX_PAYLOAD_CHARS = 14 * 1024 * 1024;
 
     (function syncApiConfigVersion() {
       try {
@@ -1323,6 +1454,10 @@
       authToken: null,
       adminDataLoaded: false,
       adminTab: "pesanan",
+      forgotAccountType: "User",
+      ownerRecoveryKey: "",
+      showRecoveryKey: false,
+      lastSavedCredential: null,
       revenueChartMode: "lunas",
       selectedMonthIndex: null,
       activeCategory: "Semua",
@@ -1346,6 +1481,54 @@
     function formatRupiah(num) {
       const n = Number(num) || 0;
       return "Rp " + n.toLocaleString("id-ID");
+    }
+
+    function parseClientNumber(val) {
+      if (typeof val === "number") return Number.isFinite(val) ? val : 0;
+      const raw = String(val ?? "").trim();
+      if (!raw) return 0;
+      if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(raw)) {
+        const nId = Number(raw.replace(/\./g, "").replace(",", "."));
+        return Number.isFinite(nId) ? nId : 0;
+      }
+      if (/^\d+(\.\d+)?$/.test(raw)) return Number(raw) || 0;
+      let cleaned = raw.replace(/[^\d.,-]/g, "");
+      if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(cleaned)) {
+        cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+      } else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(cleaned)) {
+        cleaned = cleaned.replace(/,/g, "");
+      } else {
+        cleaned = cleaned.replace(",", ".");
+      }
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function normalizeProductItem(p) {
+      const rawTipe = String(p?.Tipe_Hitung || "").trim().toLowerCase();
+      const rawStatus = String(p?.Status || "").trim().toLowerCase();
+      const minOrd = Math.floor(parseClientNumber(p?.Min_Order));
+      return {
+        Produk_ID: String(p?.Produk_ID || "").trim(),
+        Nama_Produk: String(p?.Nama_Produk || "").trim(),
+        Kategori: String(p?.Kategori || "").trim() || "Umum",
+        Tipe_Hitung: rawTipe === "dimensi" ? "Dimensi" : "Unit",
+        Harga_Dasar: Math.max(0, Math.round(parseClientNumber(p?.Harga_Dasar))),
+        Satuan: String(p?.Satuan || "").trim() || "Unit",
+        Min_Order: minOrd >= 1 ? minOrd : 1,
+        Status: rawStatus === "habis" ? "Habis" : "Tersedia"
+      };
+    }
+
+    function normalizeFinishingItem(f) {
+      const rawTipe = String(f?.Tipe_Biaya || "").trim().toLowerCase();
+      return {
+        Finishing_ID: String(f?.Finishing_ID || "").trim(),
+        Nama_Finishing: String(f?.Nama_Finishing || "").trim(),
+        Tipe_Biaya: rawTipe === "per_qty" || rawTipe === "per qty" ? "Per_Qty" : "Tetap",
+        Tambahan_Harga: Math.max(0, Math.round(parseClientNumber(f?.Tambahan_Harga))),
+        Keterangan: String(f?.Keterangan || "").trim()
+      };
     }
 
     function escapeHtml(str) {
@@ -1595,13 +1778,13 @@
         throw new Error("URL Web App Apps Script (/exec) belum terkonfigurasi.");
       }
       const bodyPayload = { ...payload };
-      const publicActions = ["login", "registerMember", "trackOrder"];
+      const publicActions = ["login", "registerMember", "forgotPassword", "trackOrder"];
       if (state.authToken && !publicActions.includes(bodyPayload.action) && !bodyPayload.token) {
         bodyPayload.token = state.authToken;
       }
       const serialized = JSON.stringify(bodyPayload);
       if (serialized.length > MAX_PAYLOAD_CHARS) {
-        throw new Error("Total ukuran data & lampiran file terlalu besar (maks. ~4 MB gabungan). Perkecil file atau kirim dalam beberapa pesanan terpisah.");
+        throw new Error("Total ukuran data & lampiran file terlalu besar (maks. ~10 MB gabungan). Perkecil file atau kirim dalam beberapa pesanan terpisah.");
       }
       try {
         const res = await fetch(API_URL, {
@@ -1621,11 +1804,16 @@
         const json = await postToGas({ action: "adminGetData" });
         if (json && json.status === "success" && json.data) {
           state.users = Array.isArray(json.data.users) ? json.data.users : [];
-          state.produk = Array.isArray(json.data.produk) ? json.data.produk : state.produk;
-          state.finishing = Array.isArray(json.data.finishing) ? json.data.finishing : state.finishing;
+          if (Array.isArray(json.data.produk)) {
+            state.produk = json.data.produk.map(normalizeProductItem).filter((p) => p.Produk_ID);
+          }
+          if (Array.isArray(json.data.finishing)) {
+            state.finishing = json.data.finishing.map(normalizeFinishingItem).filter((f) => f.Finishing_ID);
+          }
           state.pesanan = Array.isArray(json.data.pesanan) ? json.data.pesanan : [];
           state.detail_pesanan = Array.isArray(json.data.detail_pesanan) ? json.data.detail_pesanan : [];
           state.adminDataLoaded = true;
+          state.ownerRecoveryKey = (json.meta && json.meta.ownerRecoveryKey) ? String(json.meta.ownerRecoveryKey) : "";
           if (json.meta && json.meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
             SHEET_URL = json.meta.spreadsheetUrl;
             localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
@@ -1687,8 +1875,12 @@
         const res = await fetch(API_URL + "?action=getInitData");
         const json = await parseGasResponse(res);
         if (json && json.status === "success" && json.data) {
-          state.produk = Array.isArray(json.data.produk) ? json.data.produk : [];
-          state.finishing = Array.isArray(json.data.finishing) ? json.data.finishing : [];
+          state.produk = Array.isArray(json.data.produk)
+            ? json.data.produk.map(normalizeProductItem).filter((p) => p.Produk_ID)
+            : [];
+          state.finishing = Array.isArray(json.data.finishing)
+            ? json.data.finishing.map(normalizeFinishingItem).filter((f) => f.Finishing_ID)
+            : [];
           state.connectionStatus = "connected";
           state.connectionMessage = `Terhubung live ke Google Sheets & Folder Drive (${state.produk.length} produk dimuat).`;
           if (manualRetry) {
@@ -1790,34 +1982,48 @@
     function switchAuthMode(mode) {
       const loginForm = document.getElementById("login-form");
       const regForm = document.getElementById("register-form");
+      const forgotForm = document.getElementById("forgot-form");
       const tabLogin = document.getElementById("auth-tab-login");
       const tabReg = document.getElementById("auth-tab-register");
+      const tabForgot = document.getElementById("auth-tab-forgot");
       const titleEl = document.getElementById("auth-modal-title");
       const errLogin = document.getElementById("login-error-box");
       const errReg = document.getElementById("register-error-box");
+      const errForgot = document.getElementById("forgot-error-box");
 
       if (errLogin) errLogin.classList.add("hidden");
       if (errReg) errReg.classList.add("hidden");
+      if (errForgot) errForgot.classList.add("hidden");
+
+      const activeCls = "py-2 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs";
+      const idleCls = "py-2 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900";
+
+      loginForm?.classList.add("hidden");
+      regForm?.classList.add("hidden");
+      forgotForm?.classList.add("hidden");
+      if (tabLogin) tabLogin.className = idleCls;
+      if (tabReg) tabReg.className = idleCls;
+      if (tabForgot) tabForgot.className = idleCls;
 
       if (mode === "register") {
-        loginForm?.classList.add("hidden");
         regForm?.classList.remove("hidden");
         if (titleEl) titleEl.textContent = "Daftar Member Wajibku Fast";
-        if (tabReg) tabReg.className = "py-2 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs";
-        if (tabLogin) tabLogin.className = "py-2 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900";
+        if (tabReg) tabReg.className = activeCls;
+      } else if (mode === "forgot") {
+        forgotForm?.classList.remove("hidden");
+        if (titleEl) titleEl.textContent = "Reset Kata Sandi Pelanggan";
+        if (tabForgot) tabForgot.className = activeCls;
       } else {
-        regForm?.classList.add("hidden");
         loginForm?.classList.remove("hidden");
         if (titleEl) titleEl.textContent = "Masuk Akun Wajibku Fast";
-        if (tabLogin) tabLogin.className = "py-2 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs";
-        if (tabReg) tabReg.className = "py-2 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900";
+        if (tabLogin) tabLogin.className = activeCls;
       }
       refreshIcons();
     }
 
     function openLoginModal(subtitleText, mode = "login") {
       const subtitleEl = document.getElementById("login-modal-subtitle");
-      subtitleEl.textContent = subtitleText || "Masuk atau daftar sebagai member baru tanpa perlu bantuan Admin.";
+      subtitleEl.textContent = subtitleText || "Masuk, daftar member baru, atau reset sandi jika lupa.";
       switchAuthMode(mode);
       document.getElementById("login-modal-backdrop").classList.remove("hidden");
       refreshIcons();
@@ -1948,8 +2154,130 @@
         renderMyOrdersQuickList();
         showToast(`Pendaftaran berhasil! Selamat datang, ${state.currentUser.Nama}.`, "success");
       } catch (err) {
-        console.error(err);
+        console.warn("Gagal mendaftar:", err);
         errBox.textContent = err?.message || "Gagal menghubungi server pendaftaran. Coba beberapa saat lagi.";
+        errBox.classList.remove("hidden");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    function switchForgotAccountType(type) {
+      const nextType = type === "Admin" ? "Admin" : "User";
+      state.forgotAccountType = nextType;
+      const btnUser = document.getElementById("forgot-type-user");
+      const btnAdmin = document.getElementById("forgot-type-admin");
+      const namaWrap = document.getElementById("forgot-nama-wrapper");
+      const recWrap = document.getElementById("forgot-recovery-wrapper");
+      const guideBox = document.getElementById("forgot-admin-guide");
+      const helperEl = document.getElementById("forgot-helper-text");
+      const emailLabel = document.getElementById("forgot-email-label");
+      const emailInput = document.getElementById("forgot-email");
+      const errBox = document.getElementById("forgot-error-box");
+
+      if (errBox) errBox.classList.add("hidden");
+      const activeCls = "py-1.5 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs";
+      const idleCls = "py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900";
+
+      if (nextType === "Admin") {
+        if (btnUser) btnUser.className = idleCls;
+        if (btnAdmin) btnAdmin.className = activeCls;
+        namaWrap?.classList.add("hidden");
+        recWrap?.classList.remove("hidden");
+        guideBox?.classList.remove("hidden");
+        if (helperEl) helperEl.innerHTML = "Masukkan <strong>Email / User_ID</strong> dan <strong>Kode Pemulihan Pemilik</strong> untuk mereset kata sandi Admin atau Super Admin langsung dari web.";
+        if (emailLabel) emailLabel.textContent = "Email atau User_ID Admin / Super Admin *";
+        if (emailInput) emailInput.placeholder = "Contoh: superadmin@wajibkufast.id atau SUP-001";
+      } else {
+        if (btnUser) btnUser.className = activeCls;
+        if (btnAdmin) btnAdmin.className = idleCls;
+        namaWrap?.classList.remove("hidden");
+        recWrap?.classList.add("hidden");
+        guideBox?.classList.add("hidden");
+        if (helperEl) helperEl.innerHTML = "Masukkan <strong>Nama Lengkap</strong> dan <strong>Email</strong> yang sama dengan data terdaftar di akun Anda untuk membuat kata sandi baru.";
+        if (emailLabel) emailLabel.textContent = "Email Terdaftar *";
+        if (emailInput) emailInput.placeholder = "nama@email.com";
+      }
+    }
+
+    function openAdminRecoveryFlow() {
+      switchAuthMode("forgot");
+      switchForgotAccountType("Admin");
+      const emailInput = document.getElementById("forgot-email");
+      if (emailInput && !emailInput.value) {
+        emailInput.value = "superadmin@wajibkufast.id";
+      }
+    }
+
+    async function handleForgotPasswordSubmit(e) {
+      e.preventDefault();
+      const accountType = state.forgotAccountType === "Admin" ? "Admin" : "User";
+      const nama = document.getElementById("forgot-nama").value.trim();
+      const emailOrId = document.getElementById("forgot-email").value.trim().toLowerCase();
+      const recoveryKey = document.getElementById("forgot-recovery-key")?.value.trim() || "";
+      const newPassword = document.getElementById("forgot-password").value;
+      const confirmPass = document.getElementById("forgot-password-confirm").value;
+      const errBox = document.getElementById("forgot-error-box");
+
+      errBox.classList.add("hidden");
+      if (!isApiConfigured()) {
+        errBox.textContent = "Reset kata sandi membutuhkan koneksi aktif ke Google Apps Script Web App (/exec).";
+        errBox.classList.remove("hidden");
+        return;
+      }
+
+      if (accountType === "Admin") {
+        if (!emailOrId) {
+          errBox.textContent = "Email atau User_ID Admin/Super Admin wajib diisi.";
+          errBox.classList.remove("hidden");
+          return;
+        }
+        if (!recoveryKey) {
+          errBox.textContent = "Masukkan Kode Pemulihan Pemilik, atau ikuti panduan reset via Google Sheets / Apps Script di bawah.";
+          errBox.classList.remove("hidden");
+          return;
+        }
+      } else {
+        if (!nama || !emailOrId || emailOrId.indexOf("@") === -1) {
+          errBox.textContent = "Nama lengkap dan Email terdaftar wajib diisi.";
+          errBox.classList.remove("hidden");
+          return;
+        }
+      }
+
+      if (newPassword.length < 6) {
+        errBox.textContent = "Kata sandi baru minimal 6 karakter.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+      if (newPassword !== confirmPass) {
+        errBox.textContent = "Konfirmasi kata sandi baru tidak cocok.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+
+      const btn = document.getElementById("btn-submit-forgot");
+      if (btn) btn.disabled = true;
+
+      try {
+        const res = await postToGas({
+          action: "forgotPassword",
+          accountType: accountType,
+          Nama: nama,
+          Email: emailOrId,
+          recoveryKey: recoveryKey,
+          Password: newPassword
+        });
+        if (!res || res.status !== "success") {
+          throw new Error(res?.message || "Gagal mereset kata sandi.");
+        }
+        document.getElementById("forgot-form").reset();
+        switchAuthMode("login");
+        const idInput = document.getElementById("login-identifier");
+        if (idInput) idInput.value = emailOrId;
+        showToast(res.message || "Kata sandi berhasil diperbarui. Silakan masuk.", "success");
+      } catch (err) {
+        errBox.textContent = err?.message || "Gagal mereset kata sandi.";
         errBox.classList.remove("hidden");
       } finally {
         if (btn) btn.disabled = false;
@@ -1960,6 +2288,9 @@
       state.authToken = null;
       state.currentUser = null;
       state.adminDataLoaded = false;
+      state.ownerRecoveryKey = "";
+      state.showRecoveryKey = false;
+      state.lastSavedCredential = null;
       state.users = [];
       state.pesanan = [];
       state.detail_pesanan = [];
@@ -2261,8 +2592,20 @@
     }
 
     function selectProductForOrder(produkId) {
+      const targetId = String(produkId || "").trim();
       const sel = document.getElementById("calc-produk");
-      sel.value = produkId;
+      if (!sel) return;
+      const availableProducts = state.produk.filter((p) => p.Status === "Tersedia");
+      const matched = availableProducts.find((p) => String(p.Produk_ID).trim() === targetId);
+      if (matched) {
+        if (!Array.from(sel.options).some((opt) => String(opt.value).trim() === String(matched.Produk_ID).trim())) {
+          populateCalculatorDropdowns();
+        }
+        sel.disabled = false;
+        sel.value = matched.Produk_ID;
+        const qtyEl = document.getElementById("calc-qty");
+        if (qtyEl) qtyEl.value = matched.Min_Order || 1;
+      }
       onProductChange();
       navigateCustomerSection("kalkulator");
     }
@@ -2273,7 +2616,7 @@
     function populateCalculatorDropdowns() {
       const availableProducts = state.produk.filter((p) => p.Status === "Tersedia");
       const prodSel = document.getElementById("calc-produk");
-      const prevProd = prodSel.value;
+      const prevProd = String(prodSel.value || "").trim();
 
       if (!availableProducts.length) {
         prodSel.innerHTML = `<option value="">Katalog produk belum dimuat dari server</option>`;
@@ -2284,13 +2627,14 @@
           <option value="${escapeHtml(p.Produk_ID)}">${escapeHtml(p.Nama_Produk)} — ${formatRupiah(p.Harga_Dasar)} / ${escapeHtml(p.Satuan)}</option>
         `).join("");
 
-        if (prevProd && availableProducts.some((p) => p.Produk_ID === prevProd)) {
-          prodSel.value = prevProd;
+        const prevMatch = availableProducts.find((p) => String(p.Produk_ID).trim() === prevProd);
+        if (prevMatch) {
+          prodSel.value = prevMatch.Produk_ID;
         }
       }
 
       const finSel = document.getElementById("calc-finishing");
-      const prevFin = finSel.value;
+      const prevFin = String(finSel.value || "").trim();
       if (!state.finishing.length) {
         finSel.innerHTML = `<option value="">Opsi finishing belum tersedia</option>`;
         finSel.disabled = true;
@@ -2303,8 +2647,9 @@
           return `<option value="${escapeHtml(f.Finishing_ID)}">${escapeHtml(f.Nama_Finishing)} — ${biayaText}</option>`;
         }).join("");
 
-        if (prevFin && state.finishing.some((f) => f.Finishing_ID === prevFin)) {
-          finSel.value = prevFin;
+        const prevFinMatch = state.finishing.find((f) => String(f.Finishing_ID).trim() === prevFin);
+        if (prevFinMatch) {
+          finSel.value = prevFinMatch.Finishing_ID;
         }
       }
 
@@ -2312,14 +2657,14 @@
     }
 
     function getSelectedProduct() {
-      const id = document.getElementById("calc-produk").value;
+      const id = String(document.getElementById("calc-produk").value || "").trim();
       if (!id) return null;
-      return state.produk.find((p) => p.Produk_ID === id) || state.produk.find((p) => p.Status === "Tersedia") || null;
+      return state.produk.find((p) => String(p.Produk_ID).trim() === id) || state.produk.find((p) => p.Status === "Tersedia") || null;
     }
 
     function getSelectedFinishing() {
-      const id = document.getElementById("calc-finishing").value;
-      return state.finishing.find((f) => f.Finishing_ID === id) || state.finishing[0] || null;
+      const id = String(document.getElementById("calc-finishing").value || "").trim();
+      return state.finishing.find((f) => String(f.Finishing_ID).trim() === id) || state.finishing[0] || null;
     }
 
     function onProductChange() {
@@ -2332,6 +2677,10 @@
 
       if (!prod) {
         dimWrapper.classList.add("hidden");
+        panjangEl.disabled = true;
+        lebarEl.disabled = true;
+        panjangEl.removeAttribute("min");
+        lebarEl.removeAttribute("min");
         document.getElementById("calc-produk-meta").textContent = "Pilih atau muat ulang katalog produk terlebih dahulu untuk menghitung harga.";
         document.getElementById("calc-finishing-meta").textContent = "";
         document.getElementById("calc-qty-error").classList.add("hidden");
@@ -2347,17 +2696,30 @@
 
       if (prod.Tipe_Hitung === "Dimensi") {
         dimWrapper.classList.remove("hidden");
-        if (Number(panjangEl.value) <= 0) panjangEl.value = 1;
-        if (Number(lebarEl.value) <= 0) lebarEl.value = 1;
+        panjangEl.disabled = false;
+        lebarEl.disabled = false;
+        panjangEl.setAttribute("min", "0.01");
+        lebarEl.setAttribute("min", "0.01");
+        panjangEl.step = "any";
+        lebarEl.step = "any";
+        if (parseClientNumber(panjangEl.value) <= 0) panjangEl.value = 1;
+        if (parseClientNumber(lebarEl.value) <= 0) lebarEl.value = 1;
       } else {
         dimWrapper.classList.add("hidden");
+        panjangEl.disabled = true;
+        lebarEl.disabled = true;
+        panjangEl.removeAttribute("min");
+        lebarEl.removeAttribute("min");
         panjangEl.value = 0;
         lebarEl.value = 0;
       }
 
       const minOrder = Number(prod.Min_Order) || 1;
-      if (Number(qtyEl.value) < minOrder) {
+      const curQty = Math.floor(parseClientNumber(qtyEl.value));
+      if (!Number.isFinite(curQty) || curQty < minOrder) {
         qtyEl.value = minOrder;
+      } else {
+        qtyEl.value = curQty;
       }
       qtyEl.min = minOrder;
 
@@ -2370,31 +2732,39 @@
     function recalculateItem() {
       const prod = getSelectedProduct();
       const fin = getSelectedFinishing();
-      if (!prod) return null;
+      const submitBtn = document.getElementById("btn-add-to-cart");
+      if (!prod) {
+        if (submitBtn) submitBtn.disabled = true;
+        return null;
+      }
 
       const isDimensi = prod.Tipe_Hitung === "Dimensi";
-      const panjang = isDimensi ? Math.max(0, parseFloat(document.getElementById("calc-panjang").value) || 0) : 0;
-      const lebar = isDimensi ? Math.max(0, parseFloat(document.getElementById("calc-lebar").value) || 0) : 0;
-      const qty = parseInt(document.getElementById("calc-qty").value, 10) || 0;
+      const rawPanjang = String(document.getElementById("calc-panjang").value || "").replace(",", ".");
+      const rawLebar = String(document.getElementById("calc-lebar").value || "").replace(",", ".");
+      const panjang = isDimensi ? Math.max(0, parseFloat(rawPanjang) || 0) : 0;
+      const lebar = isDimensi ? Math.max(0, parseFloat(rawLebar) || 0) : 0;
+      const qty = Math.floor(Number(String(document.getElementById("calc-qty").value || "").replace(",", "."))) || 0;
       const minOrder = Number(prod.Min_Order) || 1;
 
       // Validasi Min_Order & Dimensi
       const qtyErrorEl = document.getElementById("calc-qty-error");
-      const submitBtn = document.getElementById("btn-add-to-cart");
       let valid = true;
+      let errorMsg = "";
 
       if (qty < minOrder) {
-        qtyErrorEl.textContent = `Minimal order untuk produk ini adalah ${minOrder} ${prod.Satuan}.`;
+        errorMsg = `Minimal order untuk ${prod.Nama_Produk} adalah ${minOrder} ${prod.Satuan}.`;
+        qtyErrorEl.textContent = errorMsg;
         qtyErrorEl.classList.remove("hidden");
         valid = false;
       } else if (isDimensi && (panjang <= 0 || lebar <= 0)) {
-        qtyErrorEl.textContent = `Panjang dan Lebar harus lebih dari 0 meter.`;
+        errorMsg = `Panjang dan Lebar untuk ${prod.Nama_Produk} harus lebih dari 0 meter.`;
+        qtyErrorEl.textContent = errorMsg;
         qtyErrorEl.classList.remove("hidden");
         valid = false;
       } else {
         qtyErrorEl.classList.add("hidden");
       }
-      submitBtn.disabled = !valid;
+      if (submitBtn) submitBtn.disabled = false;
 
       // Rumus Harga Dasar
       const hargaDasar = Number(prod.Harga_Dasar) || 0;
@@ -2426,39 +2796,155 @@
       document.getElementById("summary-finishing-cost").textContent = formatRupiah(finishingCost);
       document.getElementById("summary-subtotal").textContent = formatRupiah(subtotal);
 
-      if (fin) {
-        document.getElementById("calc-finishing-meta").textContent = fin.Keterangan || "";
-      }
+      document.getElementById("calc-finishing-meta").textContent = fin ? (fin.Keterangan || "") : "";
 
-      return { prod, fin, panjang, lebar, qty, baseCost, finishingCost, subtotal, valid };
+      return { prod, fin, panjang, lebar, qty, baseCost, finishingCost, subtotal, valid, errorMsg };
     }
 
-    function handleDesignFileSelect(e) {
+    function dataUrlByteSize(dataUrl) {
+      const idx = String(dataUrl || "").indexOf(",");
+      if (idx === -1) return 0;
+      const b64 = dataUrl.slice(idx + 1);
+      return Math.floor((b64.length * 3) / 4);
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (evt) => resolve(evt.target.result);
+        reader.onerror = () => reject(new Error("Gagal membaca file."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function compressImageFileToDataUrl(file, opts = {}) {
+      const maxDim = opts.maxDim || 1600;
+      const targetBytes = opts.targetBytes || 400 * 1024;
+      const initialQuality = opts.initialQuality || 0.82;
+
+      const rawDataUrl = await readFileAsDataUrl(file);
+      if (file.size <= targetBytes && !opts.alwaysResizeIfLargeDim) {
+        return { dataUrl: rawDataUrl, byteSize: file.size, compressed: false };
+      }
+
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let width = img.naturalWidth || img.width;
+            let height = img.naturalHeight || img.height;
+            if (!width || !height) {
+              resolve({ dataUrl: rawDataUrl, byteSize: file.size, compressed: false });
+              return;
+            }
+            const scale = Math.min(1, maxDim / Math.max(width, height));
+            width = Math.max(1, Math.round(width * scale));
+            height = Math.max(1, Math.round(height * scale));
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve({ dataUrl: rawDataUrl, byteSize: file.size, compressed: false });
+              return;
+            }
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+
+            let bestUrl = canvas.toDataURL("image/jpeg", initialQuality);
+            let bestBytes = dataUrlByteSize(bestUrl);
+            const qualities = [0.72, 0.6, 0.48, 0.36];
+            for (const q of qualities) {
+              if (bestBytes <= targetBytes) break;
+              bestUrl = canvas.toDataURL("image/jpeg", q);
+              bestBytes = dataUrlByteSize(bestUrl);
+            }
+
+            if (bestBytes < file.size) {
+              resolve({ dataUrl: bestUrl, byteSize: bestBytes, compressed: true });
+            } else {
+              resolve({ dataUrl: rawDataUrl, byteSize: file.size, compressed: false });
+            }
+          } catch (e) {
+            resolve({ dataUrl: rawDataUrl, byteSize: file.size, compressed: false });
+          }
+        };
+        img.onerror = () => resolve({ dataUrl: rawDataUrl, byteSize: file.size, compressed: false });
+        img.src = rawDataUrl;
+      });
+    }
+
+    async function handleDesignFileSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size > MAX_FILE_BYTES) {
-        showToast("Ukuran file desain maksimal 2,5 MB untuk menghindari timeout Apps Script.", "error");
+      const isRasterImage = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type);
+
+      if (!isRasterImage && file.size > MAX_FILE_BYTES) {
+        showToast("Ukuran file desain (PDF/AI/CDR/ZIP) maksimal 2,5 MB untuk pengiriman langsung.", "error");
+        e.target.value = "";
+        return;
+      }
+      if (isRasterImage && file.size > MAX_IMAGE_INPUT_BYTES) {
+        showToast("Ukuran gambar desain terlalu besar (maks. 15 MB sebelum kompresi otomatis).", "error");
         e.target.value = "";
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = function (evt) {
+      document.getElementById("calc-file-status").textContent = "Memproses file desain...";
+      try {
+        let finalDataUrl = "";
+        let finalSize = file.size;
+        let wasCompressed = false;
+
+        if (isRasterImage && file.size > 900 * 1024) {
+          const opt = await compressImageFileToDataUrl(file, {
+            maxDim: 2200,
+            targetBytes: 1.4 * 1024 * 1024,
+            initialQuality: 0.85
+          });
+          finalDataUrl = opt.dataUrl;
+          finalSize = opt.byteSize;
+          wasCompressed = opt.compressed;
+          if (finalSize > MAX_FILE_BYTES) {
+            const tighter = await compressImageFileToDataUrl(file, {
+              maxDim: 1600,
+              targetBytes: 1.5 * 1024 * 1024,
+              initialQuality: 0.7
+            });
+            finalDataUrl = tighter.dataUrl;
+            finalSize = tighter.byteSize;
+            wasCompressed = tighter.compressed;
+          }
+        } else {
+          finalDataUrl = await readFileAsDataUrl(file);
+        }
+
+        if (finalSize > MAX_FILE_BYTES) {
+          showToast("Ukuran file desain setelah optimasi masih di atas 2,5 MB. Perkecil resolusi file Anda.", "error");
+          e.target.value = "";
+          document.getElementById("calc-file-status").textContent = "Belum ada file dipilih (Maks. 2,5 MB, opsional jika kirim menyusul)";
+          return;
+        }
+
         state.currentDesignFile = {
           name: file.name,
-          size: file.size,
+          size: finalSize,
           mimeType: file.type,
-          base64: evt.target.result
+          base64: finalDataUrl
         };
-        document.getElementById("calc-file-status").textContent = "File siap dilampirkan:";
+        document.getElementById("calc-file-status").textContent = wasCompressed
+          ? "File siap dilampirkan (dioptimalkan otomatis):"
+          : "File siap dilampirkan:";
         document.getElementById("calc-file-name").textContent = file.name;
-        document.getElementById("calc-file-size").textContent = (file.size / 1024).toFixed(1) + " KB";
+        document.getElementById("calc-file-size").textContent = (finalSize / 1024).toFixed(1) + " KB";
         document.getElementById("calc-file-preview-box").classList.remove("hidden");
 
         const thumb = document.getElementById("calc-file-thumb");
         const icon = document.getElementById("calc-file-icon");
         if (file.type.startsWith("image/")) {
-          thumb.src = evt.target.result;
+          thumb.src = finalDataUrl;
           thumb.classList.remove("hidden");
           icon.classList.add("hidden");
         } else {
@@ -2466,8 +2952,11 @@
           icon.classList.remove("hidden");
         }
         refreshIcons();
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn("Gagal membaca file desain:", err);
+        showToast("Gagal memproses file desain yang dipilih.", "error");
+        clearDesignFile();
+      }
     }
 
     function clearDesignFile() {
@@ -2481,15 +2970,19 @@
     // 7. KERANJANG BELANJA & CHECKOUT MULTI-ITEM
     // -----------------------------------------------------------------------
     function addItemToCart(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const calc = recalculateItem();
-      if (!calc || !calc.valid) {
-        showToast("Periksa kembali ukuran dan minimal order.", "error");
+      if (!calc) {
+        showToast("Pilih produk cetak terlebih dahulu.", "error");
+        return;
+      }
+      if (!calc.valid) {
+        showToast(calc.errorMsg || "Periksa kembali ukuran dan minimal order.", "error");
         return;
       }
 
       const item = {
-        tempId: "CART-" + Date.now() + "-" + Math.floor(Math.random() * 100),
+        tempId: "CART-" + Date.now() + "-" + Math.floor(Math.random() * 100000),
         Produk_ID: calc.prod.Produk_ID,
         Nama_Produk: calc.prod.Nama_Produk,
         Tipe_Hitung: calc.prod.Tipe_Hitung,
@@ -2511,7 +3004,7 @@
       updateCartBadges();
       renderInlineCartPreview();
       renderCartDrawer();
-      showToast(`${item.Nama_Produk} ditambahkan ke keranjang.`, "success");
+      showToast(`${item.Nama_Produk} (${item.Qty} ${item.Satuan}) ditambahkan ke keranjang.`, "success");
     }
 
     function removeCartItem(tempId) {
@@ -2609,25 +3102,39 @@
       }).join("");
     }
 
-    function handlePaymentProofSelect(e) {
+    async function handlePaymentProofSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size > MAX_FILE_BYTES) {
-        showToast("Ukuran bukti bayar maksimal 2,5 MB.", "error");
+      if (file.size > MAX_IMAGE_INPUT_BYTES) {
+        showToast("Ukuran gambar bukti bayar maksimal 15 MB.", "error");
         e.target.value = "";
         return;
       }
-      const reader = new FileReader();
-      reader.onload = function (evt) {
+
+      try {
+        const opt = await compressImageFileToDataUrl(file, {
+          maxDim: 1400,
+          targetBytes: 350 * 1024,
+          initialQuality: 0.78
+        });
+        if (opt.byteSize > MAX_FILE_BYTES) {
+          showToast("Ukuran bukti bayar masih melebihi 2,5 MB setelah kompresi.", "error");
+          e.target.value = "";
+          return;
+        }
         state.currentPaymentProof = {
           name: file.name,
-          base64: evt.target.result
+          base64: opt.dataUrl
         };
-        document.getElementById("chk-bukti-img").src = evt.target.result;
-        document.getElementById("chk-bukti-name").textContent = file.name;
+        document.getElementById("chk-bukti-img").src = opt.dataUrl;
+        document.getElementById("chk-bukti-name").textContent =
+          `${file.name} (${Math.max(1, Math.round(opt.byteSize / 1024))} KB)`;
         document.getElementById("chk-bukti-preview-wrap").classList.remove("hidden");
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn("Gagal memproses foto bukti bayar:", err);
+        showToast("Gagal memproses gambar bukti pembayaran.", "error");
+        clearPaymentProof();
+      }
     }
 
     function clearPaymentProof() {
@@ -2657,10 +3164,6 @@
         return;
       }
 
-      const submitBtn = document.getElementById("btn-submit-checkout");
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<span>Mengirim Pesanan...</span>`;
-
       const hasProof = Boolean(state.currentPaymentProof && state.currentPaymentProof.base64);
 
       // Hanya kirim kontak pelanggan yang diperlukan (tanpa Password / Role / objek user penuh)
@@ -2689,13 +3192,25 @@
         Keterangan_Item: item.Keterangan_Item
       }));
 
+      const checkoutPayload = {
+        action: "createOrder",
+        user: userPayload,
+        pesanan: orderPayload,
+        detail_pesanan: detailPayload
+      };
+
+      const estimatedLen = JSON.stringify(checkoutPayload).length;
+      if (estimatedLen > MAX_PAYLOAD_CHARS) {
+        showToast("Total ukuran semua lampiran file di keranjang melebihi batas ~10 MB dalam sekali kirim. Kurangi lampiran atau pecah ke beberapa pesanan.", "error");
+        return;
+      }
+
+      const submitBtn = document.getElementById("btn-submit-checkout");
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>Mengirim Pesanan...</span>`;
+
       try {
-        const result = await postToGas({
-          action: "createOrder",
-          user: userPayload,
-          pesanan: orderPayload,
-          detail_pesanan: detailPayload
-        });
+        const result = await postToGas(checkoutPayload);
 
         if (!result || result.status !== "success" || !result.data || !result.data.pesanan) {
           throw new Error(result?.message || "Server gagal menyimpan pesanan ke Google Drive.");
@@ -2729,7 +3244,7 @@
         closeCartDrawer();
         showOrderSuccessModal(serverOrderId, savedOrder.Total_Tagihan, savedOrder.Status_Bayar, waLast4);
       } catch (err) {
-        console.error(err);
+        console.warn("Gagal mengirim pesanan:", err);
         showToast("Gagal mengirim pesanan: " + (err.message || "Periksa koneksi Apps Script."), "error");
       } finally {
         submitBtn.disabled = false;
@@ -3113,7 +3628,7 @@
           showToast(`Status ${orderId} diperbarui (${value}).`, "success");
         }
       } catch (err) {
-        console.error(err);
+        console.warn("Gagal sinkron status:", err);
         order[field] = prevValue;
         renderAdminMetrics();
         renderMonthlyRevenueChart();
@@ -3503,7 +4018,11 @@
     function resetProductForm() {
       document.getElementById("admin-product-form-title").textContent = "Tambah Produk Baru";
       document.getElementById("admin-product-form").reset();
-      document.getElementById("prod-id").value = "PRD-" + String(state.produk.length + 1).padStart(3, "0");
+      const maxNum = state.produk.reduce((m, p) => {
+        const match = String(p.Produk_ID || "").match(/(\d+)$/);
+        return match ? Math.max(m, Number(match[1])) : m;
+      }, state.produk.length);
+      document.getElementById("prod-id").value = "PRD-" + String(maxNum + 1).padStart(3, "0");
     }
 
     async function toggleProductStatus(produkId) {
@@ -3543,7 +4062,7 @@
 
       try {
         const res = await postToGas({ action: "saveProduct", produk: prodObj });
-        const saved = (res && res.data) ? res.data : prodObj;
+        const saved = normalizeProductItem((res && res.data) ? res.data : prodObj);
         const idx = state.produk.findIndex((p) => p.Produk_ID === saved.Produk_ID);
         if (idx >= 0) {
           state.produk[idx] = saved;
@@ -3627,7 +4146,7 @@
 
       try {
         const res = await postToGas({ action: "saveFinishing", finishing: finObj });
-        const saved = (res && res.data) ? res.data : finObj;
+        const saved = normalizeFinishingItem((res && res.data) ? res.data : finObj);
         const idx = state.finishing.findIndex((f) => f.Finishing_ID === saved.Finishing_ID);
         if (idx >= 0) {
           state.finishing[idx] = saved;
@@ -3782,7 +4301,7 @@
           throw new Error(res?.message || "Gagal menginisialisasi sheet.");
         }
       } catch (err) {
-        console.error(err);
+        console.warn("Gagal inisialisasi sheet:", err);
         showToast("Gagal menjalankan inisialisasi sheet: " + (err.message || "Pastikan Code.gs terbaru sudah di-deploy."), "error");
       } finally {
         if (btn) btn.disabled = false;
@@ -3818,7 +4337,7 @@
           throw new Error(res?.message || "Gagal membuat database baru.");
         }
       } catch (err) {
-        console.error(err);
+        console.warn("Gagal membuat database baru:", err);
         showToast("Gagal membuat database baru: " + (err.message || "Periksa deployment Code.gs."), "error");
       } finally {
         if (btn) btn.disabled = false;
@@ -3860,7 +4379,94 @@
     // -----------------------------------------------------------------------
     // 11B. MANAJEMEN AKUN & ROLE (KHUSUS SUPER ADMIN)
     // -----------------------------------------------------------------------
+    function renderOwnerRecoveryKeyUi() {
+      const disp = document.getElementById("owner-recovery-key-display");
+      const toggleLbl = document.getElementById("owner-recovery-key-toggle-label");
+      if (!disp) return;
+      if (!state.ownerRecoveryKey) {
+        disp.textContent = "Belum dimuat (perlu Code.gs terbaru)";
+      } else if (state.showRecoveryKey) {
+        disp.textContent = state.ownerRecoveryKey;
+      } else {
+        disp.textContent = state.ownerRecoveryKey.slice(0, 7) + "••••••••••";
+      }
+      if (toggleLbl) {
+        toggleLbl.textContent = state.showRecoveryKey ? "Sembunyikan" : "Lihat";
+      }
+    }
+
+    function toggleRecoveryKeyVisibility() {
+      state.showRecoveryKey = !state.showRecoveryKey;
+      renderOwnerRecoveryKeyUi();
+    }
+
+    function copyRecoveryKey() {
+      if (!state.ownerRecoveryKey) {
+        showToast("Kode pemulihan belum tersedia. Pastikan Code.gs terbaru sudah di-deploy.", "info");
+        return;
+      }
+      navigator.clipboard.writeText(state.ownerRecoveryKey).then(() => {
+        showToast("Kode Pemulihan Pemilik disalin ke clipboard.", "success");
+      }).catch(() => {
+        showToast("Gagal menyalin kode pemulihan.", "error");
+      });
+    }
+
+    async function regenerateRecoveryKey() {
+      if (!isSuperAdmin()) return;
+      const btn = document.getElementById("btn-regen-recovery-key");
+      if (btn) btn.disabled = true;
+      try {
+        const res = await postToGas({ action: "regenerateOwnerRecoveryKey" });
+        if (!res || res.status !== "success" || !res.data || !res.data.ownerRecoveryKey) {
+          throw new Error(res?.message || "Gagal membuat kode pemulihan baru.");
+        }
+        state.ownerRecoveryKey = res.data.ownerRecoveryKey;
+        state.showRecoveryKey = true;
+        renderOwnerRecoveryKeyUi();
+        showToast("Kode Pemulihan Pemilik baru berhasil dibuat. Segera catat di tempat aman.", "success");
+      } catch (err) {
+        showToast(err?.message || "Gagal membuat kode pemulihan baru.", "error");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
     function renderAdminUsers() {
+      renderOwnerRecoveryKeyUi();
+      const privContainer = document.getElementById("admin-privileged-accounts-list");
+      if (privContainer) {
+        const privileged = state.users.filter((u) => {
+          const r = getNormalizedRole(u);
+          return r === "Super Admin" || r === "Admin";
+        });
+        if (!privileged.length) {
+          privContainer.innerHTML = `<p class="text-slate-500">Belum ada akun Admin / Super Admin.</p>`;
+        } else {
+          privContainer.innerHTML = privileged.map((u) => {
+            const roleNorm = getNormalizedRole(u);
+            const hasPass = u.Has_Password !== false;
+            return `
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                <div class="min-w-0">
+                  <p class="font-semibold text-slate-900">
+                    ${escapeHtml(u.Nama)}
+                    <span class="font-mono text-[11px] text-slate-500">(${escapeHtml(u.User_ID)})</span>
+                    · <span class="${roleNorm === "Super Admin" ? "text-press-700" : "text-emerald-700"}">${escapeHtml(roleNorm)}</span>
+                  </p>
+                  <p class="font-mono text-[11px] text-slate-600 truncate">
+                    Login: ${escapeHtml(u.Email || u.No_WA || "-")} · Sandi: ${hasPass ? "Hash SHA-256 Aktif" : "Belum Diatur"}
+                  </p>
+                </div>
+                <button type="button" data-action="edit-user" data-id="${escapeHtml(u.User_ID)}" class="shrink-0 px-3 py-1.5 text-xs font-semibold text-press-700 bg-white border border-press-200 hover:bg-press-50 rounded-md">
+                  Reset Sandi
+                </button>
+              </div>
+            `;
+          }).join("");
+        }
+      }
+
       const tbody = document.getElementById("admin-users-tbody");
       if (!tbody) return;
       tbody.innerHTML = state.users.map((u) => {
@@ -3871,6 +4477,7 @@
           : roleNorm === "Admin"
             ? "text-emerald-700 font-semibold"
             : "text-slate-700";
+        const passLabel = u.Has_Password === false ? "Belum ada sandi" : "Sandi terenkripsi (SHA-256)";
         return `
           <tr class="hover:bg-slate-50/80 transition-colors">
             <td class="py-3 px-4 font-mono text-xs font-semibold text-slate-700">${escapeHtml(u.User_ID)}</td>
@@ -3878,11 +4485,14 @@
               <p class="font-semibold text-slate-900">${escapeHtml(u.Nama)} ${isCurrent ? '<span class="text-xs font-normal text-press-700">(Aktif)</span>' : ""}</p>
               <p class="text-xs text-slate-500 font-mono">${escapeHtml(u.Email || "-")} · ${escapeHtml(u.No_WA || "-")}</p>
             </td>
-            <td class="py-3 px-4 text-xs ${roleColor}">${escapeHtml(roleNorm)}</td>
+            <td class="py-3 px-4 text-xs">
+              <p class="${roleColor}">${escapeHtml(roleNorm)}</p>
+              <p class="text-[11px] text-slate-500">${passLabel}</p>
+            </td>
             <td class="py-3 px-4 text-right whitespace-nowrap">
               <div class="inline-flex items-center gap-3">
                 <button type="button" data-action="edit-user" data-id="${escapeHtml(u.User_ID)}" class="text-xs font-semibold text-press-700 hover:underline">
-                  Ubah
+                  Ubah / Reset Sandi
                 </button>
                 ${!isCurrent ? `
                   <button type="button" data-action="delete-record" data-sheet="Users" data-id="${escapeHtml(u.User_ID)}" data-label="${escapeHtml(u.Nama)}" class="text-xs font-semibold text-rose-700 hover:underline">
@@ -3894,19 +4504,24 @@
           </tr>
         `;
       }).join("");
+      refreshIcons();
     }
 
     function editUserInForm(userId) {
       const u = state.users.find((usr) => usr.User_ID === userId);
       if (!u) return;
-      document.getElementById("admin-user-form-title").textContent = "Edit Akun: " + u.User_ID;
+      document.getElementById("admin-user-form-title").textContent = "Edit / Reset Sandi: " + u.User_ID;
       document.getElementById("usr-id").value = u.User_ID;
       document.getElementById("usr-nama").value = u.Nama || "";
       document.getElementById("usr-wa").value = u.No_WA || "";
       document.getElementById("usr-email").value = u.Email || "";
       document.getElementById("usr-role").value = getNormalizedRole(u);
       document.getElementById("usr-alamat").value = u.Alamat || "";
-      document.getElementById("usr-password").value = "";
+      const passEl = document.getElementById("usr-password");
+      if (passEl) {
+        passEl.value = "";
+        passEl.focus();
+      }
     }
 
     function resetUserForm() {
@@ -3950,12 +4565,30 @@
         const res = await postToGas({ action: "saveUser", user: userPayload });
         const saved = (res && res.data) ? res.data : { ...userPayload };
         delete saved.Password;
+        if (newPass) saved.Has_Password = true;
         const idx = state.users.findIndex((u) => u.User_ID === saved.User_ID);
         if (idx >= 0) {
           state.users[idx] = saved;
         } else {
           state.users.push(saved);
         }
+
+        const credBox = document.getElementById("admin-saved-credential-box");
+        const credText = document.getElementById("admin-saved-credential-text");
+        const copyBtn = document.getElementById("btn-copy-saved-cred");
+        if (newPass && credBox && credText) {
+          const credString = `${saved.Role} (${saved.User_ID}) | Email: ${saved.Email} | Password: ${newPass}`;
+          credText.textContent = credString;
+          credBox.classList.remove("hidden");
+          if (copyBtn) {
+            copyBtn.onclick = () => {
+              navigator.clipboard.writeText(`Email: ${saved.Email}\nPassword: ${newPass}`).then(() => {
+                showToast("Email & kata sandi baru disalin.", "success");
+              }).catch(() => {});
+            };
+          }
+        }
+
         renderAdminUsers();
         resetUserForm();
         showToast(`Akun ${saved.Nama} (${saved.Role}) disimpan.`, "success");
@@ -4034,7 +4667,7 @@
         closeConfirmModal();
         showToast(`${label} berhasil dihapus dari ${sheetName}.`, "success");
       } catch (err) {
-        console.error(err);
+        console.warn("Gagal menghapus data:", err);
         if (btn) {
           btn.disabled = false;
           btn.textContent = "Ya, Hapus Permanen";

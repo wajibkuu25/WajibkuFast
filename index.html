@@ -86,18 +86,29 @@
         size: A4 portrait;
         margin: 12mm;
       }
-      body {
+      html, body {
+        display: block !important;
+        min-height: auto !important;
+        height: auto !important;
         background: #FFFFFF !important;
         color: #0F172A !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
       }
       body > *:not(#print-area) {
         display: none !important;
       }
       #print-area {
         display: block !important;
+        position: static !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
+        background: #FFFFFF !important;
+      }
+      .print-avoid-break {
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
     }
   </style>
@@ -2635,9 +2646,18 @@
               </table>
             </div>
             ${order.Catatan ? `<p class="text-xs text-slate-600">Catatan: ${escapeHtml(order.Catatan)}</p>` : ""}
+
+            <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+              <span class="text-xs text-slate-500">Simpan atau cetak salinan nota resmi sebagai PDF.</span>
+              <button type="button" onclick="printOrderDocument('${escapeHtml(order.Order_ID)}', 'invoice')" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition-colors">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                <span>Cetak Nota / Invoice PDF</span>
+              </button>
+            </div>
           </div>
         `;
       }).join("");
+      refreshIcons();
     }
 
     // -----------------------------------------------------------------------
@@ -3007,41 +3027,53 @@
           </div>
         `;
       } else {
+        const payStatusClass = order.Status_Bayar === "Lunas"
+          ? "border-emerald-600 text-emerald-800 bg-emerald-50"
+          : order.Status_Bayar === "Menunggu Verifikasi"
+            ? "border-amber-600 text-amber-800 bg-amber-50"
+            : "border-rose-600 text-rose-800 bg-rose-50";
+
         printArea.innerHTML = `
           <div class="space-y-6 text-slate-900">
+            <!-- Header Nota -->
             <div class="flex items-start justify-between border-b-2 border-slate-900 pb-4">
               <div>
-                <h1 class="font-display text-2xl font-bold">WAJIBKU FAST</h1>
+                <h1 class="font-display text-2xl font-bold tracking-tight">WAJIBKU FAST</h1>
                 <p class="text-xs text-slate-600 mt-0.5">Percetakan Digital, Banner, Stiker &amp; Offset</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Workshop Pusat · Layanan Order Online &amp; Cetak Cepat</p>
               </div>
               <div class="text-right">
-                <p class="font-display text-lg font-bold uppercase">Nota / Invoice</p>
-                <p class="font-mono text-sm font-bold mt-0.5">${escapeHtml(order.Order_ID)}</p>
-                <p class="font-mono text-xs text-slate-600">${escapeHtml(order.Tanggal)}</p>
+                <p class="font-display text-lg font-bold uppercase tracking-wide">Nota / Invoice</p>
+                <p class="font-mono text-sm font-bold mt-0.5 tabular-nums">${escapeHtml(order.Order_ID)}</p>
+                <p class="font-mono text-xs text-slate-600 tabular-nums">Tanggal Order: ${escapeHtml(order.Tanggal)}</p>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 text-xs">
+            <!-- Info Pelanggan & Status -->
+            <div class="grid grid-cols-2 gap-4 text-xs print-avoid-break">
               <div class="border border-slate-200 rounded-lg p-3.5 space-y-1">
-                <p class="text-slate-500">Ditagihkan Kepada:</p>
-                <p class="font-bold text-sm">${escapeHtml(user.Nama || order.User_ID)}</p>
-                <p class="font-mono">${escapeHtml(user.No_WA || "-")}</p>
+                <p class="text-slate-500 uppercase tracking-wider text-[10px] font-semibold">Ditagihkan Kepada</p>
+                <p class="font-bold text-sm text-slate-900">${escapeHtml(user.Nama || order.User_ID)}</p>
+                <p class="font-mono text-slate-700">${escapeHtml(user.No_WA || "-")}${user.Email ? " · " + escapeHtml(user.Email) : ""}</p>
                 ${user.Alamat ? `<p class="text-slate-600">${escapeHtml(user.Alamat)}</p>` : ""}
               </div>
-              <div class="border border-slate-200 rounded-lg p-3.5 space-y-1 text-right">
-                <p class="text-slate-500">Status Transaksi:</p>
-                <p class="font-bold text-sm">${escapeHtml(order.Status_Bayar)}</p>
-                <p class="text-slate-600">Status Produksi: ${escapeHtml(order.Status_Order)}</p>
+              <div class="border border-slate-200 rounded-lg p-3.5 space-y-1.5 text-right">
+                <p class="text-slate-500 uppercase tracking-wider text-[10px] font-semibold">Status Pembayaran &amp; Produksi</p>
+                <div>
+                  <span class="inline-block px-2.5 py-0.5 text-xs font-bold border rounded ${payStatusClass}">${escapeHtml(order.Status_Bayar)}</span>
+                </div>
+                <p class="text-slate-700">Status Order: <strong>${escapeHtml(order.Status_Order)}</strong></p>
                 ${order.Catatan ? `<p class="text-slate-600">Catatan: ${escapeHtml(order.Catatan)}</p>` : ""}
               </div>
             </div>
 
+            <!-- Tabel Rincian Item -->
             <table class="w-full border-collapse border border-slate-300 text-xs">
               <thead>
                 <tr class="bg-slate-100 text-left">
                   <th class="border border-slate-300 py-2.5 px-3 w-8 text-center">No</th>
                   <th class="border border-slate-300 py-2.5 px-3">Item Cetakan</th>
-                  <th class="border border-slate-300 py-2.5 px-3">Spesifikasi</th>
+                  <th class="border border-slate-300 py-2.5 px-3">Ukuran / Qty</th>
                   <th class="border border-slate-300 py-2.5 px-3">Finishing</th>
                   <th class="border border-slate-300 py-2.5 px-3 text-right">Subtotal</th>
                 </tr>
@@ -3050,13 +3082,15 @@
                 ${items.map((d, idx) => {
                   const p = state.produk.find((pr) => pr.Produk_ID === d.Produk_ID) || {};
                   const f = state.finishing.find((fi) => fi.Finishing_ID === d.Finishing_ID) || {};
-                  const spec = Number(d.Panjang_m) > 0 ? `${d.Panjang_m}m × ${d.Lebar_m}m · Qty ${d.Qty}` : `Qty ${d.Qty} ${p.Satuan || ""}`;
+                  const spec = Number(d.Panjang_m) > 0
+                    ? `${d.Panjang_m}m × ${d.Lebar_m}m · Qty ${d.Qty}`
+                    : `Qty ${d.Qty} ${p.Satuan || ""}`;
                   return `
                     <tr>
                       <td class="border border-slate-300 py-2.5 px-3 text-center font-mono">${idx + 1}</td>
                       <td class="border border-slate-300 py-2.5 px-3">
-                        <p class="font-semibold">${escapeHtml(p.Nama_Produk || d.Produk_ID)}</p>
-                        ${d.Keterangan_Item ? `<p class="text-[11px] text-slate-600">${escapeHtml(d.Keterangan_Item)}</p>` : ""}
+                        <p class="font-semibold text-slate-900">${escapeHtml(p.Nama_Produk || d.Produk_ID)}</p>
+                        ${d.Keterangan_Item ? `<p class="text-[11px] text-slate-600 mt-0.5">${escapeHtml(d.Keterangan_Item)}</p>` : ""}
                       </td>
                       <td class="border border-slate-300 py-2.5 px-3 font-mono tabular-nums">${escapeHtml(spec)}</td>
                       <td class="border border-slate-300 py-2.5 px-3">${escapeHtml(f.Nama_Finishing || d.Finishing_ID)}</td>
@@ -3073,11 +3107,13 @@
               </tfoot>
             </table>
 
-            <div class="flex justify-between items-end pt-4 text-xs border-t border-slate-200">
+            <!-- Footer Pembayaran & Tanda Tangan -->
+            <div class="flex justify-between items-end pt-4 text-xs border-t border-slate-200 print-avoid-break">
               <div class="space-y-1 text-slate-600">
                 <p class="font-semibold text-slate-900">Rekening Resmi Wajibku Fast:</p>
                 <p class="font-mono">BCA 8820 4419 20 · Mandiri 1310 0098 7721</p>
-                <p>Simpan nota ini sebagai bukti pengambilan pesanan.</p>
+                <p>Simpan nota ini sebagai bukti transaksi &amp; pengambilan pesanan.</p>
+                <p class="text-[10px] text-slate-400 font-mono">Dicetak pada: ${escapeHtml(formatNowTimestamp())}</p>
               </div>
               <div class="text-center w-44">
                 <p class="text-slate-500">Hormat Kami,</p>
@@ -3089,7 +3125,19 @@
         `;
       }
 
+      const prevTitle = document.title;
+      document.title = `${docType === "spk" ? "SPK" : "Nota"}_${order.Order_ID}_WajibkuFast`;
+      printArea.classList.remove("hidden");
+
+      const cleanupPrint = () => {
+        printArea.classList.add("hidden");
+        document.title = prevTitle;
+      };
+
+      window.addEventListener("afterprint", cleanupPrint, { once: true });
       window.print();
+      // Fallback untuk browser/iframe yang tidak memicu event afterprint secara konsisten
+      setTimeout(cleanupPrint, 1000);
     }
 
     function closeModal() {

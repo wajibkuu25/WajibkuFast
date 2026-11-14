@@ -1,0 +1,4 @@
+User_ID,Nama,No_WA,Email,Role,Alamat
+USR-001,Admin Percetakan,6281234567890,admin.cetak@gmail.com,Admin,"Jl. Ngagel Jaya No. 10, Surabaya"
+USR-002,Budi Santoso,6285711223344,budi.santoso@gmail.com,User,"Jl. Ampel Suci No. 45, Surabaya"
+USR-003,Siti Aminah,6281999887766,siti.aminah@gmail.com,User,"Jl. Raya Darmo No. 12, Surabaya"

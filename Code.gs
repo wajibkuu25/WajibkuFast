@@ -20,6 +20,9 @@
  */
 
 const SPREADSHEET_ID = "MASUKKAN_ID_SPREADSHEET_ANDA_DI_SINI";
+const DRIVE_FOLDER_ID = "1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs";
+const DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing";
+const DATABASE_FILE_NAME = "WajibkuFast_Database";
 const DRIVE_FOLDER_NAME = "WajibkuFast_Upload_Files";
 
 /**
@@ -34,29 +37,82 @@ const SCHEMA_HEADERS = {
 };
 
 /**
- * Mengambil referensi Spreadsheet aktif atau berdasarkan ID
+ * Mengambil referensi Folder Database utama di Google Drive
+ */
+function getDatabaseFolder_() {
+  if (DRIVE_FOLDER_ID) {
+    try {
+      return DriveApp.getFolderById(DRIVE_FOLDER_ID);
+    } catch (err) {
+      Logger.log("Folder ID tidak dapat diakses: " + err.message);
+    }
+  }
+  return null;
+}
+
+/**
+ * Mengambil referensi Spreadsheet:
+ * 1. SPREADSHEET_ID jika diisi manual
+ * 2. ActiveSpreadsheet jika script terikat pada Sheet
+ * 3. Spreadsheet yang tersimpan di Folder Drive DRIVE_FOLDER_ID (otomatis cari atau buat baru)
  */
 function getSpreadsheet_() {
   if (SPREADSHEET_ID && SPREADSHEET_ID !== "MASUKKAN_ID_SPREADSHEET_ANDA_DI_SINI") {
     return SpreadsheetApp.openById(SPREADSHEET_ID);
   }
   const active = SpreadsheetApp.getActiveSpreadsheet();
-  if (!active) {
-    throw new Error("Spreadsheet tidak ditemukan. Isi SPREADSHEET_ID pada Code.gs.");
+  if (active) {
+    return active;
   }
-  return active;
+
+  const props = PropertiesService.getScriptProperties();
+  const savedId = props.getProperty("DB_SPREADSHEET_ID");
+  if (savedId) {
+    try {
+      return SpreadsheetApp.openById(savedId);
+    } catch (e) {
+      props.deleteProperty("DB_SPREADSHEET_ID");
+    }
+  }
+
+  const dbFolder = getDatabaseFolder_();
+  if (dbFolder) {
+    const sheetsInFolder = dbFolder.getFilesByType(MimeType.GOOGLE_SHEETS);
+    if (sheetsInFolder.hasNext()) {
+      const existingFile = sheetsInFolder.next();
+      props.setProperty("DB_SPREADSHEET_ID", existingFile.getId());
+      return SpreadsheetApp.openById(existingFile.getId());
+    }
+
+    // Buat Spreadsheet baru dan pindahkan ke dalam folder Drive tujuan
+    const newSs = SpreadsheetApp.create(DATABASE_FILE_NAME);
+    const newFile = DriveApp.getFileById(newSs.getId());
+    newFile.moveTo(dbFolder);
+    props.setProperty("DB_SPREADSHEET_ID", newSs.getId());
+    return newSs;
+  }
+
+  throw new Error("Spreadsheet dan Folder Drive tidak ditemukan.");
 }
 
 /**
  * Mengambil atau membuat folder Google Drive untuk penyimpanan File Desain & Bukti Bayar
+ * di dalam folder database utama DRIVE_FOLDER_ID
  */
 function getOrCreateUploadFolder_() {
+  const dbFolder = getDatabaseFolder_();
+  if (dbFolder) {
+    const subFolders = dbFolder.getFoldersByName(DRIVE_FOLDER_NAME);
+    if (subFolders.hasNext()) {
+      return subFolders.next();
+    }
+    return dbFolder.createFolder(DRIVE_FOLDER_NAME);
+  }
   const folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
   if (folders.hasNext()) {
     return folders.next();
   }
-  const folder = DriveApp.createFolder(DRIVE_FOLDER_NAME);
-  return folder;
+  return DriveApp.createFolder(DRIVE_FOLDER_NAME);
 }
 
 /**
@@ -189,18 +245,48 @@ function ensureSheetsInitialized_(ss) {
       initializedHeaders.push(sheetName);
     }
 
-    // Seed data minimal untuk Spreadsheet yang benar-benar baru
+    // Seed data awal untuk Spreadsheet yang baru dibuat
     if (isNewSheet || sheet.getLastRow() <= 1) {
       if (sheetName === "Users" && sheet.getLastRow() <= 1) {
-        appendObjectRow_(ss, "Users", {
-          User_ID: "SUP-001",
-          Nama: "Super Admin Wajibku Fast",
-          No_WA: "'081100009999",
-          Email: "superadmin@wajibkufast.id",
-          Role: "Super Admin",
-          Alamat: "Kantor Pusat",
-          Password: "super123"
-        });
+        const seedUsers = [
+          {
+            User_ID: "USR-001",
+            Nama: "Admin Percetakan",
+            No_WA: "'6281234567890",
+            Email: "admin.cetak@gmail.com",
+            Role: "Admin",
+            Alamat: "Jl. Ngagel Jaya No. 10, Surabaya",
+            Password: "admin123"
+          },
+          {
+            User_ID: "USR-002",
+            Nama: "Budi Santoso",
+            No_WA: "'6285711223344",
+            Email: "budi.santoso@gmail.com",
+            Role: "User",
+            Alamat: "Jl. Ampel Suci No. 45, Surabaya",
+            Password: "user123"
+          },
+          {
+            User_ID: "USR-003",
+            Nama: "Siti Aminah",
+            No_WA: "'6281999887766",
+            Email: "siti.aminah@gmail.com",
+            Role: "User",
+            Alamat: "Jl. Raya Darmo No. 12, Surabaya",
+            Password: "user123"
+          },
+          {
+            User_ID: "SUP-001",
+            Nama: "Super Admin Wajibku Fast",
+            No_WA: "'6281100009999",
+            Email: "superadmin@wajibkufast.id",
+            Role: "Super Admin",
+            Alamat: "Kantor Pusat",
+            Password: "super123"
+          }
+        ];
+        seedUsers.forEach(function (u) { appendObjectRow_(ss, "Users", u); });
       }
       if (sheetName === "Finishing" && sheet.getLastRow() <= 1) {
         appendObjectRow_(ss, "Finishing", {
@@ -216,7 +302,9 @@ function ensureSheetsInitialized_(ss) {
 
   return {
     createdSheets: createdSheets,
-    initializedHeaders: initializedHeaders
+    initializedHeaders: initializedHeaders,
+    spreadsheetUrl: ss.getUrl(),
+    driveFolderUrl: DRIVE_FOLDER_URL
   };
 }
 
@@ -258,7 +346,14 @@ function doGet(e) {
         pesanan: sheetToObjects_(ss, "Pesanan"),
         detail_pesanan: sheetToObjects_(ss, "Detail_Pesanan")
       };
-      return jsonResponse_({ status: "success", data: data });
+      return jsonResponse_({
+        status: "success",
+        data: data,
+        meta: {
+          spreadsheetUrl: ss.getUrl(),
+          driveFolderUrl: DRIVE_FOLDER_URL
+        }
+      });
     }
 
     return jsonResponse_({ status: "error", message: "Action GET tidak dikenal: " + action });

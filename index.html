@@ -745,20 +745,26 @@
       <!-- Admin Tab 3: Pengaturan Koneksi Database -->
       <section id="admin-panel-pengaturan" class="hidden max-w-3xl bg-white border border-slate-200 rounded-xl p-6 space-y-6">
         <div class="border-b border-slate-200 pb-4">
-          <h2 class="font-display text-lg font-bold text-slate-900">Pengaturan Koneksi Google Sheets &amp; Apps Script</h2>
-          <p class="text-xs text-slate-500 mt-1">Simpan URL Web App Apps Script Anda ke localStorage agar aplikasi tersambung langsung dengan spreadsheet.</p>
+          <h2 class="font-display text-lg font-bold text-slate-900">Pengaturan Koneksi Google Drive &amp; Apps Script</h2>
+          <p class="text-xs text-slate-500 mt-1">Database &amp; file upload diarahkan ke Folder Google Drive Anda (`1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs`) melalui Web App Google Apps Script.</p>
+        </div>
+
+        <div class="bg-press-50/70 border border-press-100 rounded-lg p-4 text-xs text-slate-700 space-y-1.5">
+          <p class="font-semibold text-press-800">Folder Database Google Drive Terhubung:</p>
+          <p class="font-mono break-all text-slate-700">https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing</p>
+          <p class="text-slate-600">Catatan teknis: Browser tidak dapat menulis langsung ke tautan folder Google Drive tanpa otorisasi server. Deploy <span class="font-mono font-semibold">Code.gs</span> sebagai Web App (Execute as: Me) lalu tempelkan URL <span class="font-mono">/exec</span> di bawah agar seluruh transaksi, upload file, dan update database otomatis tersimpan di folder Drive tersebut.</p>
         </div>
 
         <div class="space-y-4">
           <div>
             <label for="setting-api-url" class="block text-sm font-semibold text-slate-800 mb-1.5">URL Web App Google Apps Script (`API_URL`)</label>
             <input type="url" id="setting-api-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-            <p class="mt-1.5 text-xs text-slate-500">Saat belum diisi atau saat offline, aplikasi otomatis menggunakan data contoh (Mock Data) agar tetap dapat digunakan penuh.</p>
+            <p class="mt-1.5 text-xs text-slate-500">Saat belum diisi atau saat offline, aplikasi otomatis menggunakan data lokal (Mock Data) agar tetap dapat diuji penuh.</p>
           </div>
 
           <div>
-            <label for="setting-sheet-url" class="block text-sm font-semibold text-slate-800 mb-1.5">Tautan Google Sheets Database</label>
-            <input type="url" id="setting-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/..." class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            <label for="setting-sheet-url" class="block text-sm font-semibold text-slate-800 mb-1.5">Tautan Akses Database (Google Drive / Sheets)</label>
+            <input type="url" id="setting-sheet-url" placeholder="https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing" class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
           </div>
 
           <div class="flex flex-wrap items-center gap-3 pt-2">
@@ -772,9 +778,9 @@
               <span>Inisialisasi 5 Sheet Otomatis</span>
             </button>
 
-            <a id="btn-open-sheet" href="#" target="_blank" rel="noopener noreferrer" onclick="return handleOpenSheetClick(event)" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
+            <a id="btn-open-sheet" href="https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing" target="_blank" rel="noopener noreferrer" onclick="return handleOpenSheetClick(event)" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
               <i data-lucide="external-link" class="w-4 h-4"></i>
-              <span>Buka Google Sheets Database</span>
+              <span>Buka Akses Database</span>
             </a>
 
             <button type="button" onclick="resetToMockData()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors">
@@ -1077,12 +1083,12 @@
         <div class="pt-4 border-t border-slate-200 space-y-2.5">
           <p class="text-xs font-semibold text-slate-700">Isi Cepat Akun Demo (Berdasarkan Akses):</p>
           <div class="grid grid-cols-1 gap-2">
-            <button type="button" onclick="fillDemoLogin('budi@usahamaju.id', 'user123')" class="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-between text-xs">
-              <span><strong class="text-slate-900">User (Pelanggan)</strong> · Khusus Layanan</span>
+            <button type="button" onclick="fillDemoLogin('budi.santoso@gmail.com', 'user123')" class="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-between text-xs">
+              <span><strong class="text-slate-900">User (Budi Santoso)</strong> · Khusus Layanan</span>
               <span class="font-mono text-slate-500">user123</span>
             </button>
-            <button type="button" onclick="fillDemoLogin('admin@wajibkufast.id', 'admin123')" class="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-between text-xs">
-              <span><strong class="text-slate-900">Admin</strong> · Khusus Dashboard Admin</span>
+            <button type="button" onclick="fillDemoLogin('admin.cetak@gmail.com', 'admin123')" class="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-between text-xs">
+              <span><strong class="text-slate-900">Admin Percetakan</strong> · Khusus Dashboard Admin</span>
               <span class="font-mono text-slate-500">admin123</span>
             </button>
             <button type="button" onclick="fillDemoLogin('superadmin@wajibkufast.id', 'super123')" class="w-full text-left px-3 py-2 rounded-lg border border-press-100 bg-press-50/50 hover:bg-press-50 transition-colors flex items-center justify-between text-xs">
@@ -1132,43 +1138,44 @@
     // -----------------------------------------------------------------------
     // 1. KONFIGURASI API & FALLBACK MOCK DATA (Case-Sensitive Kolom Sheets)
     // -----------------------------------------------------------------------
+    const DEFAULT_SHEET_URL = "https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing";
     let API_URL = localStorage.getItem("GAS_API_URL") || "MASUKKAN_URL_APPS_SCRIPT_DI_SINI";
-    let SHEET_URL = localStorage.getItem("GAS_SHEET_URL") || "";
+    let SHEET_URL = localStorage.getItem("GAS_SHEET_URL") || DEFAULT_SHEET_URL;
     const AUTH_STORAGE_KEY = "WAJIBKU_AUTH_USER";
 
     const MOCK_DATA = {
       users: [
         {
           User_ID: "USR-001",
-          Nama: "Budi Santoso",
-          No_WA: "081234567890",
-          Email: "budi@usahamaju.id",
-          Role: "User",
-          Alamat: "Jl. Merdeka No. 12, Bandung",
-          Password: "user123"
+          Nama: "Admin Percetakan",
+          No_WA: "6281234567890",
+          Email: "admin.cetak@gmail.com",
+          Role: "Admin",
+          Alamat: "Jl. Ngagel Jaya No. 10, Surabaya",
+          Password: "admin123"
         },
         {
           User_ID: "USR-002",
-          Nama: "Siti Aminah",
-          No_WA: "085678901234",
-          Email: "siti@kreatifstudio.co.id",
+          Nama: "Budi Santoso",
+          No_WA: "6285711223344",
+          Email: "budi.santoso@gmail.com",
           Role: "User",
-          Alamat: "Jl. Sudirman Kav. 45, Jakarta",
+          Alamat: "Jl. Ampel Suci No. 45, Surabaya",
           Password: "user123"
         },
         {
-          User_ID: "ADM-001",
-          Nama: "Admin Wajibku Fast",
-          No_WA: "081122334455",
-          Email: "admin@wajibkufast.id",
-          Role: "Admin",
-          Alamat: "Workshop Pusat",
-          Password: "admin123"
+          User_ID: "USR-003",
+          Nama: "Siti Aminah",
+          No_WA: "6281999887766",
+          Email: "siti.aminah@gmail.com",
+          Role: "User",
+          Alamat: "Jl. Raya Darmo No. 12, Surabaya",
+          Password: "user123"
         },
         {
           User_ID: "SUP-001",
           Nama: "Super Admin Wajibku Fast",
-          No_WA: "081100009999",
+          No_WA: "6281100009999",
           Email: "superadmin@wajibkufast.id",
           Role: "Super Admin",
           Alamat: "Kantor Pusat",
@@ -1251,7 +1258,7 @@
         {
           Order_ID: "ORD-1002",
           Tanggal: "2026-11-13 14:15",
-          User_ID: "USR-002",
+          User_ID: "USR-003",
           Status_Order: "Menunggu Bayar",
           Total_Tagihan: 245000,
           Bukti_Bayar: "",
@@ -1261,7 +1268,7 @@
         {
           Order_ID: "ORD-1001",
           Tanggal: "2026-11-12 09:30",
-          User_ID: "USR-001",
+          User_ID: "USR-002",
           Status_Order: "Diproses",
           Total_Tagihan: 110000,
           Bukti_Bayar: "",
@@ -1271,7 +1278,7 @@
         {
           Order_ID: "ORD-1000",
           Tanggal: "2026-10-24 16:05",
-          User_ID: "USR-002",
+          User_ID: "USR-003",
           Status_Order: "Diambil",
           Total_Tagihan: 380000,
           Bukti_Bayar: "",
@@ -1281,7 +1288,7 @@
         {
           Order_ID: "ORD-0999",
           Tanggal: "2026-09-18 11:20",
-          User_ID: "USR-001",
+          User_ID: "USR-002",
           Status_Order: "Diambil",
           Total_Tagihan: 290000,
           Bukti_Bayar: "",
@@ -1291,7 +1298,7 @@
         {
           Order_ID: "ORD-0998",
           Tanggal: "2026-08-14 10:40",
-          User_ID: "USR-002",
+          User_ID: "USR-003",
           Status_Order: "Diambil",
           Total_Tagihan: 195000,
           Bukti_Bayar: "",
@@ -1301,7 +1308,7 @@
         {
           Order_ID: "ORD-0997",
           Tanggal: "2026-07-09 13:10",
-          User_ID: "USR-001",
+          User_ID: "USR-002",
           Status_Order: "Diambil",
           Total_Tagihan: 150000,
           Bukti_Bayar: "",
@@ -1596,12 +1603,16 @@
         const res = await fetch(API_URL + "?action=getInitData");
         const json = await res.json();
         if (json && json.status === "success" && json.data) {
-          state.users = Array.isArray(json.data.users) ? json.data.users : MOCK_DATA.users;
+          state.users = Array.isArray(json.data.users) && json.data.users.length ? json.data.users : MOCK_DATA.users;
           state.produk = Array.isArray(json.data.produk) && json.data.produk.length ? json.data.produk : MOCK_DATA.produk;
           state.finishing = Array.isArray(json.data.finishing) && json.data.finishing.length ? json.data.finishing : MOCK_DATA.finishing;
           state.pesanan = Array.isArray(json.data.pesanan) ? json.data.pesanan : [];
           state.detail_pesanan = Array.isArray(json.data.detail_pesanan) ? json.data.detail_pesanan : [];
-          showToast("Data berhasil disinkronkan dari Google Sheets.", "success");
+          if (json.meta && json.meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
+            SHEET_URL = json.meta.spreadsheetUrl;
+            localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
+          }
+          showToast("Data berhasil disinkronkan dari Google Drive/Sheets.", "success");
         } else {
           throw new Error(json?.message || "Respons server tidak valid");
         }
@@ -3351,10 +3362,11 @@
         SHEET_URL = sheetInput;
         localStorage.setItem("GAS_SHEET_URL", sheetInput);
       } else {
-        SHEET_URL = "";
+        SHEET_URL = DEFAULT_SHEET_URL;
         localStorage.removeItem("GAS_SHEET_URL");
       }
 
+      syncSheetAnchorHref();
       showToast("Pengaturan koneksi disimpan. Memuat ulang data...", "info");
       fetchInitData();
     }

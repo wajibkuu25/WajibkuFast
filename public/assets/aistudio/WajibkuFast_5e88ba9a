@@ -1,0 +1,5 @@
+User_ID,Nama,No_WA,Email,Role,Alamat,Password
+USR-001,Admin Percetakan,6281234567890,admin.cetak@gmail.com,Admin,"Jl. Ngagel Jaya No. 10, Surabaya",sha256$8b6db3a40baa466e$7ad2e4a3c0f3851872274d5acfae35b04e3df556812cc229b03112cd310a3254
+USR-002,Budi Santoso,6285711223344,budi.santoso@gmail.com,User,"Jl. Ampel Suci No. 45, Surabaya",sha256$43a1bd3198254dfd$ff5898088bca75f54fd4dcc259c3cae8553a662eb052be18f975717a1ad95eb4
+USR-003,Siti Aminah,6281999887766,siti.aminah@gmail.com,User,"Jl. Raya Darmo No. 12, Surabaya",sha256$e35b3175deea43a6$cfefc6ebda34b8025f56fc2781e985feebfc6521b406fcf5f74d17079e5ce47f
+SUP-001,Super Admin Wajibku Fast,6281100009999,superadmin@wajibkufast.id,Super Admin,Kantor Pusat,sha256$b826e65917d54224$65bd35a0d7a5f98a9a187447e68a579288a8016600dd5bb831db7b35fdb0adc5

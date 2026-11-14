@@ -1,0 +1,6 @@
+{
+  "name": "PrimaPress — Web Percetakan & Manajemen Order",
+  "description": "Aplikasi Web Percetakan SPA dengan kalkulator cetak otomatis, keranjang multi-item, pelacakan pesanan, dan dashboard admin terintegrasi Google Sheets & Apps Script.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -251,15 +251,23 @@
         </div>
       </div>
 
-      <!-- Alert Koneksi Server (Tampil jika endpoint live gagal dihubungi) -->
-      <div id="catalog-connection-alert" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-900 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm">
-        <div>
-          <p class="font-bold">Gagal memuat data terbaru dari server</p>
-          <p id="catalog-connection-alert-msg" class="text-xs text-rose-700 mt-0.5"></p>
+      <!-- Alert Koneksi Server (Tampil jika endpoint live gagal dihubungi atau mode pratinjau aktif) -->
+      <div id="catalog-connection-alert" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-900 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs sm:text-sm">
+        <div class="min-w-0">
+          <p id="catalog-connection-alert-title" class="font-bold">Gagal memuat data terbaru dari server</p>
+          <p id="catalog-connection-alert-msg" class="text-xs text-rose-800 mt-1 leading-relaxed"></p>
         </div>
-        <button type="button" data-action="retry-init" class="shrink-0 px-4 py-2 text-xs font-semibold text-white bg-rose-700 hover:bg-rose-800 rounded-lg transition-colors">
-          Coba Muat Ulang
-        </button>
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <a id="catalog-test-api-link" href="#" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 text-xs font-semibold text-rose-800 bg-white border border-rose-300 hover:bg-rose-100 rounded-lg transition-colors whitespace-nowrap">
+            Cek Link API
+          </a>
+          <button type="button" id="btn-load-sample-preview" data-action="load-sample-preview" class="px-3.5 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition-colors whitespace-nowrap">
+            Muat Katalog Contoh
+          </button>
+          <button type="button" id="btn-retry-init" data-action="retry-init" class="px-4 py-2 text-xs font-semibold text-white bg-rose-700 hover:bg-rose-800 rounded-lg transition-colors whitespace-nowrap">
+            Coba Muat Ulang
+          </button>
+        </div>
       </div>
 
       <!-- Product Grid -->
@@ -1505,14 +1513,45 @@
 
     function renderCatalogConnectionAlert() {
       const box = document.getElementById("catalog-connection-alert");
+      const titleEl = document.getElementById("catalog-connection-alert-title");
       const msgEl = document.getElementById("catalog-connection-alert-msg");
+      const testLink = document.getElementById("catalog-test-api-link");
+      const sampleBtn = document.getElementById("btn-load-sample-preview");
+      const retryBtn = document.getElementById("btn-retry-init");
       if (!box || !msgEl) return;
+
+      if (testLink) {
+        testLink.href = isApiConfigured() ? (API_URL + "?action=getInitData") : "#";
+        testLink.classList.toggle("hidden", !isApiConfigured());
+      }
+
       if (state.connectionStatus === "error") {
+        box.className = "mb-6 bg-rose-50 border border-rose-200 text-rose-900 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs sm:text-sm";
+        if (titleEl) titleEl.textContent = "Gagal memuat katalog dari Google Apps Script";
+        msgEl.className = "text-xs text-rose-800 mt-1 leading-relaxed";
         msgEl.textContent = state.connectionMessage || "Tidak dapat terhubung ke server Apps Script.";
+        if (sampleBtn) sampleBtn.classList.remove("hidden");
+        if (retryBtn) retryBtn.className = "px-4 py-2 text-xs font-semibold text-white bg-rose-700 hover:bg-rose-800 rounded-lg transition-colors whitespace-nowrap";
+        box.classList.remove("hidden");
+      } else if (state.connectionStatus === "mock") {
+        box.className = "mb-6 bg-amber-50 border border-amber-200 text-amber-950 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs sm:text-sm";
+        if (titleEl) titleEl.textContent = "Mode Pratinjau Katalog (Offline)";
+        msgEl.className = "text-xs text-amber-900 mt-1 leading-relaxed";
+        msgEl.textContent = state.connectionMessage || "Menampilkan contoh katalog lokal. Untuk menyimpan pesanan ke Google Sheets, pastikan Web App Apps Script berstatus 'Who has access: Anyone'.";
+        if (sampleBtn) sampleBtn.classList.add("hidden");
+        if (retryBtn) retryBtn.className = "px-4 py-2 text-xs font-semibold text-white bg-amber-700 hover:bg-amber-800 rounded-lg transition-colors whitespace-nowrap";
         box.classList.remove("hidden");
       } else {
         box.classList.add("hidden");
       }
+    }
+
+    function enableSampleCatalogPreview() {
+      loadSampleCatalog();
+      state.connectionStatus = "mock";
+      state.connectionMessage = "Menampilkan contoh katalog untuk pratinjau kalkulator. Koneksi server Apps Script belum aktif, sehingga checkout & admin dinonaktifkan sampai server terhubung.";
+      renderAll();
+      showToast("Katalog contoh dimuat dalam Mode Pratinjau.", "info");
     }
 
     async function parseGasResponse(res) {
@@ -1542,9 +1581,10 @@
       const msg = (err && err.message) ? String(err.message) : "";
       if (err && (err.name === "TypeError" || /failed to fetch|networkerror|load failed/i.test(msg))) {
         return new Error(
-          "Koneksi ke Google Apps Script diblokir (CORS / Failed to fetch). " +
-          "Pastikan Code.gs sudah ditempel, Deploy Web App diatur 'Execute as: Me' & 'Who has access: Anyone', " +
-          "dan sudah di-Deploy ulang sebagai 'New version' agar fungsi doGet/doPost aktif."
+          "Koneksi ke Google Apps Script diblokir oleh CORS / autentikasi Google. " +
+          "Di Apps Script pilih Deploy > Manage deployments > Edit > pastikan 'Execute as: Me', " +
+          "'Who has access: Anyone' (bukan 'Only myself'), serta Version: 'New version'. " +
+          "Klik 'Cek Link API' untuk melihat status langsung endpoint Anda."
         );
       }
       return err instanceof Error ? err : new Error(msg || "Gagal menghubungi Google Apps Script.");
@@ -1625,7 +1665,7 @@
       }
     }
 
-    async function fetchInitData() {
+    async function fetchInitData(manualRetry = false) {
       if (!isApiConfigured()) {
         state.connectionStatus = "mock";
         state.connectionMessage = "API_URL belum diisi. Hanya menampilkan contoh katalog (transaksi & login memerlukan server Apps Script).";
@@ -1637,6 +1677,12 @@
         return;
       }
 
+      const retryBtn = document.getElementById("btn-retry-init");
+      if (retryBtn) {
+        retryBtn.disabled = true;
+        retryBtn.textContent = "Menghubungkan...";
+      }
+
       try {
         const res = await fetch(API_URL + "?action=getInitData");
         const json = await parseGasResponse(res);
@@ -1645,6 +1691,9 @@
           state.finishing = Array.isArray(json.data.finishing) ? json.data.finishing : [];
           state.connectionStatus = "connected";
           state.connectionMessage = `Terhubung live ke Google Sheets & Folder Drive (${state.produk.length} produk dimuat).`;
+          if (manualRetry) {
+            showToast(`Berhasil terhubung (${state.produk.length} produk dimuat).`, "success");
+          }
         } else {
           throw new Error(json?.message || "Respons server tidak valid");
         }
@@ -1655,7 +1704,14 @@
         state.connectionMessage = friendlyErr.message;
         state.produk = [];
         state.finishing = [];
-        showToast("Gagal memuat data dari Google Apps Script: " + state.connectionMessage, "error");
+        if (manualRetry) {
+          showToast("Masih gagal terhubung ke Apps Script. Klik 'Cek Link API' untuk melihat status deployment.", "error");
+        }
+      } finally {
+        if (retryBtn) {
+          retryBtn.disabled = false;
+          retryBtn.textContent = "Coba Muat Ulang";
+        }
       }
 
       restoreSession();
@@ -2219,25 +2275,37 @@
       const prodSel = document.getElementById("calc-produk");
       const prevProd = prodSel.value;
 
-      prodSel.innerHTML = availableProducts.map((p) => `
-        <option value="${escapeHtml(p.Produk_ID)}">${escapeHtml(p.Nama_Produk)} — ${formatRupiah(p.Harga_Dasar)} / ${escapeHtml(p.Satuan)}</option>
-      `).join("");
+      if (!availableProducts.length) {
+        prodSel.innerHTML = `<option value="">Katalog produk belum dimuat dari server</option>`;
+        prodSel.disabled = true;
+      } else {
+        prodSel.disabled = false;
+        prodSel.innerHTML = availableProducts.map((p) => `
+          <option value="${escapeHtml(p.Produk_ID)}">${escapeHtml(p.Nama_Produk)} — ${formatRupiah(p.Harga_Dasar)} / ${escapeHtml(p.Satuan)}</option>
+        `).join("");
 
-      if (prevProd && availableProducts.some((p) => p.Produk_ID === prevProd)) {
-        prodSel.value = prevProd;
+        if (prevProd && availableProducts.some((p) => p.Produk_ID === prevProd)) {
+          prodSel.value = prevProd;
+        }
       }
 
       const finSel = document.getElementById("calc-finishing");
       const prevFin = finSel.value;
-      finSel.innerHTML = state.finishing.map((f) => {
-        const biayaText = Number(f.Tambahan_Harga) === 0
-          ? "Gratis"
-          : `+${formatRupiah(f.Tambahan_Harga)} (${f.Tipe_Biaya === "Per_Qty" ? "per Qty" : "Tetap"})`;
-        return `<option value="${escapeHtml(f.Finishing_ID)}">${escapeHtml(f.Nama_Finishing)} — ${biayaText}</option>`;
-      }).join("");
+      if (!state.finishing.length) {
+        finSel.innerHTML = `<option value="">Opsi finishing belum tersedia</option>`;
+        finSel.disabled = true;
+      } else {
+        finSel.disabled = false;
+        finSel.innerHTML = state.finishing.map((f) => {
+          const biayaText = Number(f.Tambahan_Harga) === 0
+            ? "Gratis"
+            : `+${formatRupiah(f.Tambahan_Harga)} (${f.Tipe_Biaya === "Per_Qty" ? "per Qty" : "Tetap"})`;
+          return `<option value="${escapeHtml(f.Finishing_ID)}">${escapeHtml(f.Nama_Finishing)} — ${biayaText}</option>`;
+        }).join("");
 
-      if (prevFin && state.finishing.some((f) => f.Finishing_ID === prevFin)) {
-        finSel.value = prevFin;
+        if (prevFin && state.finishing.some((f) => f.Finishing_ID === prevFin)) {
+          finSel.value = prevFin;
+        }
       }
 
       onProductChange();
@@ -2245,22 +2313,37 @@
 
     function getSelectedProduct() {
       const id = document.getElementById("calc-produk").value;
-      return state.produk.find((p) => p.Produk_ID === id) || state.produk.find((p) => p.Status === "Tersedia");
+      if (!id) return null;
+      return state.produk.find((p) => p.Produk_ID === id) || state.produk.find((p) => p.Status === "Tersedia") || null;
     }
 
     function getSelectedFinishing() {
       const id = document.getElementById("calc-finishing").value;
-      return state.finishing.find((f) => f.Finishing_ID === id) || state.finishing[0];
+      return state.finishing.find((f) => f.Finishing_ID === id) || state.finishing[0] || null;
     }
 
     function onProductChange() {
       const prod = getSelectedProduct();
-      if (!prod) return;
-
       const dimWrapper = document.getElementById("calc-dimensi-wrapper");
       const panjangEl = document.getElementById("calc-panjang");
       const lebarEl = document.getElementById("calc-lebar");
       const qtyEl = document.getElementById("calc-qty");
+      const submitBtn = document.getElementById("btn-add-to-cart");
+
+      if (!prod) {
+        dimWrapper.classList.add("hidden");
+        document.getElementById("calc-produk-meta").textContent = "Pilih atau muat ulang katalog produk terlebih dahulu untuk menghitung harga.";
+        document.getElementById("calc-finishing-meta").textContent = "";
+        document.getElementById("calc-qty-error").classList.add("hidden");
+        document.getElementById("summary-tipe-hitung").textContent = "Menunggu Katalog";
+        document.getElementById("summary-nama-produk").textContent = "-";
+        document.getElementById("summary-dimensi-row").classList.add("hidden");
+        document.getElementById("summary-base-cost").textContent = "Rp 0";
+        document.getElementById("summary-finishing-cost").textContent = "Rp 0";
+        document.getElementById("summary-subtotal").textContent = "Rp 0";
+        if (submitBtn) submitBtn.disabled = true;
+        return;
+      }
 
       if (prod.Tipe_Hitung === "Dimensi") {
         dimWrapper.classList.remove("hidden");
@@ -2557,8 +2640,8 @@
       e.preventDefault();
       if (!state.cart.length) return;
 
-      if (!isApiConfigured()) {
-        showToast("Transaksi checkout memerlukan koneksi aktif ke Google Apps Script (/exec).", "error");
+      if (!isApiConfigured() || state.connectionStatus !== "connected") {
+        showToast("Checkout memerlukan koneksi aktif ke Google Apps Script (/exec). Klik 'Coba Muat Ulang' pada katalog terlebih dahulu.", "error");
         return;
       }
 
@@ -4223,7 +4306,9 @@
         const action = trigger.dataset.action;
 
         if (action === "retry-init") {
-          fetchInitData();
+          fetchInitData(true);
+        } else if (action === "load-sample-preview") {
+          enableSampleCatalogPreview();
         } else if (action === "set-category") {
           setCategoryFilter(trigger.dataset.category || "Semua");
         } else if (action === "select-product") {

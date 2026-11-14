@@ -19,7 +19,7 @@
  * 4. Salin URL Web App (/exec) dan tempelkan pada menu Admin > Koneksi Database.
  */
 
-const SPREADSHEET_ID = "MASUKKAN_ID_SPREADSHEET_ANDA_DI_SINI";
+const SPREADSHEET_ID = "1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc";
 const DRIVE_FOLDER_ID = "1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs";
 const DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing";
 const DATABASE_FILE_NAME = "WajibkuFast_Database";
@@ -50,26 +50,40 @@ function getDatabaseFolder_() {
   return null;
 }
 
+function openNonTrashedSpreadsheet_(fileId) {
+  const file = DriveApp.getFileById(fileId);
+  if (file.isTrashed()) {
+    throw new Error("Spreadsheet berada di Trash.");
+  }
+  return SpreadsheetApp.openById(fileId);
+}
+
 /**
  * Mengambil referensi Spreadsheet:
  * 1. SPREADSHEET_ID jika diisi manual
- * 2. ActiveSpreadsheet jika script terikat pada Sheet
- * 3. Spreadsheet yang tersimpan di Folder Drive DRIVE_FOLDER_ID (otomatis cari atau buat baru)
+ * 2. Spreadsheet baru/aktif yang tersimpan di ScriptProperties (FORCE_DB_SPREADSHEET_ID / DB_SPREADSHEET_ID)
+ * 3. Spreadsheet di dalam Folder Drive DRIVE_FOLDER_ID (1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs) — otomatis cari atau buat baru di folder tersebut
+ * 4. ActiveSpreadsheet jika script terikat langsung pada Sheet dan folder Drive tidak tersedia
  */
 function getSpreadsheet_() {
   if (SPREADSHEET_ID && SPREADSHEET_ID !== "MASUKKAN_ID_SPREADSHEET_ANDA_DI_SINI") {
     return SpreadsheetApp.openById(SPREADSHEET_ID);
   }
-  const active = SpreadsheetApp.getActiveSpreadsheet();
-  if (active) {
-    return active;
-  }
 
   const props = PropertiesService.getScriptProperties();
+  const forcedId = props.getProperty("FORCE_DB_SPREADSHEET_ID");
+  if (forcedId) {
+    try {
+      return openNonTrashedSpreadsheet_(forcedId);
+    } catch (e) {
+      props.deleteProperty("FORCE_DB_SPREADSHEET_ID");
+    }
+  }
+
   const savedId = props.getProperty("DB_SPREADSHEET_ID");
   if (savedId) {
     try {
-      return SpreadsheetApp.openById(savedId);
+      return openNonTrashedSpreadsheet_(savedId);
     } catch (e) {
       props.deleteProperty("DB_SPREADSHEET_ID");
     }
@@ -77,19 +91,35 @@ function getSpreadsheet_() {
 
   const dbFolder = getDatabaseFolder_();
   if (dbFolder) {
-    const sheetsInFolder = dbFolder.getFilesByType(MimeType.GOOGLE_SHEETS);
-    if (sheetsInFolder.hasNext()) {
-      const existingFile = sheetsInFolder.next();
-      props.setProperty("DB_SPREADSHEET_ID", existingFile.getId());
-      return SpreadsheetApp.openById(existingFile.getId());
+    const namedSheets = dbFolder.getFilesByName(DATABASE_FILE_NAME);
+    while (namedSheets.hasNext()) {
+      const f = namedSheets.next();
+      if (!f.isTrashed() && f.getMimeType() === MimeType.GOOGLE_SHEETS) {
+        props.setProperty("DB_SPREADSHEET_ID", f.getId());
+        return SpreadsheetApp.openById(f.getId());
+      }
     }
 
-    // Buat Spreadsheet baru dan pindahkan ke dalam folder Drive tujuan
+    const sheetsInFolder = dbFolder.getFilesByType(MimeType.GOOGLE_SHEETS);
+    while (sheetsInFolder.hasNext()) {
+      const existingFile = sheetsInFolder.next();
+      if (!existingFile.isTrashed()) {
+        props.setProperty("DB_SPREADSHEET_ID", existingFile.getId());
+        return SpreadsheetApp.openById(existingFile.getId());
+      }
+    }
+
+    // Buat Spreadsheet baru dan simpan langsung ke dalam Folder Drive 1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs
     const newSs = SpreadsheetApp.create(DATABASE_FILE_NAME);
     const newFile = DriveApp.getFileById(newSs.getId());
     newFile.moveTo(dbFolder);
     props.setProperty("DB_SPREADSHEET_ID", newSs.getId());
     return newSs;
+  }
+
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) {
+    return active;
   }
 
   throw new Error("Spreadsheet dan Folder Drive tidak ditemukan.");
@@ -258,6 +288,25 @@ function ensureSheetsInitialized_(ss) {
       headerRange.setBackground("#F1F5F9");
       sheet.setFrozenRows(1);
       initializedHeaders.push(sheetName);
+    } else {
+      // Pastikan kolom baru (mis. Password pada sheet Users) otomatis ditambahkan jika belum ada
+      const currentLastCol = Math.max(sheet.getLastColumn(), 1);
+      const currentHeaders = sheet.getRange(1, 1, 1, currentLastCol).getValues()[0].map(function (h) {
+        return String(h).trim();
+      });
+      expectedHeaders.forEach(function (expectedCol) {
+        if (currentHeaders.indexOf(expectedCol) === -1) {
+          const nextCol = sheet.getLastColumn() + 1;
+          const cell = sheet.getRange(1, nextCol);
+          cell.setValue(expectedCol);
+          cell.setFontWeight("bold");
+          cell.setBackground("#F1F5F9");
+          currentHeaders.push(expectedCol);
+          if (initializedHeaders.indexOf(sheetName) === -1) {
+            initializedHeaders.push(sheetName);
+          }
+        }
+      });
     }
 
     // Seed data awal untuk Spreadsheet yang baru dibuat
@@ -384,9 +433,38 @@ function ensureSheetsInitialized_(ss) {
     }
   });
 
+  // Pastikan minimal ada 1 akun Super Admin jika sheet Users sudah ada sebelumnya tanpa SUP-001
+  const existingUsersList = sheetToObjects_(ss, "Users");
+  const hasSuperAdmin = existingUsersList.some(function (u) {
+    const r = String(u.Role || "").trim().toLowerCase();
+    return r === "super admin" || r === "superadmin";
+  });
+  if (!hasSuperAdmin) {
+    appendObjectRow_(ss, "Users", {
+      User_ID: "SUP-001",
+      Nama: "Super Admin Wajibku Fast",
+      No_WA: "'6281100009999",
+      Email: "superadmin@wajibkufast.id",
+      Role: "Super Admin",
+      Alamat: "Kantor Pusat",
+      Password: "super123"
+    });
+  }
+
+  // Hapus tab bawaan "Sheet1" jika kosong agar spreadsheet hanya berisi 5 tab database
+  const defaultSheet1 = ss.getSheetByName("Sheet1");
+  if (defaultSheet1 && ss.getSheets().length > 1 && defaultSheet1.getLastRow() <= 1) {
+    try {
+      ss.deleteSheet(defaultSheet1);
+    } catch (delErr) {
+      Logger.log("Info hapus Sheet1: " + delErr.message);
+    }
+  }
+
   return {
     createdSheets: createdSheets,
     initializedHeaders: initializedHeaders,
+    spreadsheetId: ss.getId(),
     spreadsheetUrl: ss.getUrl(),
     driveFolderUrl: DRIVE_FOLDER_URL
   };
@@ -404,12 +482,41 @@ function setupDatabaseSheets() {
 }
 
 /**
+ * Membuat file Google Sheets database BARU (WajibkuFast_Database) di dalam Folder Drive
+ * DRIVE_FOLDER_ID, lengkap dengan 5 tab sheet, header kolom, dan data awal, lalu mengikatnya sebagai DB aktif.
+ */
+function buatDatabaseBaru() {
+  const dbFolder = getDatabaseFolder_();
+  const newSs = SpreadsheetApp.create(DATABASE_FILE_NAME);
+  if (dbFolder) {
+    const newFile = DriveApp.getFileById(newSs.getId());
+    newFile.moveTo(dbFolder);
+  }
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty("FORCE_DB_SPREADSHEET_ID", newSs.getId());
+  props.setProperty("DB_SPREADSHEET_ID", newSs.getId());
+  const initResult = ensureSheetsInitialized_(newSs);
+  Logger.log("Database Baru Dibuat: " + newSs.getUrl());
+  return initResult;
+}
+
+/**
  * Handler HTTP GET
- * Endpoint: ?action=getInitData | ?action=initSheets
+ * Endpoint: ?action=getInitData | ?action=initSheets | ?action=createNewDatabase
  */
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "getInitData";
+
+    if (action === "createNewDatabase") {
+      const createdResult = buatDatabaseBaru();
+      return jsonResponse_({
+        status: "success",
+        message: "Database Google Sheets baru berhasil dibuat.",
+        data: createdResult
+      });
+    }
+
     const ss = getSpreadsheet_();
 
     if (action === "initSheets") {
@@ -864,7 +971,7 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // 7. INIT SHEETS (Auto-setup 5 tab & header kolom spreadsheet baru)
+    // 7. INIT SHEETS & CREATE NEW DATABASE
     // ------------------------------------------------------------------------
     if (action === "initSheets") {
       const initResult = ensureSheetsInitialized_(ss);
@@ -872,6 +979,15 @@ function doPost(e) {
         status: "success",
         message: "Inisialisasi 5 tab & header sheet selesai.",
         data: initResult
+      });
+    }
+
+    if (action === "createNewDatabase") {
+      const createdResult = buatDatabaseBaru();
+      return jsonResponse_({
+        status: "success",
+        message: "Database Google Sheets baru berhasil dibuat di Google Drive.",
+        data: createdResult
       });
     }
 

@@ -750,14 +750,14 @@
       <!-- Admin Tab 3: Pengaturan Koneksi Database -->
       <section id="admin-panel-pengaturan" class="hidden max-w-3xl bg-white border border-slate-200 rounded-xl p-6 space-y-6">
         <div class="border-b border-slate-200 pb-4">
-          <h2 class="font-display text-lg font-bold text-slate-900">Pengaturan Koneksi Google Drive &amp; Apps Script</h2>
-          <p class="text-xs text-slate-500 mt-1">Database &amp; file upload diarahkan ke Folder Google Drive Anda (`1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs`) melalui Web App Google Apps Script.</p>
+          <h2 class="font-display text-lg font-bold text-slate-900">Pengaturan Koneksi Google Sheets &amp; Apps Script</h2>
+          <p class="text-xs text-slate-500 mt-1">Seluruh transaksi, katalog, dan akun pengguna disinkronkan melalui Web App Google Apps Script ke Google Sheets &amp; Folder Drive Anda.</p>
         </div>
 
         <div class="bg-press-50/70 border border-press-100 rounded-lg p-4 text-xs text-slate-700 space-y-1.5">
-          <p class="font-semibold text-press-800">Folder Database Google Drive Terhubung:</p>
-          <p class="font-mono break-all text-slate-700">https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing</p>
-          <p class="text-slate-600">Penting untuk <strong>GitHub Pages</strong>: Menyimpan URL di kolom bawah hanya berlaku di browser ini (<span class="font-mono">localStorage</span>). Agar seluruh pelanggan di <span class="font-mono">wajibkuu25.github.io/WajibkuFast/</span> otomatis menyimpan transaksi ke Drive Anda, salin URL Web App <span class="font-mono">/exec</span> lalu tempelkan langsung ke konstanta <span class="font-mono font-semibold">DEFAULT_API_URL</span> di dalam file <span class="font-mono">index.html</span> sebelum upload ke GitHub.</p>
+          <p class="font-semibold text-press-800">Endpoint Web App Google Apps Script Aktif:</p>
+          <p class="font-mono break-all text-slate-700">https://script.google.com/macros/s/AKfycbz2aOuhWER2ZII_eEy7vX6KEsJpRa1vMUx_AMFo_C7vB4hebXCYqa8mfjStY3kN1At04w/exec</p>
+          <p class="text-slate-600">Pastikan kode <span class="font-mono font-semibold">Code.gs</span> sudah ditempel di Apps Script Google Sheet tersebut dan di-deploy sebagai Web App (<span class="font-mono">Execute as: Me</span>, <span class="font-mono">Who has access: Anyone</span>). Jika baru memperbarui kode di Apps Script, pilih <strong>Deploy &gt; Manage deployments &gt; Edit &gt; Version: New version</strong>.</p>
         </div>
 
         <div id="setting-connection-status" class="rounded-lg border p-4 text-xs space-y-1">
@@ -790,6 +790,11 @@
             <button type="button" id="btn-init-sheets" onclick="initSpreadsheetHeaders()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors">
               <i data-lucide="table-2" class="w-4 h-4"></i>
               <span>Inisialisasi 5 Sheet Otomatis</span>
+            </button>
+
+            <button type="button" id="btn-create-new-db" onclick="createNewDatabaseFromUi()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-800 bg-slate-100 border border-slate-300 hover:bg-slate-200 rounded-lg transition-colors">
+              <i data-lucide="database-zap" class="w-4 h-4"></i>
+              <span>Buat Database Baru</span>
             </button>
 
             <a id="btn-open-sheet" href="https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing" target="_blank" rel="noopener noreferrer" onclick="return handleOpenSheetClick(event)" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
@@ -1212,14 +1217,21 @@
     // 1. KONFIGURASI API & FALLBACK MOCK DATA (Case-Sensitive Kolom Sheets)
     // -----------------------------------------------------------------------
     const DEFAULT_SHEET_URL = "https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing";
-    // PENTING UNTUK GITHUB PAGES: Tempelkan URL Web App (/exec) dari Deploy Code.gs di bawah ini
-    // sebelum mengunggah index.html ke GitHub, agar seluruh pengunjung otomatis terhubung ke Google Drive.
-    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzq8UzczX7g9lowvW_r32zEisZ_ZmoYHpZrosxw5QLwqZQBvBpRT-Gh_52-eiFwA2nd/exec";
-    (function syncApiFromQueryParam() {
+    // Endpoint Web App Google Apps Script (/exec) terhubung ke Google Sheets database utama
+    const API_CONFIG_VERSION = "2026-11-14-AKfycbz2a";
+    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbz2aOuhWER2ZII_eEy7vX6KEsJpRa1vMUx_AMFo_C7vB4hebXCYqa8mfjStY3kN1At04w/exec";
+    (function syncApiFromConfigOrQuery() {
       try {
         const paramApi = new URLSearchParams(window.location.search).get("api");
         if (paramApi && paramApi.startsWith("http")) {
           localStorage.setItem("GAS_API_URL", paramApi.trim());
+          localStorage.setItem("GAS_API_VERSION", API_CONFIG_VERSION);
+          return;
+        }
+        if (localStorage.getItem("GAS_API_VERSION") !== API_CONFIG_VERSION) {
+          localStorage.removeItem("GAS_API_URL");
+          localStorage.removeItem("GAS_SHEET_URL");
+          localStorage.setItem("GAS_API_VERSION", API_CONFIG_VERSION);
         }
       } catch (e) {}
     })();
@@ -1687,6 +1699,9 @@
       try {
         json = JSON.parse(rawText);
       } catch (parseErr) {
+        if (rawText.includes("Script function not found")) {
+          throw new Error("Fungsi doGet/doPost belum ditemukan di deployment Apps Script ini. Tempel seluruh isi Code.gs ke Apps Script Sheet Anda, simpan, lalu pilih Deploy > Manage deployments > Edit > Version: New version.");
+        }
         throw new Error("Respons Apps Script bukan JSON. Pastikan URL berakhiran /exec dan Deploy Web App diatur 'Execute as: Me' serta 'Who has access: Anyone'.");
       }
       if (!json || typeof json !== "object") {
@@ -1719,6 +1734,7 @@
           if (json.meta && json.meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
             SHEET_URL = json.meta.spreadsheetUrl;
             localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
+            syncSheetAnchorHref();
           }
           state.connectionStatus = "connected";
           state.connectionMessage = `Terhubung live ke Google Sheets & Folder Drive (${json.data.pesanan?.length || 0} pesanan dimuat).`;
@@ -3675,6 +3691,13 @@
       try {
         const res = await fetch(targetUrl + "?action=getInitData");
         const json = await parseGasResponse(res);
+        if (json.meta && json.meta.spreadsheetUrl) {
+          SHEET_URL = json.meta.spreadsheetUrl;
+          localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
+          const sheetInputEl = document.getElementById("setting-sheet-url");
+          if (sheetInputEl) sheetInputEl.value = SHEET_URL;
+          syncSheetAnchorHref();
+        }
         state.connectionStatus = "connected";
         state.connectionMessage = `Tes koneksi sukses! Spreadsheet aktif: ${json.meta?.spreadsheetUrl || "-"}`;
         renderConnectionDiagnostics();
@@ -3710,6 +3733,41 @@
       } catch (err) {
         console.error(err);
         showToast("Gagal menjalankan inisialisasi sheet: " + (err.message || "Pastikan Code.gs terbaru sudah di-deploy."), "error");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function createNewDatabaseFromUi() {
+      if (!isApiConfigured()) {
+        showToast("Tempelkan dan simpan URL Web App Apps Script terlebih dahulu.", "info");
+        document.getElementById("setting-api-url")?.focus();
+        return;
+      }
+
+      const btn = document.getElementById("btn-create-new-db");
+      if (btn) btn.disabled = true;
+      try {
+        const res = await postToGas({ action: "createNewDatabase" });
+        if (res && res.status === "success" && res.data) {
+          if (res.data.spreadsheetUrl) {
+            SHEET_URL = res.data.spreadsheetUrl;
+            localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
+            const sheetInputEl = document.getElementById("setting-sheet-url");
+            if (sheetInputEl) sheetInputEl.value = SHEET_URL;
+            syncSheetAnchorHref();
+          }
+          state.connectionStatus = "connected";
+          state.connectionMessage = `Database baru dibuat & aktif: ${res.data.spreadsheetUrl || "-"}`;
+          renderConnectionDiagnostics();
+          showToast("Database Google Sheets baru berhasil dibuat! Memuat data...", "success");
+          fetchInitData();
+        } else {
+          throw new Error(res?.message || "Gagal membuat database baru.");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Gagal membuat database baru: " + (err.message || "Periksa deployment Code.gs."), "error");
       } finally {
         if (btn) btn.disabled = false;
       }

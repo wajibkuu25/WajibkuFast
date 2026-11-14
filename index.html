@@ -755,9 +755,11 @@
         </div>
 
         <div class="bg-press-50/70 border border-press-100 rounded-lg p-4 text-xs text-slate-700 space-y-1.5">
-          <p class="font-semibold text-press-800">Endpoint Web App Google Apps Script Aktif:</p>
+          <p class="font-semibold text-press-800">Google Sheets Database Utama Terhubung:</p>
+          <p class="font-mono break-all text-slate-700">https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit?usp=sharing</p>
+          <p class="font-semibold text-press-800 pt-1">Endpoint Web App Google Apps Script Aktif:</p>
           <p class="font-mono break-all text-slate-700">https://script.google.com/macros/s/AKfycbz2aOuhWER2ZII_eEy7vX6KEsJpRa1vMUx_AMFo_C7vB4hebXCYqa8mfjStY3kN1At04w/exec</p>
-          <p class="text-slate-600">Pastikan kode <span class="font-mono font-semibold">Code.gs</span> sudah ditempel di Apps Script Google Sheet tersebut dan di-deploy sebagai Web App (<span class="font-mono">Execute as: Me</span>, <span class="font-mono">Who has access: Anyone</span>). Jika baru memperbarui kode di Apps Script, pilih <strong>Deploy &gt; Manage deployments &gt; Edit &gt; Version: New version</strong>.</p>
+          <p class="text-slate-600">Pastikan kode <span class="font-mono font-semibold">Code.gs</span> (dengan <span class="font-mono">SPREADSHEET_ID = "1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc"</span>) sudah ditempel di Apps Script dan di-deploy sebagai Web App (<span class="font-mono">Execute as: Me</span>, <span class="font-mono">Who has access: Anyone</span>).</p>
         </div>
 
         <div id="setting-connection-status" class="rounded-lg border p-4 text-xs space-y-1">
@@ -768,12 +770,12 @@
           <div>
             <label for="setting-api-url" class="block text-sm font-semibold text-slate-800 mb-1.5">URL Web App Google Apps Script (`API_URL`)</label>
             <input type="url" id="setting-api-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-            <p class="mt-1.5 text-xs text-slate-500">Harus berakhiran <span class="font-mono">/exec</span> (bukan link folder Drive dan bukan <span class="font-mono">/dev</span>). Saat belum diisi, aplikasi berjalan dalam Mode Lokal (Mock Data).</p>
+            <p class="mt-1.5 text-xs text-slate-500">Harus berakhiran <span class="font-mono">/exec</span> (bukan link `/edit` Google Sheets). Saat belum aktif, aplikasi berjalan dalam Mode Lokal (Mock Data).</p>
           </div>
 
           <div>
-            <label for="setting-sheet-url" class="block text-sm font-semibold text-slate-800 mb-1.5">Tautan Akses Database (Google Drive / Sheets)</label>
-            <input type="url" id="setting-sheet-url" placeholder="https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing" class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            <label for="setting-sheet-url" class="block text-sm font-semibold text-slate-800 mb-1.5">Tautan Google Sheets Database</label>
+            <input type="url" id="setting-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit?usp=sharing" class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
           </div>
 
           <div class="flex flex-wrap items-center gap-3 pt-2">
@@ -797,9 +799,9 @@
               <span>Buat Database Baru</span>
             </button>
 
-            <a id="btn-open-sheet" href="https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing" target="_blank" rel="noopener noreferrer" onclick="return handleOpenSheetClick(event)" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
+            <a id="btn-open-sheet" href="https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit?usp=sharing" target="_blank" rel="noopener noreferrer" onclick="return handleOpenSheetClick(event)" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
               <i data-lucide="external-link" class="w-4 h-4"></i>
-              <span>Buka Akses Database</span>
+              <span>Buka Google Sheets Database</span>
             </a>
 
             <button type="button" onclick="resetToMockData()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors">
@@ -1216,9 +1218,9 @@
     // -----------------------------------------------------------------------
     // 1. KONFIGURASI API & FALLBACK MOCK DATA (Case-Sensitive Kolom Sheets)
     // -----------------------------------------------------------------------
-    const DEFAULT_SHEET_URL = "https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing";
-    // Endpoint Web App Google Apps Script (/exec) terhubung ke Google Sheets database utama
-    const API_CONFIG_VERSION = "2026-11-14-AKfycbz2a";
+    const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit?usp=sharing";
+    // Endpoint Web App Google Apps Script (/exec) terhubung ke Google Sheets 1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc
+    const API_CONFIG_VERSION = "2026-11-14-1aJjDWtT";
     const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbz2aOuhWER2ZII_eEy7vX6KEsJpRa1vMUx_AMFo_C7vB4hebXCYqa8mfjStY3kN1At04w/exec";
     (function syncApiFromConfigOrQuery() {
       try {
@@ -1577,7 +1579,12 @@
     }
 
     function isApiConfigured() {
-      return Boolean(API_URL && API_URL.startsWith("http") && API_URL !== "MASUKKAN_URL_APPS_SCRIPT_DI_SINI");
+      return Boolean(
+        API_URL &&
+        API_URL.startsWith("http") &&
+        API_URL !== "MASUKKAN_URL_APPS_SCRIPT_DI_SINI" &&
+        !API_URL.includes("docs.google.com/spreadsheets")
+      );
     }
 
     function formatNowTimestamp() {

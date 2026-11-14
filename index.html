@@ -251,6 +251,17 @@
         </div>
       </div>
 
+      <!-- Alert Koneksi Server (Tampil jika endpoint live gagal dihubungi) -->
+      <div id="catalog-connection-alert" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-900 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm">
+        <div>
+          <p class="font-bold">Gagal memuat data terbaru dari server</p>
+          <p id="catalog-connection-alert-msg" class="text-xs text-rose-700 mt-0.5"></p>
+        </div>
+        <button type="button" data-action="retry-init" class="shrink-0 px-4 py-2 text-xs font-semibold text-white bg-rose-700 hover:bg-rose-800 rounded-lg transition-colors">
+          Coba Muat Ulang
+        </button>
+      </div>
+
       <!-- Product Grid -->
       <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Populated dynamically -->
@@ -315,7 +326,7 @@
                   <span>Pilih File Desain</span>
                 </label>
                 <input type="file" id="calc-file-desain" accept=".pdf,.png,.jpg,.jpeg,.webp,.ai,.cdr,.zip,.rar" onchange="handleDesignFileSelect(event)" class="hidden" />
-                <div id="calc-file-status" class="text-xs text-slate-500 truncate">Belum ada file dipilih (Maks. 10 MB, opsional jika kirim menyusul)</div>
+                <div id="calc-file-status" class="text-xs text-slate-500 truncate">Belum ada file dipilih (Maks. 2,5 MB, opsional jika kirim menyusul)</div>
               </div>
               <div id="calc-file-preview-box" class="hidden mt-3 flex items-center justify-between gap-3 p-3 bg-white border border-slate-200 rounded-lg">
                 <div class="flex items-center gap-3 min-w-0">
@@ -402,23 +413,21 @@
     <!-- Section 3: Lacak Pesanan -->
     <section id="lacak" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="bg-white border border-slate-200 rounded-xl p-6 sm:p-8">
-        <div class="max-w-2xl">
+        <div class="max-w-3xl">
           <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Lacak Status Pesanan</h2>
-          <p class="mt-1 text-sm text-slate-600">Masukkan ID Pesanan (contoh: <span class="font-mono">ORD-1001</span>) atau Nomor WhatsApp yang digunakan saat checkout.</p>
+          <p class="mt-1 text-sm text-slate-600">Masukkan <strong>ID Pesanan lengkap</strong> dan <strong>4 digit terakhir Nomor WhatsApp</strong> yang digunakan saat checkout untuk menjaga privasi data pelanggan.</p>
 
-          <form onsubmit="handleTrackOrder(event)" class="mt-5 flex flex-col sm:flex-row gap-3">
-            <input type="text" id="track-query" placeholder="Contoh: ORD-1001 atau 081234567890" class="flex-1 px-4 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
-            <button type="submit" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors whitespace-nowrap shrink-0">
+          <form onsubmit="handleTrackOrder(event)" class="mt-5 grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <input type="text" id="track-order-id" required placeholder="ID Pesanan (contoh: ORD-261114-7K3Q9B)" class="sm:col-span-6 px-4 py-2.5 text-sm font-mono uppercase bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+            <input type="text" id="track-wa-last4" required maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="4 digit akhir WA" class="sm:col-span-3 px-4 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+            <button type="submit" id="btn-track-order" class="sm:col-span-3 inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors whitespace-nowrap shrink-0">
               <i data-lucide="search" class="w-4 h-4"></i>
               <span>Cek Pesanan</span>
             </button>
           </form>
 
-          <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <span>Coba contoh:</span>
-            <button type="button" onclick="quickTrack('ORD-1001')" class="font-mono text-press-700 hover:underline">ORD-1001</button>
-            <span>·</span>
-            <button type="button" onclick="quickTrack('ORD-1002')" class="font-mono text-press-700 hover:underline">ORD-1002</button>
+          <div id="my-orders-quick-list" class="hidden mt-4 pt-4 border-t border-slate-200 space-y-2">
+            <!-- Populated for logged-in members only -->
           </div>
         </div>
 
@@ -804,9 +813,9 @@
               <span>Buka Google Sheets Database</span>
             </a>
 
-            <button type="button" onclick="resetToMockData()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors">
+            <button type="button" onclick="resetApiSettings()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors">
               <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-              <span>Reset ke Mock Data</span>
+              <span>Reset ke Konfigurasi Default</span>
             </button>
           </div>
         </div>
@@ -862,8 +871,8 @@
             </div>
 
             <div>
-              <label for="usr-password" class="block text-xs font-semibold text-slate-700 mb-1">PIN / Kata Sandi Login</label>
-              <input type="text" id="usr-password" placeholder="Kosongkan jika tidak diubah" class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <label for="usr-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Login</label>
+              <input type="password" id="usr-password" minlength="6" placeholder="Min. 6 karakter (kosongkan jika tidak diubah)" class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
 
             <div>
@@ -1021,7 +1030,7 @@
 
             <!-- Upload Bukti Bayar -->
             <div>
-              <label for="chk-bukti" class="block text-xs font-semibold text-slate-700 mb-1">Upload Bukti Transfer / QRIS (Opsional saat pesan)</label>
+              <label for="chk-bukti" class="block text-xs font-semibold text-slate-700 mb-1">Upload Bukti Transfer / QRIS (Maks. 2,5 MB, opsional saat pesan)</label>
               <input type="file" id="chk-bukti" accept="image/*" onchange="handlePaymentProofSelect(event)" class="block w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border file:border-slate-300 file:text-xs file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100" />
               <div id="chk-bukti-preview-wrap" class="hidden mt-2 flex items-center gap-3 p-2 bg-slate-50 border border-slate-200 rounded-lg">
                 <img id="chk-bukti-img" src="" alt="Preview bukti bayar" class="w-14 h-14 object-cover rounded border border-slate-200" />
@@ -1109,29 +1118,14 @@
             <input type="password" id="login-password" required placeholder="Masukkan kata sandi" class="w-full px-3.5 py-2.5 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
           </div>
 
-          <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">
+          <button type="submit" id="btn-submit-login" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">
             <i data-lucide="log-in" class="w-4 h-4"></i>
             <span>Masuk Sekarang</span>
           </button>
 
-          <!-- Akun Demo Cepat Sesuai Level Akses -->
-          <div class="pt-4 border-t border-slate-200 space-y-2.5">
-            <p class="text-xs font-semibold text-slate-700">Isi Cepat Akun Demo (Berdasarkan Akses):</p>
-            <div class="grid grid-cols-1 gap-2">
-              <button type="button" onclick="fillDemoLogin('budi.santoso@gmail.com', 'user123')" class="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-between text-xs">
-                <span><strong class="text-slate-900">User (Budi Santoso)</strong> · Khusus Layanan</span>
-                <span class="font-mono text-slate-500">user123</span>
-              </button>
-              <button type="button" onclick="fillDemoLogin('admin.cetak@gmail.com', 'admin123')" class="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-between text-xs">
-                <span><strong class="text-slate-900">Admin Percetakan</strong> · Khusus Dashboard Admin</span>
-                <span class="font-mono text-slate-500">admin123</span>
-              </button>
-              <button type="button" onclick="fillDemoLogin('superadmin@wajibkufast.id', 'super123')" class="w-full text-left px-3 py-2 rounded-lg border border-press-100 bg-press-50/50 hover:bg-press-50 transition-colors flex items-center justify-between text-xs">
-                <span><strong class="text-press-800">Super Admin</strong> · Akses Layanan + Admin</span>
-                <span class="font-mono text-press-700">super123</span>
-              </button>
-            </div>
-          </div>
+          <p class="pt-3 border-t border-slate-200 text-[11px] text-slate-500 text-center">
+            Autentikasi diverifikasi langsung oleh Google Apps Script. Belum punya akun? Pilih tab <strong>Daftar Member Baru</strong>.
+          </p>
         </form>
 
         <!-- Form Registrasi Member Mandiri -->
@@ -1162,11 +1156,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label for="reg-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi *</label>
-              <input type="password" id="reg-password" required minlength="4" placeholder="Min. 4 karakter" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <input type="password" id="reg-password" required minlength="6" placeholder="Min. 6 karakter" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
             <div>
               <label for="reg-password-confirm" class="block text-xs font-semibold text-slate-700 mb-1">Ulangi Sandi *</label>
-              <input type="password" id="reg-password-confirm" required minlength="4" placeholder="Ketik ulang sandi" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <input type="password" id="reg-password-confirm" required minlength="6" placeholder="Ketik ulang sandi" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
           </div>
 
@@ -1198,7 +1192,7 @@
           <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg">
             Batal
           </button>
-          <button type="button" onclick="executeDeleteRecord()" class="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-rose-700 hover:bg-rose-800 rounded-lg">
+          <button type="button" id="btn-confirm-delete" onclick="executeDeleteRecord()" class="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-rose-700 hover:bg-rose-800 disabled:bg-slate-400 disabled:cursor-not-allowed rounded-lg">
             Ya, Hapus Permanen
           </button>
         </div>
@@ -1216,20 +1210,17 @@
   <!-- ===================================================================== -->
   <script>
     // -----------------------------------------------------------------------
-    // 1. KONFIGURASI API & FALLBACK MOCK DATA (Case-Sensitive Kolom Sheets)
+    // 1. KONFIGURASI API & KATALOG FALLBACK LOKAL (Tanpa Kredensial/Data Sensitif)
     // -----------------------------------------------------------------------
     const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit?usp=sharing";
-    // Endpoint Web App Google Apps Script (/exec) terhubung ke Google Sheets 1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc
-    const API_CONFIG_VERSION = "2026-11-14-1aJjDWtT";
+    const API_CONFIG_VERSION = "2026-11-15-sec-v1";
     const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbz2aOuhWER2ZII_eEy7vX6KEsJpRa1vMUx_AMFo_C7vB4hebXCYqa8mfjStY3kN1At04w/exec";
-    (function syncApiFromConfigOrQuery() {
+    const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
+    const MAX_PAYLOAD_CHARS = 5.8 * 1024 * 1024;
+
+    (function syncApiConfigVersion() {
       try {
-        const paramApi = new URLSearchParams(window.location.search).get("api");
-        if (paramApi && paramApi.startsWith("http")) {
-          localStorage.setItem("GAS_API_URL", paramApi.trim());
-          localStorage.setItem("GAS_API_VERSION", API_CONFIG_VERSION);
-          return;
-        }
+        localStorage.removeItem("WAJIBKU_AUTH_USER");
         if (localStorage.getItem("GAS_API_VERSION") !== API_CONFIG_VERSION) {
           localStorage.removeItem("GAS_API_URL");
           localStorage.removeItem("GAS_SHEET_URL");
@@ -1237,49 +1228,13 @@
         }
       } catch (e) {}
     })();
+
     let API_URL = localStorage.getItem("GAS_API_URL") || DEFAULT_API_URL;
     let SHEET_URL = localStorage.getItem("GAS_SHEET_URL") || DEFAULT_SHEET_URL;
-    const AUTH_STORAGE_KEY = "WAJIBKU_AUTH_USER";
+    const AUTH_STORAGE_KEY = "WAJIBKU_AUTH_SESSION";
 
-    const MOCK_DATA = {
-      users: [
-        {
-          User_ID: "USR-001",
-          Nama: "Admin Percetakan",
-          No_WA: "6281234567890",
-          Email: "admin.cetak@gmail.com",
-          Role: "Admin",
-          Alamat: "Jl. Ngagel Jaya No. 10, Surabaya",
-          Password: "admin123"
-        },
-        {
-          User_ID: "USR-002",
-          Nama: "Budi Santoso",
-          No_WA: "6285711223344",
-          Email: "budi.santoso@gmail.com",
-          Role: "User",
-          Alamat: "Jl. Ampel Suci No. 45, Surabaya",
-          Password: "user123"
-        },
-        {
-          User_ID: "USR-003",
-          Nama: "Siti Aminah",
-          No_WA: "6281999887766",
-          Email: "siti.aminah@gmail.com",
-          Role: "User",
-          Alamat: "Jl. Raya Darmo No. 12, Surabaya",
-          Password: "user123"
-        },
-        {
-          User_ID: "SUP-001",
-          Nama: "Super Admin Wajibku Fast",
-          No_WA: "6281100009999",
-          Email: "superadmin@wajibkufast.id",
-          Role: "Super Admin",
-          Alamat: "Kantor Pusat",
-          Password: "super123"
-        }
-      ],
+    // Hanya contoh katalog publik jika API_URL sengaja dikosongkan (tidak menyimpan akun/pesanan)
+    const SAMPLE_CATALOG = {
       produk: [
         {
           Produk_ID: "PRD-001",
@@ -1351,178 +1306,19 @@
           Tambahan_Harga: 4000,
           Keterangan: "Biaya potong pola khusus per item"
         }
-      ],
-      pesanan: [
-        {
-          Order_ID: "ORD-1002",
-          Tanggal: "2026-11-13 14:15",
-          User_ID: "USR-003",
-          Status_Order: "Menunggu Bayar",
-          Total_Tagihan: 245000,
-          Bukti_Bayar: "",
-          Status_Bayar: "Menunggu Verifikasi",
-          Catatan: "Kirim via kurir instan jika sudah selesai."
-        },
-        {
-          Order_ID: "ORD-1001",
-          Tanggal: "2026-11-12 09:30",
-          User_ID: "USR-002",
-          Status_Order: "Diproses",
-          Total_Tagihan: 110000,
-          Bukti_Bayar: "",
-          Status_Bayar: "Lunas",
-          Catatan: "Mohon warna tajam untuk pembukaan toko besok pagi."
-        },
-        {
-          Order_ID: "ORD-1000",
-          Tanggal: "2026-10-24 16:05",
-          User_ID: "USR-003",
-          Status_Order: "Diambil",
-          Total_Tagihan: 380000,
-          Bukti_Bayar: "",
-          Status_Bayar: "Lunas",
-          Catatan: "Paket banner & stiker event Oktober."
-        },
-        {
-          Order_ID: "ORD-0999",
-          Tanggal: "2026-09-18 11:20",
-          User_ID: "USR-002",
-          Status_Order: "Diambil",
-          Total_Tagihan: 290000,
-          Bukti_Bayar: "",
-          Status_Bayar: "Lunas",
-          Catatan: "Cetak brosur & X-banner pameran."
-        },
-        {
-          Order_ID: "ORD-0998",
-          Tanggal: "2026-08-14 10:40",
-          User_ID: "USR-003",
-          Status_Order: "Diambil",
-          Total_Tagihan: 195000,
-          Bukti_Bayar: "",
-          Status_Bayar: "Lunas",
-          Catatan: "Spanduk promo kemerdekaan."
-        },
-        {
-          Order_ID: "ORD-0997",
-          Tanggal: "2026-07-09 13:10",
-          User_ID: "USR-002",
-          Status_Order: "Diambil",
-          Total_Tagihan: 150000,
-          Bukti_Bayar: "",
-          Status_Bayar: "Lunas",
-          Catatan: "Stiker label batch awal."
-        }
-      ],
-      detail_pesanan: [
-        {
-          Detail_ID: "DTL-001",
-          Order_ID: "ORD-1001",
-          Produk_ID: "PRD-001",
-          Panjang_m: 3,
-          Lebar_m: 2,
-          Qty: 1,
-          Finishing_ID: "FIN-001",
-          File_Desain: "spanduk_opening_toko_3x2m.pdf",
-          Keterangan_Item: "Spanduk Opening Toko 3x2m + Mata Ayam",
-          Subtotal: 110000
-        },
-        {
-          Detail_ID: "DTL-002",
-          Order_ID: "ORD-1002",
-          Produk_ID: "PRD-002",
-          Panjang_m: 0,
-          Lebar_m: 0,
-          Qty: 2,
-          Finishing_ID: "FIN-000",
-          File_Desain: "xbanner_promo_menu.pdf",
-          Keterangan_Item: "2 Set X-Banner Menu Baru",
-          Subtotal: 170000
-        },
-        {
-          Detail_ID: "DTL-003",
-          Order_ID: "ORD-1002",
-          Produk_ID: "PRD-003",
-          Panjang_m: 0,
-          Lebar_m: 0,
-          Qty: 5,
-          Finishing_ID: "FIN-002",
-          File_Desain: "stiker_logo_kemasan.png",
-          Keterangan_Item: "Stiker Label Kemasan + Laminasi",
-          Subtotal: 75000
-        },
-        {
-          Detail_ID: "DTL-004",
-          Order_ID: "ORD-1000",
-          Produk_ID: "PRD-002",
-          Panjang_m: 0,
-          Lebar_m: 0,
-          Qty: 4,
-          Finishing_ID: "FIN-000",
-          File_Desain: "xbanner_event_okt.pdf",
-          Keterangan_Item: "4 Set X-Banner Event",
-          Subtotal: 340000
-        },
-        {
-          Detail_ID: "DTL-005",
-          Order_ID: "ORD-1000",
-          Produk_ID: "PRD-004",
-          Panjang_m: 0,
-          Lebar_m: 0,
-          Qty: 8,
-          Finishing_ID: "FIN-000",
-          File_Desain: "sertifikat_concorde.pdf",
-          Keterangan_Item: "Sertifikat Concorde",
-          Subtotal: 40000
-        },
-        {
-          Detail_ID: "DTL-006",
-          Order_ID: "ORD-0999",
-          Produk_ID: "PRD-001",
-          Panjang_m: 4,
-          Lebar_m: 2,
-          Qty: 2,
-          Finishing_ID: "FIN-001",
-          File_Desain: "backdrop_pameran_sep.pdf",
-          Keterangan_Item: "2x Backdrop 4x2m",
-          Subtotal: 290000
-        },
-        {
-          Detail_ID: "DTL-007",
-          Order_ID: "ORD-0998",
-          Produk_ID: "PRD-001",
-          Panjang_m: 5,
-          Lebar_m: 2,
-          Qty: 1,
-          Finishing_ID: "FIN-001",
-          File_Desain: "spanduk_agustus.pdf",
-          Keterangan_Item: "Spanduk 5x2m + Mata Ayam",
-          Subtotal: 195000
-        },
-        {
-          Detail_ID: "DTL-008",
-          Order_ID: "ORD-0997",
-          Produk_ID: "PRD-003",
-          Panjang_m: 0,
-          Lebar_m: 0,
-          Qty: 10,
-          Finishing_ID: "FIN-002",
-          File_Desain: "stiker_batch_1.png",
-          Keterangan_Item: "10 Lembar Stiker + Laminasi",
-          Subtotal: 150000
-        }
       ]
     };
 
-    // State Aplikasi
     let state = {
-      role: "user", // View aktif: "user" (Layanan) | "admin" (Dashboard Admin)
-      currentUser: null, // { User_ID, Nama, No_WA, Email, Role: "User"|"Admin"|"Super Admin", Alamat }
-      adminTab: "pesanan", // "pesanan" | "produk" | "finishing" | "pengguna" | "pengaturan"
-      revenueChartMode: "lunas", // "lunas" | "all"
+      role: "user", // View aktif: "user" | "admin"
+      currentUser: null,
+      authToken: null,
+      adminDataLoaded: false,
+      adminTab: "pesanan",
+      revenueChartMode: "lunas",
       selectedMonthIndex: null,
       activeCategory: "Semua",
-      pendingDelete: null, // { sheetName, id, label }
+      pendingDelete: null,
       connectionStatus: "idle", // "idle" | "mock" | "connected" | "error"
       connectionMessage: "",
       users: [],
@@ -1530,13 +1326,14 @@
       finishing: [],
       pesanan: [],
       detail_pesanan: [],
+      trackedOrderCache: {},
       cart: [],
-      currentDesignFile: null, // { name, size, base64, mimeType }
-      currentPaymentProof: null // { name, base64 }
+      currentDesignFile: null,
+      currentPaymentProof: null
     };
 
     // -----------------------------------------------------------------------
-    // 2. UTILITAS FORMAT & HELPER
+    // 2. UTILITAS FORMAT & SANITASI XSS
     // -----------------------------------------------------------------------
     function formatRupiah(num) {
       const n = Number(num) || 0;
@@ -1548,7 +1345,16 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function isSafeHttpUrl(url) {
+      return /^https?:\/\//i.test(String(url || "").trim());
+    }
+
+    function isSafeDataImage(url) {
+      return /^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(String(url || "").trim());
     }
 
     function formatWaNumber(noWa) {
@@ -1687,14 +1493,26 @@
     }
 
     // -----------------------------------------------------------------------
-    // 3. INISIALISASI & SINKRONISASI DATA (GET ?action=getInitData)
+    // 3. INISIALISASI & SINKRONISASI DATA (GET PUBLIK + POST ADMIN TERPROTEKSI)
     // -----------------------------------------------------------------------
-    function loadMockData() {
-      state.users = JSON.parse(JSON.stringify(MOCK_DATA.users));
-      state.produk = JSON.parse(JSON.stringify(MOCK_DATA.produk));
-      state.finishing = JSON.parse(JSON.stringify(MOCK_DATA.finishing));
-      state.pesanan = JSON.parse(JSON.stringify(MOCK_DATA.pesanan));
-      state.detail_pesanan = JSON.parse(JSON.stringify(MOCK_DATA.detail_pesanan));
+    function loadSampleCatalog() {
+      state.users = [];
+      state.produk = JSON.parse(JSON.stringify(SAMPLE_CATALOG.produk));
+      state.finishing = JSON.parse(JSON.stringify(SAMPLE_CATALOG.finishing));
+      state.pesanan = [];
+      state.detail_pesanan = [];
+    }
+
+    function renderCatalogConnectionAlert() {
+      const box = document.getElementById("catalog-connection-alert");
+      const msgEl = document.getElementById("catalog-connection-alert-msg");
+      if (!box || !msgEl) return;
+      if (state.connectionStatus === "error") {
+        msgEl.textContent = state.connectionMessage || "Tidak dapat terhubung ke server Apps Script.";
+        box.classList.remove("hidden");
+      } else {
+        box.classList.add("hidden");
+      }
     }
 
     async function parseGasResponse(res) {
@@ -1720,11 +1538,101 @@
       return json;
     }
 
+    function normalizeGasFetchError(err) {
+      const msg = (err && err.message) ? String(err.message) : "";
+      if (err && (err.name === "TypeError" || /failed to fetch|networkerror|load failed/i.test(msg))) {
+        return new Error(
+          "Koneksi ke Google Apps Script diblokir (CORS / Failed to fetch). " +
+          "Pastikan Code.gs sudah ditempel, Deploy Web App diatur 'Execute as: Me' & 'Who has access: Anyone', " +
+          "dan sudah di-Deploy ulang sebagai 'New version' agar fungsi doGet/doPost aktif."
+        );
+      }
+      return err instanceof Error ? err : new Error(msg || "Gagal menghubungi Google Apps Script.");
+    }
+
+    async function postToGas(payload) {
+      if (!isApiConfigured()) {
+        throw new Error("URL Web App Apps Script (/exec) belum terkonfigurasi.");
+      }
+      const bodyPayload = { ...payload };
+      const publicActions = ["login", "registerMember", "trackOrder"];
+      if (state.authToken && !publicActions.includes(bodyPayload.action) && !bodyPayload.token) {
+        bodyPayload.token = state.authToken;
+      }
+      const serialized = JSON.stringify(bodyPayload);
+      if (serialized.length > MAX_PAYLOAD_CHARS) {
+        throw new Error("Total ukuran data & lampiran file terlalu besar (maks. ~4 MB gabungan). Perkecil file atau kirim dalam beberapa pesanan terpisah.");
+      }
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: serialized
+        });
+        return await parseGasResponse(res);
+      } catch (err) {
+        throw normalizeGasFetchError(err);
+      }
+    }
+
+    async function fetchAdminData() {
+      if (!state.authToken || !canAccessAdmin()) return false;
+      try {
+        const json = await postToGas({ action: "adminGetData" });
+        if (json && json.status === "success" && json.data) {
+          state.users = Array.isArray(json.data.users) ? json.data.users : [];
+          state.produk = Array.isArray(json.data.produk) ? json.data.produk : state.produk;
+          state.finishing = Array.isArray(json.data.finishing) ? json.data.finishing : state.finishing;
+          state.pesanan = Array.isArray(json.data.pesanan) ? json.data.pesanan : [];
+          state.detail_pesanan = Array.isArray(json.data.detail_pesanan) ? json.data.detail_pesanan : [];
+          state.adminDataLoaded = true;
+          if (json.meta && json.meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
+            SHEET_URL = json.meta.spreadsheetUrl;
+            localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
+            syncSheetAnchorHref();
+          }
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.warn("Verifikasi sesi admin ditolak server:", err);
+        state.adminDataLoaded = false;
+        logoutUser(true);
+        showToast(err.message || "Sesi admin tidak valid atau kedaluwarsa. Silakan login kembali.", "error");
+        return false;
+      }
+    }
+
+    async function fetchMyOrders() {
+      if (!state.authToken || !state.currentUser || !isApiConfigured()) return;
+      try {
+        const json = await postToGas({ action: "getMyOrders" });
+        if (json && json.status === "success" && json.data) {
+          state.pesanan = Array.isArray(json.data.pesanan) ? json.data.pesanan : [];
+          state.detail_pesanan = Array.isArray(json.data.detail_pesanan) ? json.data.detail_pesanan : [];
+          state.pesanan.forEach((o) => {
+            state.trackedOrderCache[o.Order_ID] = {
+              order: o,
+              details: state.detail_pesanan.filter((d) => d.Order_ID === o.Order_ID),
+              customer: json.data.user || state.currentUser
+            };
+          });
+          renderMyOrdersQuickList();
+        }
+      } catch (err) {
+        console.warn("Sesi member tidak valid:", err);
+        logoutUser(true);
+      }
+    }
+
     async function fetchInitData() {
       if (!isApiConfigured()) {
         state.connectionStatus = "mock";
-        state.connectionMessage = "API_URL belum diisi. Transaksi saat ini hanya tersimpan di browser lokal (Mock Data), belum ke Google Drive.";
-        loadMockData();
+        state.connectionMessage = "API_URL belum diisi. Hanya menampilkan contoh katalog (transaksi & login memerlukan server Apps Script).";
+        state.authToken = null;
+        state.currentUser = null;
+        state.adminDataLoaded = false;
+        loadSampleCatalog();
         renderAll();
         return;
       }
@@ -1733,46 +1641,36 @@
         const res = await fetch(API_URL + "?action=getInitData");
         const json = await parseGasResponse(res);
         if (json && json.status === "success" && json.data) {
-          state.users = Array.isArray(json.data.users) && json.data.users.length ? json.data.users : MOCK_DATA.users;
-          state.produk = Array.isArray(json.data.produk) && json.data.produk.length ? json.data.produk : MOCK_DATA.produk;
-          state.finishing = Array.isArray(json.data.finishing) && json.data.finishing.length ? json.data.finishing : MOCK_DATA.finishing;
-          state.pesanan = Array.isArray(json.data.pesanan) ? json.data.pesanan : [];
-          state.detail_pesanan = Array.isArray(json.data.detail_pesanan) ? json.data.detail_pesanan : [];
-          if (json.meta && json.meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
-            SHEET_URL = json.meta.spreadsheetUrl;
-            localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
-            syncSheetAnchorHref();
-          }
+          state.produk = Array.isArray(json.data.produk) ? json.data.produk : [];
+          state.finishing = Array.isArray(json.data.finishing) ? json.data.finishing : [];
           state.connectionStatus = "connected";
-          state.connectionMessage = `Terhubung live ke Google Sheets & Folder Drive (${json.data.pesanan?.length || 0} pesanan dimuat).`;
-          showToast("Data berhasil disinkronkan dari Google Drive/Sheets.", "success");
+          state.connectionMessage = `Terhubung live ke Google Sheets & Folder Drive (${state.produk.length} produk dimuat).`;
         } else {
           throw new Error(json?.message || "Respons server tidak valid");
         }
       } catch (err) {
-        console.warn("Gagal sinkron ke Apps Script, fallback ke Mock Data:", err);
+        const friendlyErr = normalizeGasFetchError(err);
+        console.warn("Gagal sinkron ke Apps Script:", friendlyErr);
         state.connectionStatus = "error";
-        state.connectionMessage = err.message || "Gagal terhubung ke Apps Script.";
-        loadMockData();
-        showToast("Gagal sinkron ke Google Drive: " + state.connectionMessage, "error");
+        state.connectionMessage = friendlyErr.message;
+        state.produk = [];
+        state.finishing = [];
+        showToast("Gagal memuat data dari Google Apps Script: " + state.connectionMessage, "error");
+      }
+
+      restoreSession();
+      if (state.authToken && state.connectionStatus === "connected") {
+        if (canAccessAdmin()) {
+          await fetchAdminData();
+        } else {
+          await fetchMyOrders();
+        }
       }
       renderAll();
     }
 
-    async function postToGas(payload) {
-      if (!isApiConfigured()) {
-        return { status: "mock", message: "Tersimpan secara lokal (Mode Mock Data)." };
-      }
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      });
-      return await parseGasResponse(res);
-    }
-
     // -----------------------------------------------------------------------
-    // 4. OTENTIKASI, RBAC & SWITCHER AKSES (USER / ADMIN / SUPER ADMIN)
+    // 4. OTENTIKASI, RBAC & SWITCHER AKSES (TERVERIFIKASI TOKEN SERVER)
     // -----------------------------------------------------------------------
     function getNormalizedRole(user) {
       if (!user || !user.Role) return "Guest";
@@ -1783,33 +1681,48 @@
     }
 
     function canAccessAdmin() {
+      if (!state.authToken || !state.currentUser || !isApiConfigured()) return false;
       const r = getNormalizedRole(state.currentUser);
       return r === "Admin" || r === "Super Admin";
     }
 
     function canAccessLayanan() {
       const r = getNormalizedRole(state.currentUser);
-      // Admin biasa hanya masuk Dashboard Admin; Layanan dibuka untuk Guest, User, dan Super Admin
       return r !== "Admin";
     }
 
     function isSuperAdmin() {
-      return getNormalizedRole(state.currentUser) === "Super Admin";
+      return Boolean(state.authToken && state.currentUser && getNormalizedRole(state.currentUser) === "Super Admin");
     }
 
     function restoreSession() {
+      state.authToken = null;
+      state.currentUser = null;
+      state.adminDataLoaded = false;
+
+      if (!isApiConfigured()) {
+        state.role = "user";
+        return;
+      }
+
       try {
         const raw = localStorage.getItem(AUTH_STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          const fresh = state.users.find((u) => u.User_ID === parsed.User_ID) || parsed;
-          state.currentUser = fresh;
+          if (parsed && typeof parsed.token === "string" && parsed.token.includes(".") && parsed.user && parsed.user.User_ID) {
+            state.authToken = parsed.token;
+            state.currentUser = parsed.user;
+          } else {
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+          }
         }
       } catch (e) {
+        state.authToken = null;
         state.currentUser = null;
+        localStorage.removeItem(AUTH_STORAGE_KEY);
       }
 
-      if (getNormalizedRole(state.currentUser) === "Admin") {
+      if (getNormalizedRole(state.currentUser) === "Admin" && state.authToken) {
         state.role = "admin";
       } else if (isSuperAdmin() && state.role === "admin") {
         state.role = "admin";
@@ -1858,59 +1771,60 @@
       document.getElementById("login-modal-backdrop").classList.add("hidden");
     }
 
-    function fillDemoLogin(identifier, password) {
-      switchAuthMode("login");
-      document.getElementById("login-identifier").value = identifier;
-      document.getElementById("login-password").value = password;
-    }
-
-    function handleLoginSubmit(e) {
+    async function handleLoginSubmit(e) {
       e.preventDefault();
       const identifierRaw = document.getElementById("login-identifier").value.trim();
-      const identifier = identifierRaw.toLowerCase();
-      const normIdentifierWa = formatWaNumber(identifierRaw);
       const password = document.getElementById("login-password").value;
       const errBox = document.getElementById("login-error-box");
+      const btn = document.getElementById("btn-submit-login");
 
-      const matched = state.users.find((u) => {
-        const emailMatch = String(u.Email || "").trim().toLowerCase() === identifier;
-        const waMatch = String(u.No_WA || "").trim().toLowerCase() === identifier ||
-          (normIdentifierWa && formatWaNumber(u.No_WA) === normIdentifierWa);
-        const idMatch = String(u.User_ID || "").trim().toLowerCase() === identifier;
-        return emailMatch || waMatch || idMatch;
-      });
-
-      if (!matched) {
-        errBox.textContent = "Akun tidak ditemukan. Periksa Email / No. WhatsApp atau daftar sebagai member baru.";
+      errBox.classList.add("hidden");
+      if (!isApiConfigured()) {
+        errBox.textContent = "Login membutuhkan koneksi aktif ke Google Apps Script Web App (/exec).";
         errBox.classList.remove("hidden");
         return;
       }
 
-      const roleNorm = getNormalizedRole(matched);
-      const defaultPass = roleNorm === "Super Admin" ? "super123" : roleNorm === "Admin" ? "admin123" : "user123";
-      const expectedPass = matched.Password ? String(matched.Password) : defaultPass;
+      if (btn) btn.disabled = true;
+      try {
+        const res = await postToGas({
+          action: "login",
+          identifier: identifierRaw,
+          password: password
+        });
+        if (!res || res.status !== "success" || !res.data || !res.data.token || !res.data.user) {
+          throw new Error(res?.message || "Email/No. WhatsApp atau kata sandi salah.");
+        }
 
-      if (password !== expectedPass) {
-        errBox.textContent = "Kata sandi / PIN salah.";
+        state.authToken = res.data.token;
+        state.currentUser = res.data.user;
+        state.adminDataLoaded = false;
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+          token: state.authToken,
+          user: state.currentUser
+        }));
+
+        document.getElementById("login-form").reset();
+        closeLoginModal();
+
+        const roleNorm = getNormalizedRole(state.currentUser);
+        if (roleNorm === "Admin" || roleNorm === "Super Admin") {
+          const ok = await fetchAdminData();
+          if (ok) {
+            switchRole("admin");
+            showToast(`Masuk sebagai ${roleNorm} (${state.currentUser.Nama}).`, "success");
+          }
+        } else {
+          await fetchMyOrders();
+          switchRole("user");
+          prefillCheckoutFromUser();
+          showToast(`Selamat datang, ${state.currentUser.Nama}.`, "success");
+        }
+      } catch (err) {
+        errBox.textContent = err.message || "Gagal login.";
         errBox.classList.remove("hidden");
-        return;
-      }
-
-      state.currentUser = matched;
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(matched));
-      document.getElementById("login-form").reset();
-      closeLoginModal();
-
-      if (roleNorm === "Admin") {
-        switchRole("admin");
-        showToast(`Masuk sebagai Admin (${matched.Nama}).`, "success");
-      } else if (roleNorm === "Super Admin") {
-        switchRole("admin");
-        showToast(`Masuk sebagai Super Admin — Akses penuh Layanan & Dashboard Admin aktif.`, "success");
-      } else {
-        switchRole("user");
-        prefillCheckoutFromUser();
-        showToast(`Selamat datang, ${matched.Nama}.`, "success");
+      } finally {
+        if (btn) btn.disabled = false;
       }
     }
 
@@ -1926,13 +1840,18 @@
       const errBox = document.getElementById("register-error-box");
 
       errBox.classList.add("hidden");
+      if (!isApiConfigured()) {
+        errBox.textContent = "Pendaftaran member membutuhkan koneksi aktif ke Google Apps Script Web App (/exec).";
+        errBox.classList.remove("hidden");
+        return;
+      }
       if (!nama || !normWa || normWa.length < 10 || !email) {
         errBox.textContent = "Nama lengkap, Nomor WhatsApp valid, dan Email aktif wajib diisi.";
         errBox.classList.remove("hidden");
         return;
       }
-      if (password.length < 4) {
-        errBox.textContent = "Kata sandi minimal 4 karakter.";
+      if (password.length < 6) {
+        errBox.textContent = "Kata sandi minimal 6 karakter.";
         errBox.classList.remove("hidden");
         return;
       }
@@ -1942,46 +1861,36 @@
         return;
       }
 
-      const duplicate = state.users.find((u) => {
-        const uEmail = String(u.Email || "").trim().toLowerCase();
-        const uWa = formatWaNumber(u.No_WA);
-        return (uEmail && uEmail === email) || (uWa && uWa === normWa);
-      });
-      if (duplicate) {
-        errBox.textContent = "Email atau Nomor WhatsApp sudah terdaftar. Silakan masuk melalui tab Masuk Akun.";
-        errBox.classList.remove("hidden");
-        return;
-      }
-
       const btn = document.getElementById("btn-submit-register");
       if (btn) btn.disabled = true;
 
-      const newUser = {
-        User_ID: "USR-" + String(state.users.length + 1).padStart(3, "0") + "-" + Date.now().toString().slice(-3),
-        Nama: nama,
-        No_WA: normWa,
-        Email: email,
-        Role: "User",
-        Alamat: alamat,
-        Password: password
-      };
-
       try {
-        const res = await postToGas({ action: "registerMember", user: newUser });
-        if (res && res.status === "error") {
-          errBox.textContent = res.message || "Gagal mendaftar.";
-          errBox.classList.remove("hidden");
-          return;
+        const res = await postToGas({
+          action: "registerMember",
+          user: {
+            Nama: nama,
+            No_WA: normWa,
+            Email: email,
+            Alamat: alamat,
+            Password: password
+          }
+        });
+        if (!res || res.status !== "success" || !res.data || !res.data.token || !res.data.user) {
+          throw new Error(res?.message || "Gagal mendaftar.");
         }
-        const savedUser = (res && res.status === "success" && res.data) ? { ...newUser, ...res.data } : newUser;
-        state.users.push(savedUser);
-        state.currentUser = savedUser;
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(savedUser));
+        state.authToken = res.data.token;
+        state.currentUser = res.data.user;
+        state.adminDataLoaded = false;
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+          token: state.authToken,
+          user: state.currentUser
+        }));
         document.getElementById("register-form").reset();
         closeLoginModal();
         switchRole("user");
         prefillCheckoutFromUser();
-        showToast(`Pendaftaran berhasil! Selamat datang, ${savedUser.Nama}.`, "success");
+        renderMyOrdersQuickList();
+        showToast(`Pendaftaran berhasil! Selamat datang, ${state.currentUser.Nama}.`, "success");
       } catch (err) {
         console.error(err);
         errBox.textContent = err?.message || "Gagal menghubungi server pendaftaran. Coba beberapa saat lagi.";
@@ -1991,11 +1900,19 @@
       }
     }
 
-    function logoutUser() {
+    function logoutUser(silent = false) {
+      state.authToken = null;
       state.currentUser = null;
+      state.adminDataLoaded = false;
+      state.users = [];
+      state.pesanan = [];
+      state.detail_pesanan = [];
       localStorage.removeItem(AUTH_STORAGE_KEY);
       switchRole("user");
-      showToast("Anda telah keluar dari sesi login.", "info");
+      renderMyOrdersQuickList();
+      if (!silent) {
+        showToast("Anda telah keluar dari sesi login.", "info");
+      }
     }
 
     function prefillCheckoutFromUser() {
@@ -2023,7 +1940,7 @@
       let mobileHtml = "";
       let footerHtml = "";
 
-      if (roleNorm === "Super Admin") {
+      if (roleNorm === "Super Admin" && state.authToken) {
         const onAdmin = state.role === "admin";
         desktopHtml = `
           <button type="button" onclick="switchRole('user')" class="py-1 border-b-2 ${!onAdmin ? "border-press-700 text-slate-900 font-semibold" : "border-transparent hover:text-slate-900"} transition-colors whitespace-nowrap shrink-0">
@@ -2053,8 +1970,7 @@
           primaryLabel.textContent = `Keranjang (${state.cart.length})`;
           primaryBtn.querySelector("i")?.setAttribute("data-lucide", "shopping-bag");
         }
-      } else if (roleNorm === "Admin") {
-        // Admin biasa dipisahkan: hanya akses Dashboard Admin (Pesanan, Produk, Finishing)
+      } else if (roleNorm === "Admin" && state.authToken) {
         desktopHtml = `
           <button type="button" onclick="switchAdminTab('pesanan')" class="py-1 border-b-2 ${state.adminTab === "pesanan" ? "border-press-700 text-slate-900 font-semibold" : "border-transparent hover:text-slate-900"} transition-colors whitespace-nowrap shrink-0">
             Manajemen Pesanan
@@ -2080,7 +1996,6 @@
         primaryLabel.textContent = "Keluar Admin";
         primaryBtn.querySelector("i")?.setAttribute("data-lucide", "log-out");
       } else {
-        // Guest atau User (Pelanggan): hanya akses Layanan
         const authLinkDesktop = state.currentUser
           ? `<button type="button" onclick="logoutUser()" class="py-1 border-b-2 border-transparent text-slate-700 hover:text-rose-700 transition-colors whitespace-nowrap shrink-0">${escapeHtml(state.currentUser.Nama)} (Keluar)</button>`
           : `<button type="button" onclick="openLoginModal()" class="py-1 border-b-2 border-transparent text-press-700 hover:text-press-800 font-semibold transition-colors whitespace-nowrap shrink-0">Masuk / Daftar</button>`;
@@ -2121,7 +2036,7 @@
     }
 
     function handleBrandClick(e) {
-      if (getNormalizedRole(state.currentUser) === "Admin") {
+      if (getNormalizedRole(state.currentUser) === "Admin" && state.authToken) {
         e.preventDefault();
         switchRole("admin");
         return false;
@@ -2130,10 +2045,16 @@
       return true;
     }
 
-    function switchRole(role) {
-      if (role === "admin" && !canAccessAdmin()) {
-        openLoginModal("Akses Dashboard Admin memerlukan login Admin atau Super Admin.");
-        return;
+    async function switchRole(role) {
+      if (role === "admin") {
+        if (!canAccessAdmin()) {
+          openLoginModal("Akses Dashboard Admin memerlukan login Admin atau Super Admin.");
+          return;
+        }
+        if (!state.adminDataLoaded) {
+          const ok = await fetchAdminData();
+          if (!ok) return;
+        }
       }
       if (role === "user" && !canAccessLayanan()) {
         showToast("Akun Admin hanya memiliki akses Dashboard Admin. Gunakan akun Super Admin untuk mengakses keduanya.", "info");
@@ -2184,9 +2105,9 @@
 
     function handleHeaderPrimaryAction() {
       const roleNorm = getNormalizedRole(state.currentUser);
-      if (roleNorm === "Admin") {
+      if (roleNorm === "Admin" && state.authToken) {
         logoutUser();
-      } else if (roleNorm === "Super Admin" && state.role === "admin") {
+      } else if (roleNorm === "Super Admin" && state.authToken && state.role === "admin") {
         switchRole("user");
       } else {
         openCartDrawer();
@@ -2213,7 +2134,7 @@
       container.innerHTML = cats.map((cat) => {
         const active = state.activeCategory === cat;
         return `
-          <button type="button" onclick="setCategoryFilter('${escapeHtml(cat)}')" class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${active ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"}">
+          <button type="button" data-action="set-category" data-category="${escapeHtml(cat)}" class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${active ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"}">
             ${escapeHtml(cat)}
           </button>
         `;
@@ -2238,9 +2159,12 @@
       });
 
       if (!items.length) {
+        const emptyMsg = state.connectionStatus === "error"
+          ? "Gagal memuat katalog produk dari server. Silakan klik tombol Coba Muat Ulang di atas."
+          : "Tidak ada produk tersedia yang sesuai dengan filter pencarian Anda.";
         grid.innerHTML = `
           <div class="col-span-full bg-white border border-slate-200 rounded-xl p-10 text-center text-sm text-slate-500">
-            Tidak ada produk tersedia yang sesuai dengan filter pencarian Anda.
+            ${escapeHtml(emptyMsg)}
           </div>
         `;
         return;
@@ -2269,7 +2193,7 @@
             </div>
           </div>
           <div class="px-5 pb-5">
-            <button type="button" onclick="selectProductForOrder('${escapeHtml(p.Produk_ID)}')" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-slate-900 hover:bg-press-700 rounded-lg transition-colors whitespace-nowrap">
+            <button type="button" data-action="select-product" data-id="${escapeHtml(p.Produk_ID)}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-slate-900 hover:bg-press-700 rounded-lg transition-colors whitespace-nowrap">
               <span>Pilih &amp; Hitung Harga</span>
               <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
             </button>
@@ -2429,8 +2353,8 @@
     function handleDesignFileSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size > 10 * 1024 * 1024) {
-        showToast("Ukuran file maksimal 10 MB untuk pengiriman langsung.", "error");
+      if (file.size > MAX_FILE_BYTES) {
+        showToast("Ukuran file desain maksimal 2,5 MB untuk menghindari timeout Apps Script.", "error");
         e.target.value = "";
         return;
       }
@@ -2466,7 +2390,7 @@
     function clearDesignFile() {
       state.currentDesignFile = null;
       document.getElementById("calc-file-desain").value = "";
-      document.getElementById("calc-file-status").textContent = "Belum ada file dipilih (Maks. 10 MB, opsional jika kirim menyusul)";
+      document.getElementById("calc-file-status").textContent = "Belum ada file dipilih (Maks. 2,5 MB, opsional jika kirim menyusul)";
       document.getElementById("calc-file-preview-box").classList.add("hidden");
     }
 
@@ -2595,7 +2519,7 @@
             </div>
             <div class="text-right shrink-0 flex flex-col items-end gap-2">
               <span class="font-mono text-sm font-bold text-slate-900 tabular-nums">${formatRupiah(item.Subtotal)}</span>
-              <button type="button" onclick="removeCartItem('${item.tempId}')" class="text-xs font-medium text-rose-600 hover:text-rose-700">Hapus</button>
+              <button type="button" data-action="remove-cart" data-id="${escapeHtml(item.tempId)}" class="text-xs font-medium text-rose-600 hover:text-rose-700">Hapus</button>
             </div>
           </div>
         `;
@@ -2605,8 +2529,8 @@
     function handlePaymentProofSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size > 8 * 1024 * 1024) {
-        showToast("Ukuran bukti bayar maksimal 8 MB.", "error");
+      if (file.size > MAX_FILE_BYTES) {
+        showToast("Ukuran bukti bayar maksimal 2,5 MB.", "error");
         e.target.value = "";
         return;
       }
@@ -2633,14 +2557,20 @@
       e.preventDefault();
       if (!state.cart.length) return;
 
+      if (!isApiConfigured()) {
+        showToast("Transaksi checkout memerlukan koneksi aktif ke Google Apps Script (/exec).", "error");
+        return;
+      }
+
       const nama = document.getElementById("chk-nama").value.trim();
       const noWa = document.getElementById("chk-wa").value.trim();
       const email = document.getElementById("chk-email").value.trim();
       const alamat = document.getElementById("chk-alamat").value.trim();
       const catatan = document.getElementById("chk-catatan").value.trim();
 
-      if (!nama || !noWa) {
-        showToast("Nama dan Nomor WhatsApp wajib diisi.", "error");
+      const normNoWa = formatWaNumber(noWa);
+      if (!nama || !normNoWa || normNoWa.length < 10) {
+        showToast("Nama lengkap dan Nomor WhatsApp valid (min. 10 digit) wajib diisi.", "error");
         return;
       }
 
@@ -2648,42 +2578,24 @@
       submitBtn.disabled = true;
       submitBtn.innerHTML = `<span>Mengirim Pesanan...</span>`;
 
-      const orderId = "ORD-" + Math.floor(1000 + Math.random() * 9000);
-      const tanggal = formatNowTimestamp();
-      const totalTagihan = state.cart.reduce((sum, i) => sum + i.Subtotal, 0);
       const hasProof = Boolean(state.currentPaymentProof && state.currentPaymentProof.base64);
 
-      // Cari atau buat User_ID lokal berdasarkan No_WA ternormalisasi
-      const normNoWa = formatWaNumber(noWa) || noWa;
-      let existingUser = state.users.find((u) => {
-        const uWa = formatWaNumber(u.No_WA);
-        return (uWa && uWa === normNoWa) || String(u.No_WA).trim() === noWa;
-      });
-      let userId = existingUser ? existingUser.User_ID : ("USR-" + Math.floor(100 + Math.random() * 900));
-      const userPayload = existingUser || {
-        User_ID: userId,
+      // Hanya kirim kontak pelanggan yang diperlukan (tanpa Password / Role / objek user penuh)
+      const userPayload = {
         Nama: nama,
         No_WA: normNoWa,
         Email: email,
-        Role: "User",
         Alamat: alamat
       };
 
-      const newOrder = {
-        Order_ID: orderId,
-        Tanggal: tanggal,
-        User_ID: userId,
-        Status_Order: "Menunggu Bayar",
-        Total_Tagihan: totalTagihan,
+      const orderPayload = {
         Bukti_Bayar: hasProof ? state.currentPaymentProof.base64 : "",
         Bukti_Bayar_Name: hasProof ? state.currentPaymentProof.name : "",
-        Status_Bayar: hasProof ? "Menunggu Verifikasi" : "Belum Bayar",
         Catatan: catatan
       };
 
-      const newDetails = state.cart.map((item, idx) => ({
-        Detail_ID: `DTL-${orderId.replace("ORD-", "")}-${idx + 1}`,
-        Order_ID: orderId,
+      // Server selalu menghitung ulang Subtotal & Total_Tagihan dari harga asli di sheet
+      const detailPayload = state.cart.map((item) => ({
         Produk_ID: item.Produk_ID,
         Panjang_m: item.Panjang_m,
         Lebar_m: item.Lebar_m,
@@ -2691,70 +2603,51 @@
         Finishing_ID: item.Finishing_ID,
         File_Desain: item.File_Desain,
         File_Desain_Base64: item.File_Desain_Base64,
-        Keterangan_Item: item.Keterangan_Item,
-        Subtotal: item.Subtotal
+        Keterangan_Item: item.Keterangan_Item
       }));
 
       try {
         const result = await postToGas({
           action: "createOrder",
           user: userPayload,
-          pesanan: newOrder,
-          detail_pesanan: newDetails
+          pesanan: orderPayload,
+          detail_pesanan: detailPayload
         });
 
-        // Pastikan sukses sesungguhnya ke Drive atau memang sedang Mode Mock Data
-        if (result && result.status === "success" && result.data) {
-          if (!existingUser) {
-            state.users.push({ ...userPayload, User_ID: result.data.User_ID || userId });
-          }
-          state.pesanan.unshift(result.data.pesanan);
-          state.detail_pesanan.push(...result.data.detail_pesanan);
-          showToast("Pesanan " + orderId + " berhasil tersimpan ke Google Drive & Sheets!", "success");
-        } else if (result && result.status === "mock") {
-          if (!existingUser) {
-            state.users.push(userPayload);
-          }
-          state.pesanan.unshift({
-            Order_ID: newOrder.Order_ID,
-            Tanggal: newOrder.Tanggal,
-            User_ID: newOrder.User_ID,
-            Status_Order: newOrder.Status_Order,
-            Total_Tagihan: newOrder.Total_Tagihan,
-            Bukti_Bayar: newOrder.Bukti_Bayar,
-            Status_Bayar: newOrder.Status_Bayar,
-            Catatan: newOrder.Catatan
-          });
-          newDetails.forEach((d) => {
-            state.detail_pesanan.push({
-              Detail_ID: d.Detail_ID,
-              Order_ID: d.Order_ID,
-              Produk_ID: d.Produk_ID,
-              Panjang_m: d.Panjang_m,
-              Lebar_m: d.Lebar_m,
-              Qty: d.Qty,
-              Finishing_ID: d.Finishing_ID,
-              File_Desain: d.File_Desain_Base64 || d.File_Desain,
-              Keterangan_Item: d.Keterangan_Item,
-              Subtotal: d.Subtotal
-            });
-          });
-          showToast("Pesanan " + orderId + " dibuat di Mode Lokal (API_URL belum terhubung ke Google Drive).", "info");
-        } else {
+        if (!result || result.status !== "success" || !result.data || !result.data.pesanan) {
           throw new Error(result?.message || "Server gagal menyimpan pesanan ke Google Drive.");
         }
 
-        // Reset keranjang & tampilkan konfirmasi
+        const savedOrder = result.data.pesanan;
+        const savedDetails = Array.isArray(result.data.detail_pesanan) ? result.data.detail_pesanan : [];
+        const savedCustomer = result.data.customer || { User_ID: result.data.User_ID, Nama: nama, No_WA: "••••••" + normNoWa.slice(-4) };
+        const serverOrderId = savedOrder.Order_ID;
+        const waLast4 = normNoWa.slice(-4);
+
+        state.trackedOrderCache[serverOrderId] = {
+          order: savedOrder,
+          details: savedDetails,
+          customer: savedCustomer
+        };
+
+        if (state.currentUser && state.authToken) {
+          state.pesanan.unshift(savedOrder);
+          state.detail_pesanan.push(...savedDetails);
+          renderMyOrdersQuickList();
+        }
+
+        showToast("Pesanan " + serverOrderId + " berhasil tersimpan ke Google Drive & Sheets!", "success");
+
         state.cart = [];
         document.getElementById("checkout-form").reset();
         clearPaymentProof();
         updateCartBadges();
         renderInlineCartPreview();
         closeCartDrawer();
-        showOrderSuccessModal(orderId, totalTagihan, newOrder.Status_Bayar);
+        showOrderSuccessModal(serverOrderId, savedOrder.Total_Tagihan, savedOrder.Status_Bayar, waLast4);
       } catch (err) {
         console.error(err);
-        showToast("Gagal menyimpan ke Google Drive: " + (err.message || "Periksa koneksi Apps Script."), "error");
+        showToast("Gagal mengirim pesanan: " + (err.message || "Periksa koneksi Apps Script."), "error");
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i><span>Buat Pesanan Sekarang</span>`;
@@ -2762,7 +2655,7 @@
       }
     }
 
-    function showOrderSuccessModal(orderId, totalTagihan, statusBayar) {
+    function showOrderSuccessModal(orderId, totalTagihan, statusBayar, waLast4) {
       document.getElementById("modal-title").textContent = "Pesanan Berhasil Dibuat";
       document.getElementById("modal-body").innerHTML = `
         <div class="text-center py-4 space-y-4">
@@ -2784,11 +2677,11 @@
             </div>
           </div>
           <div class="pt-2 flex flex-wrap justify-center gap-3">
-            <button type="button" onclick="printOrderDocument('${escapeHtml(orderId)}', 'invoice')" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg">
+            <button type="button" data-action="print-doc" data-id="${escapeHtml(orderId)}" data-doc="invoice" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg">
               <i data-lucide="printer" class="w-4 h-4"></i>
               <span>Cetak Nota / PDF</span>
             </button>
-            <button type="button" onclick="closeModal(); quickTrack('${escapeHtml(orderId)}');" class="px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg">
+            <button type="button" data-action="track-created-order" data-id="${escapeHtml(orderId)}" data-wa4="${escapeHtml(waLast4 || "")}" class="px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg">
               Lacak Pesanan Ini
             </button>
             <button type="button" onclick="closeModal()" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg">
@@ -2802,49 +2695,59 @@
     }
 
     // -----------------------------------------------------------------------
-    // 8. LACAK PESANAN (USER)
+    // 8. LACAK PESANAN (VERIFIKASI SERVER: ORDER_ID PERSIS + 4 DIGIT AKHIR WA)
     // -----------------------------------------------------------------------
-    function quickTrack(query) {
-      document.getElementById("track-query").value = query;
-      handleTrackOrder();
-      navigateCustomerSection("lacak");
+    function renderMyOrdersQuickList() {
+      const box = document.getElementById("my-orders-quick-list");
+      if (!box) return;
+      if (!state.currentUser || !state.authToken || !state.pesanan.length || canAccessAdmin()) {
+        box.classList.add("hidden");
+        box.innerHTML = "";
+        return;
+      }
+      const recent = state.pesanan.slice(0, 6);
+      box.classList.remove("hidden");
+      box.innerHTML = `
+        <p class="text-xs font-semibold text-slate-700">Pesanan Saya (${escapeHtml(state.currentUser.Nama)}):</p>
+        <div class="flex flex-wrap gap-2">
+          ${recent.map((o) => `
+            <button type="button" data-action="select-my-order" data-id="${escapeHtml(o.Order_ID)}" class="px-3 py-1.5 text-xs font-mono font-semibold text-press-700 bg-press-50 border border-press-100 hover:bg-press-100 rounded-lg transition-colors">
+              ${escapeHtml(o.Order_ID)} · ${escapeHtml(o.Status_Order)}
+            </button>
+          `).join("")}
+        </div>
+      `;
     }
 
-    function handleTrackOrder(e) {
-      if (e) e.preventDefault();
-      const rawQuery = (document.getElementById("track-query").value || "").trim().toLowerCase();
-      const container = document.getElementById("track-results");
+    function quickTrack(orderId, waLast4) {
+      const idEl = document.getElementById("track-order-id");
+      const waEl = document.getElementById("track-wa-last4");
+      if (idEl) idEl.value = orderId || "";
+      if (waEl && waLast4) waEl.value = waLast4;
+      if (orderId && state.trackedOrderCache[orderId]) {
+        renderTrackedOrderList([state.trackedOrderCache[orderId]]);
+        navigateCustomerSection("lacak");
+        return;
+      }
+      if (orderId && waLast4) {
+        handleTrackOrder();
+        navigateCustomerSection("lacak");
+      }
+    }
 
-      if (!rawQuery) {
+    function renderTrackedOrderList(entries) {
+      const container = document.getElementById("track-results");
+      if (!container) return;
+      if (!entries || !entries.length) {
         container.innerHTML = "";
         return;
       }
 
-      const matchedUsers = state.users.filter((u) =>
-        String(u.No_WA || "").toLowerCase().includes(rawQuery) ||
-        String(u.Nama || "").toLowerCase().includes(rawQuery)
-      ).map((u) => u.User_ID);
-
-      const results = state.pesanan.filter((p) =>
-        String(p.Order_ID || "").toLowerCase() === rawQuery ||
-        String(p.Order_ID || "").toLowerCase().includes(rawQuery) ||
-        matchedUsers.includes(p.User_ID)
-      );
-
-      if (!results.length) {
-        container.innerHTML = `
-          <div class="p-6 bg-slate-50 border border-slate-200 rounded-xl text-center text-sm text-slate-600">
-            Pesanan dengan kata kunci <span class="font-mono font-semibold">${escapeHtml(rawQuery)}</span> tidak ditemukan.
-          </div>
-        `;
-        return;
-      }
-
       const steps = ["Menunggu Bayar", "Diproses", "Selesai", "Diambil"];
-
-      container.innerHTML = results.map((order) => {
-        const user = state.users.find((u) => u.User_ID === order.User_ID) || {};
-        const items = state.detail_pesanan.filter((d) => d.Order_ID === order.Order_ID);
+      container.innerHTML = entries.map((entry) => {
+        const order = entry.order || {};
+        const user = entry.customer || {};
+        const items = entry.details || [];
         const currentStepIdx = Math.max(0, steps.indexOf(order.Status_Order));
 
         return `
@@ -2865,7 +2768,6 @@
               </div>
             </div>
 
-            <!-- Progress Stepper -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
               ${steps.map((step, idx) => {
                 const done = idx <= currentStepIdx;
@@ -2879,7 +2781,6 @@
               }).join("")}
             </div>
 
-            <!-- Item Details -->
             <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
               <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 border-b border-slate-200 text-slate-600">
@@ -2911,7 +2812,7 @@
 
             <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
               <span class="text-xs text-slate-500">Simpan atau cetak salinan nota resmi sebagai PDF.</span>
-              <button type="button" onclick="printOrderDocument('${escapeHtml(order.Order_ID)}', 'invoice')" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition-colors">
+              <button type="button" data-action="print-doc" data-id="${escapeHtml(order.Order_ID)}" data-doc="invoice" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition-colors">
                 <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                 <span>Cetak Nota / Invoice PDF</span>
               </button>
@@ -2920,6 +2821,53 @@
         `;
       }).join("");
       refreshIcons();
+    }
+
+    async function handleTrackOrder(e) {
+      if (e) e.preventDefault();
+      const orderId = (document.getElementById("track-order-id")?.value || "").trim().toUpperCase();
+      const waLast4 = (document.getElementById("track-wa-last4")?.value || "").replace(/\D/g, "");
+      const container = document.getElementById("track-results");
+      const btn = document.getElementById("btn-track-order");
+
+      if (!orderId || !/^\d{4}$/.test(waLast4)) {
+        showToast("Masukkan ID Pesanan lengkap dan tepat 4 digit terakhir Nomor WhatsApp.", "error");
+        return;
+      }
+
+      if (!isApiConfigured()) {
+        showToast("Pelacakan pesanan membutuhkan koneksi aktif ke Google Apps Script (/exec).", "error");
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      container.innerHTML = `<div class="p-6 bg-slate-50 border border-slate-200 rounded-xl text-center text-sm text-slate-500">Memeriksa data pesanan...</div>`;
+
+      try {
+        const res = await postToGas({
+          action: "trackOrder",
+          orderId: orderId,
+          waLast4: waLast4
+        });
+        if (!res || res.status !== "success" || !res.data || !res.data.pesanan) {
+          throw new Error(res?.message || "Pesanan tidak ditemukan.");
+        }
+        const entry = {
+          order: res.data.pesanan,
+          details: Array.isArray(res.data.detail_pesanan) ? res.data.detail_pesanan : [],
+          customer: res.data.customer || {}
+        };
+        state.trackedOrderCache[entry.order.Order_ID] = entry;
+        renderTrackedOrderList([entry]);
+      } catch (err) {
+        container.innerHTML = `
+          <div class="p-6 bg-slate-50 border border-slate-200 rounded-xl text-center text-sm text-slate-600">
+            ${escapeHtml(err.message || "Pesanan tidak ditemukan atau 4 digit terakhir WhatsApp tidak cocok.")}
+          </div>
+        `;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     // -----------------------------------------------------------------------
@@ -3024,12 +2972,12 @@
             </td>
             <td class="py-3 px-4 text-right font-mono font-semibold text-slate-900 whitespace-nowrap tabular-nums">${formatRupiah(o.Total_Tagihan)}</td>
             <td class="py-3 px-4">
-              <select onchange="updateOrderStatus('${escapeHtml(o.Order_ID)}', 'Status_Bayar', this.value)" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg border ${bayarColor} focus:outline-none focus:ring-2 focus:ring-press-700">
+              <select data-action="update-status" data-id="${escapeHtml(o.Order_ID)}" data-field="Status_Bayar" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg border ${bayarColor} focus:outline-none focus:ring-2 focus:ring-press-700">
                 ${bayarOptions.map((opt) => `<option value="${opt}" ${o.Status_Bayar === opt ? "selected" : ""}>${opt}</option>`).join("")}
               </select>
             </td>
             <td class="py-3 px-4">
-              <select onchange="updateOrderStatus('${escapeHtml(o.Order_ID)}', 'Status_Order', this.value)" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-press-700">
+              <select data-action="update-status" data-id="${escapeHtml(o.Order_ID)}" data-field="Status_Order" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-press-700">
                 ${orderOptions.map((opt) => `<option value="${opt}" ${o.Status_Order === opt ? "selected" : ""}>${opt}</option>`).join("")}
               </select>
             </td>
@@ -3041,11 +2989,11 @@
                     <span>WA</span>
                   </a>
                 ` : ""}
-                <button type="button" onclick="openOrderDetailModal('${escapeHtml(o.Order_ID)}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-press-700 bg-press-50 hover:bg-press-100 rounded-lg transition-colors">
+                <button type="button" data-action="open-order-detail" data-id="${escapeHtml(o.Order_ID)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-press-700 bg-press-50 hover:bg-press-100 rounded-lg transition-colors">
                   <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                   <span>Detail</span>
                 </button>
-                <button type="button" onclick="openDeleteConfirm('Pesanan', '${escapeHtml(o.Order_ID)}', 'Pesanan ${escapeHtml(o.Order_ID)}')" title="Hapus pesanan" class="inline-flex items-center justify-center p-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 rounded-lg transition-colors">
+                <button type="button" data-action="delete-record" data-sheet="Pesanan" data-id="${escapeHtml(o.Order_ID)}" data-label="Pesanan ${escapeHtml(o.Order_ID)}" title="Hapus pesanan" class="inline-flex items-center justify-center p-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 rounded-lg transition-colors">
                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
@@ -3057,14 +3005,14 @@
       refreshIcons();
     }
 
-    async function updateOrderStatus(orderId, field, value) {
+    async function updateOrderStatus(orderId, field, value, selectEl) {
+      if (!canAccessAdmin()) return;
       const order = state.pesanan.find((o) => o.Order_ID === orderId);
       if (!order) return;
 
+      const prevValue = order[field];
       order[field] = value;
-      renderAdminMetrics();
-      renderMonthlyRevenueChart();
-      renderAdminOrders();
+      if (selectEl) selectEl.disabled = true;
 
       try {
         await postToGas({
@@ -3073,6 +3021,9 @@
           Status_Order: order.Status_Order,
           Status_Bayar: order.Status_Bayar
         });
+        renderAdminMetrics();
+        renderMonthlyRevenueChart();
+        renderAdminOrders();
         if (value === "Selesai" || value === "Belum Bayar") {
           showToast(`Status ${orderId} diperbarui (${value}). Klik tombol WA untuk mengabari pelanggan.`, "success");
         } else {
@@ -3080,7 +3031,11 @@
         }
       } catch (err) {
         console.error(err);
-        showToast("Gagal sinkron status ke Google Sheets.", "error");
+        order[field] = prevValue;
+        renderAdminMetrics();
+        renderMonthlyRevenueChart();
+        renderAdminOrders();
+        showToast("Gagal sinkron status ke Google Sheets: " + (err.message || ""), "error");
       }
     }
 
@@ -3093,19 +3048,24 @@
 
       document.getElementById("modal-title").textContent = `Rincian Pesanan ${order.Order_ID}`;
 
-      const buktiSection = order.Bukti_Bayar
-        ? (order.Bukti_Bayar.startsWith("data:image")
-            ? `<img src="${order.Bukti_Bayar}" alt="Bukti Bayar ${escapeHtml(order.Order_ID)}" class="max-h-64 rounded-lg border border-slate-200 object-contain bg-slate-50" />`
-            : `<a href="${escapeHtml(order.Bukti_Bayar)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-press-700 bg-press-50 border border-press-100 rounded-lg hover:bg-press-100">Buka Bukti Bayar di Google Drive</a>`)
-        : `<p class="text-xs text-slate-500 italic">Pelanggan belum mengunggah foto bukti pembayaran.</p>`;
+      let buktiSection = `<p class="text-xs text-slate-500 italic">Pelanggan belum mengunggah foto bukti pembayaran.</p>`;
+      if (order.Bukti_Bayar) {
+        if (isSafeDataImage(order.Bukti_Bayar)) {
+          buktiSection = `<img src="${escapeHtml(order.Bukti_Bayar)}" alt="Bukti Bayar ${escapeHtml(order.Order_ID)}" class="max-h-64 rounded-lg border border-slate-200 object-contain bg-slate-50" />`;
+        } else if (isSafeHttpUrl(order.Bukti_Bayar)) {
+          buktiSection = `<a href="${escapeHtml(order.Bukti_Bayar)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-press-700 bg-press-50 border border-press-100 rounded-lg hover:bg-press-100">Buka Bukti Bayar di Google Drive</a>`;
+        } else {
+          buktiSection = `<p class="text-xs font-mono text-slate-600">${escapeHtml(order.Bukti_Bayar)}</p>`;
+        }
+      }
 
       document.getElementById("modal-body").innerHTML = `
         <div class="flex flex-wrap items-center gap-2.5 pb-2 border-b border-slate-200">
-          <button type="button" onclick="printOrderDocument('${escapeHtml(order.Order_ID)}', 'invoice')" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg">
+          <button type="button" data-action="print-doc" data-id="${escapeHtml(order.Order_ID)}" data-doc="invoice" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg">
             <i data-lucide="printer" class="w-3.5 h-3.5"></i>
             <span>Cetak Nota / Invoice</span>
           </button>
-          <button type="button" onclick="printOrderDocument('${escapeHtml(order.Order_ID)}', 'spk')" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg">
+          <button type="button" data-action="print-doc" data-id="${escapeHtml(order.Order_ID)}" data-doc="spk" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg">
             <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
             <span>Cetak SPK Produksi</span>
           </button>
@@ -3158,10 +3118,8 @@
                   const dimText = Number(d.Panjang_m) > 0 ? `${d.Panjang_m}m × ${d.Lebar_m}m (Qty ${d.Qty})` : `Qty ${d.Qty}`;
                   let fileHtml = `<span class="text-slate-400">Tidak ada file</span>`;
                   if (d.File_Desain) {
-                    if (String(d.File_Desain).startsWith("http")) {
+                    if (isSafeHttpUrl(d.File_Desain)) {
                       fileHtml = `<a href="${escapeHtml(d.File_Desain)}" target="_blank" rel="noopener noreferrer" class="text-press-700 font-semibold hover:underline">Unduh Drive</a>`;
-                    } else if (String(d.File_Desain).startsWith("data:")) {
-                      fileHtml = `<a href="${d.File_Desain}" download="${escapeHtml(d.Detail_ID)}_desain" class="text-press-700 font-semibold hover:underline">Unduh File</a>`;
                     } else {
                       fileHtml = `<span class="font-mono text-slate-700">${escapeHtml(d.File_Desain)}</span>`;
                     }
@@ -3195,13 +3153,15 @@
     }
 
     function printOrderDocument(orderId, docType) {
-      const order = state.pesanan.find((o) => o.Order_ID === orderId);
+      const cached = state.trackedOrderCache[orderId];
+      const order = state.pesanan.find((o) => o.Order_ID === orderId) || (cached ? cached.order : null);
       if (!order) {
         showToast("Data pesanan tidak ditemukan untuk dicetak.", "error");
         return;
       }
-      const user = state.users.find((u) => u.User_ID === order.User_ID) || {};
-      const items = state.detail_pesanan.filter((d) => d.Order_ID === orderId);
+      const user = state.users.find((u) => u.User_ID === order.User_ID) || (cached ? cached.customer : null) || {};
+      const stateItems = state.detail_pesanan.filter((d) => d.Order_ID === orderId);
+      const items = stateItems.length ? stateItems : (cached && Array.isArray(cached.details) ? cached.details : []);
       const printArea = document.getElementById("print-area");
       if (!printArea) return;
 
@@ -3424,16 +3384,16 @@
             <td class="py-3 px-4 text-xs text-slate-700">${escapeHtml(p.Tipe_Hitung)}</td>
             <td class="py-3 px-4 text-right font-mono font-semibold text-slate-900 tabular-nums">${formatRupiah(p.Harga_Dasar)} / ${escapeHtml(p.Satuan)}</td>
             <td class="py-3 px-4">
-              <button type="button" onclick="toggleProductStatus('${escapeHtml(p.Produk_ID)}')" class="px-2.5 py-1 text-xs font-semibold rounded-md border ${isAvailable ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-300"}">
+              <button type="button" data-action="toggle-product-status" data-id="${escapeHtml(p.Produk_ID)}" class="px-2.5 py-1 text-xs font-semibold rounded-md border ${isAvailable ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-300"}">
                 ${escapeHtml(p.Status)}
               </button>
             </td>
             <td class="py-3 px-4 text-right whitespace-nowrap">
               <div class="inline-flex items-center gap-3">
-                <button type="button" onclick="editProductInForm('${escapeHtml(p.Produk_ID)}')" class="text-xs font-semibold text-press-700 hover:underline">
+                <button type="button" data-action="edit-product" data-id="${escapeHtml(p.Produk_ID)}" class="text-xs font-semibold text-press-700 hover:underline">
                   Ubah
                 </button>
-                <button type="button" onclick="openDeleteConfirm('Produk', '${escapeHtml(p.Produk_ID)}', '${escapeHtml(p.Nama_Produk)}')" class="text-xs font-semibold text-rose-700 hover:underline">
+                <button type="button" data-action="delete-record" data-sheet="Produk" data-id="${escapeHtml(p.Produk_ID)}" data-label="${escapeHtml(p.Nama_Produk)}" class="text-xs font-semibold text-rose-700 hover:underline">
                   Hapus
                 </button>
               </div>
@@ -3464,22 +3424,29 @@
     }
 
     async function toggleProductStatus(produkId) {
+      if (!canAccessAdmin()) return;
       const p = state.produk.find((pr) => pr.Produk_ID === produkId);
       if (!p) return;
-      p.Status = p.Status === "Tersedia" ? "Habis" : "Tersedia";
-      renderAdminProducts();
-      renderCustomerAll();
+      const prevStatus = p.Status;
+      const nextStatus = p.Status === "Tersedia" ? "Habis" : "Tersedia";
+      const updatedProd = { ...p, Status: nextStatus };
 
       try {
-        await postToGas({ action: "saveProduct", produk: p });
+        await postToGas({ action: "saveProduct", produk: updatedProd });
+        p.Status = nextStatus;
+        renderAdminProducts();
+        renderCustomerAll();
         showToast(`Status ${p.Nama_Produk} diubah menjadi ${p.Status}.`, "success");
       } catch (err) {
-        showToast("Gagal sinkronisasi produk ke Google Sheets.", "error");
+        p.Status = prevStatus;
+        renderAdminProducts();
+        showToast("Gagal sinkronisasi produk ke Google Sheets: " + (err.message || ""), "error");
       }
     }
 
     async function saveAdminProduct(e) {
       e.preventDefault();
+      if (!canAccessAdmin()) return;
       const prodObj = {
         Produk_ID: document.getElementById("prod-id").value.trim(),
         Nama_Produk: document.getElementById("prod-nama").value.trim(),
@@ -3491,22 +3458,21 @@
         Status: document.getElementById("prod-status").value
       };
 
-      const idx = state.produk.findIndex((p) => p.Produk_ID === prodObj.Produk_ID);
-      if (idx >= 0) {
-        state.produk[idx] = prodObj;
-      } else {
-        state.produk.push(prodObj);
-      }
-
-      renderAdminProducts();
-      renderCustomerAll();
-      resetProductForm();
-
       try {
-        await postToGas({ action: "saveProduct", produk: prodObj });
-        showToast(`Produk ${prodObj.Nama_Produk} berhasil disimpan.`, "success");
+        const res = await postToGas({ action: "saveProduct", produk: prodObj });
+        const saved = (res && res.data) ? res.data : prodObj;
+        const idx = state.produk.findIndex((p) => p.Produk_ID === saved.Produk_ID);
+        if (idx >= 0) {
+          state.produk[idx] = saved;
+        } else {
+          state.produk.push(saved);
+        }
+        renderAdminProducts();
+        renderCustomerAll();
+        resetProductForm();
+        showToast(`Produk ${saved.Nama_Produk} berhasil disimpan.`, "success");
       } catch (err) {
-        showToast("Gagal menyimpan produk ke Google Sheets.", "error");
+        showToast("Gagal menyimpan produk ke Google Sheets: " + (err.message || ""), "error");
       }
     }
 
@@ -3533,10 +3499,10 @@
             <td class="py-3 px-4 text-right font-mono font-semibold text-slate-900 tabular-nums">${formatRupiah(f.Tambahan_Harga)}</td>
             <td class="py-3 px-4 text-right whitespace-nowrap">
               <div class="inline-flex items-center gap-3">
-                <button type="button" onclick="editFinishingInForm('${escapeHtml(f.Finishing_ID)}')" class="text-xs font-semibold text-press-700 hover:underline">
+                <button type="button" data-action="edit-finishing" data-id="${escapeHtml(f.Finishing_ID)}" class="text-xs font-semibold text-press-700 hover:underline">
                   Ubah
                 </button>
-                <button type="button" onclick="openDeleteConfirm('Finishing', '${escapeHtml(f.Finishing_ID)}', '${escapeHtml(f.Nama_Finishing)}')" class="text-xs font-semibold text-rose-700 hover:underline">
+                <button type="button" data-action="delete-record" data-sheet="Finishing" data-id="${escapeHtml(f.Finishing_ID)}" data-label="${escapeHtml(f.Nama_Finishing)}" class="text-xs font-semibold text-rose-700 hover:underline">
                   Hapus
                 </button>
               </div>
@@ -3567,6 +3533,7 @@
 
     async function saveAdminFinishing(e) {
       e.preventDefault();
+      if (!canAccessAdmin()) return;
       const finObj = {
         Finishing_ID: document.getElementById("fin-id").value.trim(),
         Nama_Finishing: document.getElementById("fin-nama").value.trim(),
@@ -3575,23 +3542,22 @@
         Keterangan: document.getElementById("fin-ket").value.trim()
       };
 
-      const idx = state.finishing.findIndex((f) => f.Finishing_ID === finObj.Finishing_ID);
-      if (idx >= 0) {
-        state.finishing[idx] = finObj;
-      } else {
-        state.finishing.push(finObj);
-      }
-
-      renderAdminFinishing();
-      populateCalculatorDropdowns();
-      recalculateItem();
-      resetFinishingForm();
-
       try {
-        await postToGas({ action: "saveFinishing", finishing: finObj });
-        showToast(`Finishing ${finObj.Nama_Finishing} berhasil disimpan.`, "success");
+        const res = await postToGas({ action: "saveFinishing", finishing: finObj });
+        const saved = (res && res.data) ? res.data : finObj;
+        const idx = state.finishing.findIndex((f) => f.Finishing_ID === saved.Finishing_ID);
+        if (idx >= 0) {
+          state.finishing[idx] = saved;
+        } else {
+          state.finishing.push(saved);
+        }
+        renderAdminFinishing();
+        populateCalculatorDropdowns();
+        recalculateItem();
+        resetFinishingForm();
+        showToast(`Finishing ${saved.Nama_Finishing} berhasil disimpan.`, "success");
       } catch (err) {
-        showToast("Gagal menyimpan finishing ke Google Sheets.", "error");
+        showToast("Gagal menyimpan finishing ke Google Sheets: " + (err.message || ""), "error");
       }
     }
 
@@ -3610,7 +3576,7 @@
             ? "Mode Lokal Aktif (Belum Terhubung ke Google Drive)"
             : "Koneksi Google Apps Script Bermasalah";
           const desc = !configured
-            ? "Transaksi hanya tersimpan di browser ini dan tidak masuk ke Google Drive. Hubungkan URL Web App (/exec) pada menu Koneksi Database atau tempel ke DEFAULT_API_URL di index.html sebelum deploy GitHub Pages."
+            ? "URL Web App (/exec) belum diatur. Hubungkan pada menu Koneksi Database."
             : escapeHtml(state.connectionMessage || "Gagal menghubungi endpoint Apps Script.");
           banner.innerHTML = `
             <div>
@@ -3633,8 +3599,8 @@
         if (!configured) {
           statusBox.className = "rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 space-y-1";
           statusBox.innerHTML = `
-            <p class="font-bold">Status: Mode Lokal (Mock Data)</p>
-            <p>URL Apps Script (<span class="font-mono">API_URL</span>) belum diisi atau masih placeholder. Semua order dan perubahan hanya tersimpan sementara di memori browser.</p>
+            <p class="font-bold">Status: Belum Terkonfigurasi</p>
+            <p>URL Apps Script (<span class="font-mono">API_URL</span>) belum diisi.</p>
           `;
         } else if (state.connectionStatus === "connected") {
           statusBox.className = "rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-900 space-y-1";
@@ -3656,6 +3622,7 @@
     }
 
     function saveApiSettings() {
+      if (!isSuperAdmin()) return;
       const apiInput = document.getElementById("setting-api-url").value.trim();
       const sheetInput = document.getElementById("setting-sheet-url").value.trim();
 
@@ -3697,16 +3664,9 @@
       if (btn) btn.disabled = true;
       try {
         const res = await fetch(targetUrl + "?action=getInitData");
-        const json = await parseGasResponse(res);
-        if (json.meta && json.meta.spreadsheetUrl) {
-          SHEET_URL = json.meta.spreadsheetUrl;
-          localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
-          const sheetInputEl = document.getElementById("setting-sheet-url");
-          if (sheetInputEl) sheetInputEl.value = SHEET_URL;
-          syncSheetAnchorHref();
-        }
+        await parseGasResponse(res);
         state.connectionStatus = "connected";
-        state.connectionMessage = `Tes koneksi sukses! Spreadsheet aktif: ${json.meta?.spreadsheetUrl || "-"}`;
+        state.connectionMessage = "Tes koneksi ke endpoint Apps Script berhasil!";
         renderConnectionDiagnostics();
         showToast("Koneksi ke Google Apps Script & Drive berhasil!", "success");
       } catch (err) {
@@ -3720,6 +3680,7 @@
     }
 
     async function initSpreadsheetHeaders() {
+      if (!isSuperAdmin()) return;
       if (!isApiConfigured()) {
         showToast("Tempelkan dan simpan URL Web App Apps Script terlebih dahulu sebelum inisialisasi sheet.", "info");
         document.getElementById("setting-api-url")?.focus();
@@ -3732,7 +3693,7 @@
         const res = await postToGas({ action: "initSheets" });
         if (res && res.status === "success") {
           const created = res.data?.createdSheets?.length ? `Tab baru: ${res.data.createdSheets.join(", ")}. ` : "";
-          showToast(`${created}Struktur 5 tab & header Google Sheets siap digunakan.`, "success");
+          showToast(`${created}Struktur 5 tab & hash password Google Sheets siap digunakan.`, "success");
           fetchInitData();
         } else {
           throw new Error(res?.message || "Gagal menginisialisasi sheet.");
@@ -3746,6 +3707,7 @@
     }
 
     async function createNewDatabaseFromUi() {
+      if (!isSuperAdmin()) return;
       if (!isApiConfigured()) {
         showToast("Tempelkan dan simpan URL Web App Apps Script terlebih dahulu.", "info");
         document.getElementById("setting-api-url")?.focus();
@@ -3784,7 +3746,7 @@
       const sheetInput = document.getElementById("setting-sheet-url")?.value.trim() || SHEET_URL;
       const anchor = document.getElementById("btn-open-sheet");
       if (anchor) {
-        anchor.href = (sheetInput && sheetInput.startsWith("http")) ? sheetInput : "#";
+        anchor.href = (sheetInput && isSafeHttpUrl(sheetInput)) ? sheetInput : "#";
       }
     }
 
@@ -3800,15 +3762,16 @@
       return true;
     }
 
-    function resetToMockData() {
+    function resetApiSettings() {
       localStorage.removeItem("GAS_API_URL");
+      localStorage.removeItem("GAS_SHEET_URL");
       API_URL = DEFAULT_API_URL;
-      document.getElementById("setting-api-url").value = "";
-      state.connectionStatus = isApiConfigured() ? "idle" : "mock";
-      state.connectionMessage = isApiConfigured() ? "" : "API_URL belum diisi. Mode Lokal (Mock Data) aktif.";
-      loadMockData();
-      renderAll();
-      showToast("Aplikasi kembali ke mode Mock Data lokal.", "success");
+      SHEET_URL = DEFAULT_SHEET_URL;
+      document.getElementById("setting-api-url").value = DEFAULT_API_URL;
+      document.getElementById("setting-sheet-url").value = DEFAULT_SHEET_URL;
+      syncSheetAnchorHref();
+      fetchInitData();
+      showToast("Konfigurasi URL dikembalikan ke default.", "success");
     }
 
     // -----------------------------------------------------------------------
@@ -3835,11 +3798,11 @@
             <td class="py-3 px-4 text-xs ${roleColor}">${escapeHtml(roleNorm)}</td>
             <td class="py-3 px-4 text-right whitespace-nowrap">
               <div class="inline-flex items-center gap-3">
-                <button type="button" onclick="editUserInForm('${escapeHtml(u.User_ID)}')" class="text-xs font-semibold text-press-700 hover:underline">
+                <button type="button" data-action="edit-user" data-id="${escapeHtml(u.User_ID)}" class="text-xs font-semibold text-press-700 hover:underline">
                   Ubah
                 </button>
                 ${!isCurrent ? `
-                  <button type="button" onclick="openDeleteConfirm('Users', '${escapeHtml(u.User_ID)}', '${escapeHtml(u.Nama)}')" class="text-xs font-semibold text-rose-700 hover:underline">
+                  <button type="button" data-action="delete-record" data-sheet="Users" data-id="${escapeHtml(u.User_ID)}" data-label="${escapeHtml(u.Nama)}" class="text-xs font-semibold text-rose-700 hover:underline">
                     Hapus
                   </button>
                 ` : ""}
@@ -3878,38 +3841,55 @@
       const userId = document.getElementById("usr-id").value.trim();
       const existing = state.users.find((u) => u.User_ID === userId);
       const newPass = document.getElementById("usr-password").value.trim();
-      const userObj = {
+
+      if (!existing && newPass.length < 6) {
+        showToast("Akun baru wajib memiliki kata sandi minimal 6 karakter.", "error");
+        return;
+      }
+      if (newPass && newPass.length < 6) {
+        showToast("Kata sandi baru minimal 6 karakter.", "error");
+        return;
+      }
+
+      const userPayload = {
         User_ID: userId,
         Nama: document.getElementById("usr-nama").value.trim(),
         No_WA: document.getElementById("usr-wa").value.trim(),
         Email: document.getElementById("usr-email").value.trim(),
         Role: document.getElementById("usr-role").value,
-        Alamat: document.getElementById("usr-alamat").value.trim(),
-        Password: newPass || (existing ? existing.Password : "user123")
+        Alamat: document.getElementById("usr-alamat").value.trim()
       };
-
-      const idx = state.users.findIndex((u) => u.User_ID === userId);
-      if (idx >= 0) {
-        state.users[idx] = userObj;
-      } else {
-        state.users.push(userObj);
+      if (newPass) {
+        userPayload.Password = newPass;
       }
 
-      renderAdminUsers();
-      resetUserForm();
-
       try {
-        await postToGas({ action: "saveUser", user: userObj });
-        showToast(`Akun ${userObj.Nama} (${userObj.Role}) disimpan.`, "success");
+        const res = await postToGas({ action: "saveUser", user: userPayload });
+        const saved = (res && res.data) ? res.data : { ...userPayload };
+        delete saved.Password;
+        const idx = state.users.findIndex((u) => u.User_ID === saved.User_ID);
+        if (idx >= 0) {
+          state.users[idx] = saved;
+        } else {
+          state.users.push(saved);
+        }
+        renderAdminUsers();
+        resetUserForm();
+        showToast(`Akun ${saved.Nama} (${saved.Role}) disimpan.`, "success");
       } catch (err) {
-        showToast("Gagal sinkronisasi akun ke Google Sheets.", "error");
+        showToast("Gagal sinkronisasi akun ke Google Sheets: " + (err.message || ""), "error");
       }
     }
 
     // -----------------------------------------------------------------------
-    // 11D. KONFIRMASI & HAPUS DATA (NON-NATIVE MODAL)
+    // 11D. KONFIRMASI & HAPUS DATA (MENUNGGU KONFIRMASI SERVER)
     // -----------------------------------------------------------------------
     function openDeleteConfirm(sheetName, id, label) {
+      if (!canAccessAdmin()) return;
+      if (sheetName === "Users" && !isSuperAdmin()) {
+        showToast("Hanya Super Admin yang dapat menghapus akun.", "error");
+        return;
+      }
       if (sheetName === "Users" && state.currentUser && state.currentUser.User_ID === id) {
         showToast("Akun yang sedang aktif login tidak dapat dihapus.", "error");
         return;
@@ -3926,6 +3906,11 @@
 
     function closeConfirmModal() {
       state.pendingDelete = null;
+      const btn = document.getElementById("btn-confirm-delete");
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Ya, Hapus Permanen";
+      }
       document.getElementById("confirm-modal-backdrop").classList.add("hidden");
     }
 
@@ -3933,46 +3918,59 @@
       const target = state.pendingDelete;
       if (!target) return;
       const { sheetName, id, label } = target;
-      closeConfirmModal();
-
-      if (sheetName === "Produk") {
-        state.produk = state.produk.filter((p) => p.Produk_ID !== id);
-        renderAdminProducts();
-        renderCustomerAll();
-      } else if (sheetName === "Finishing") {
-        state.finishing = state.finishing.filter((f) => f.Finishing_ID !== id);
-        renderAdminFinishing();
-        populateCalculatorDropdowns();
-        recalculateItem();
-      } else if (sheetName === "Users") {
-        state.users = state.users.filter((u) => u.User_ID !== id);
-        renderAdminUsers();
-      } else if (sheetName === "Pesanan") {
-        state.pesanan = state.pesanan.filter((o) => o.Order_ID !== id);
-        state.detail_pesanan = state.detail_pesanan.filter((d) => d.Order_ID !== id);
-        renderAdminMetrics();
-        renderMonthlyRevenueChart();
-        renderAdminOrders();
+      const btn = document.getElementById("btn-confirm-delete");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Menghapus...";
       }
 
       try {
         await postToGas({ action: "deleteRecord", sheetName, id });
+
+        if (sheetName === "Produk") {
+          state.produk = state.produk.filter((p) => p.Produk_ID !== id);
+          renderAdminProducts();
+          renderCustomerAll();
+        } else if (sheetName === "Finishing") {
+          state.finishing = state.finishing.filter((f) => f.Finishing_ID !== id);
+          renderAdminFinishing();
+          populateCalculatorDropdowns();
+          recalculateItem();
+        } else if (sheetName === "Users") {
+          state.users = state.users.filter((u) => u.User_ID !== id);
+          renderAdminUsers();
+        } else if (sheetName === "Pesanan") {
+          state.pesanan = state.pesanan.filter((o) => o.Order_ID !== id);
+          state.detail_pesanan = state.detail_pesanan.filter((d) => d.Order_ID !== id);
+          delete state.trackedOrderCache[id];
+          renderAdminMetrics();
+          renderMonthlyRevenueChart();
+          renderAdminOrders();
+        }
+
+        closeConfirmModal();
         showToast(`${label} berhasil dihapus dari ${sheetName}.`, "success");
       } catch (err) {
         console.error(err);
-        showToast("Terhapus secara lokal, namun gagal sinkron hapus ke Google Sheets.", "error");
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Ya, Hapus Permanen";
+        }
+        showToast("Gagal menghapus dari Google Sheets: " + (err.message || ""), "error");
       }
     }
 
     // -----------------------------------------------------------------------
-    // 12. RENDER ORCHESTRATOR
+    // 12. RENDER ORCHESTRATOR & DELEGATED EVENT LISTENERS
     // -----------------------------------------------------------------------
     function renderCustomerAll() {
+      renderCatalogConnectionAlert();
       renderCategoryTabs();
       renderCatalog();
       populateCalculatorDropdowns();
       updateCartBadges();
       renderInlineCartPreview();
+      renderMyOrdersQuickList();
     }
 
     // -----------------------------------------------------------------------
@@ -4137,8 +4135,11 @@
                       <button
                         type="button"
                         data-rev-bar="${idx}"
-                        onclick="selectRevenueMonth(${idx}, ${selectedYear}, ${val}, ${count})"
-                        onmouseenter="selectRevenueMonth(${idx}, ${selectedYear}, ${val}, ${count})"
+                        data-action="select-rev-month"
+                        data-month="${idx}"
+                        data-year="${selectedYear}"
+                        data-amount="${val}"
+                        data-count="${count}"
                         aria-label="${BULAN_LONG[idx]} ${selectedYear}: ${formatRupiah(val)} (${count} pesanan)"
                         style="height: ${pct}%"
                         class="relative w-full max-w-[34px] rounded-t-md transition-all duration-200 ${val > 0 ? barColorClass + " cursor-pointer" : "bg-slate-200/70 min-h-[3px] cursor-default"}"
@@ -4164,13 +4165,13 @@
         </div>
       `;
 
-      // Highlight bulan puncak secara default agar ringkasan langsung informatif
       if (peakIdx >= 0) {
         selectRevenueMonth(peakIdx, selectedYear, monthlyTotals[peakIdx], monthlyCounts[peakIdx]);
       }
     }
 
     function renderAdminDashboard() {
+      if (!canAccessAdmin() || !state.adminDataLoaded) return;
       const superMode = isSuperAdmin();
       const roleNorm = getNormalizedRole(state.currentUser);
       const subtitleEl = document.getElementById("admin-role-subtitle");
@@ -4193,10 +4194,9 @@
     }
 
     function renderAll() {
-      restoreSession();
       const viewUser = document.getElementById("view-user");
       const viewAdmin = document.getElementById("view-admin");
-      if (state.role === "admin" && canAccessAdmin()) {
+      if (state.role === "admin" && canAccessAdmin() && state.adminDataLoaded) {
         viewUser.classList.add("hidden");
         viewAdmin.classList.remove("hidden");
       } else {
@@ -4205,7 +4205,7 @@
         viewUser.classList.remove("hidden");
       }
       renderCustomerAll();
-      if (canAccessAdmin()) {
+      if (canAccessAdmin() && state.adminDataLoaded) {
         renderAdminDashboard();
       }
       renderNavigation();
@@ -4216,8 +4216,70 @@
       refreshIcons();
     }
 
+    function setupDelegatedEvents() {
+      document.addEventListener("click", (e) => {
+        const trigger = e.target.closest("[data-action]");
+        if (!trigger) return;
+        const action = trigger.dataset.action;
+
+        if (action === "retry-init") {
+          fetchInitData();
+        } else if (action === "set-category") {
+          setCategoryFilter(trigger.dataset.category || "Semua");
+        } else if (action === "select-product") {
+          selectProductForOrder(trigger.dataset.id || "");
+        } else if (action === "remove-cart") {
+          removeCartItem(trigger.dataset.id || "");
+        } else if (action === "print-doc") {
+          printOrderDocument(trigger.dataset.id || "", trigger.dataset.doc || "invoice");
+        } else if (action === "track-created-order") {
+          closeModal();
+          quickTrack(trigger.dataset.id || "", trigger.dataset.wa4 || "");
+        } else if (action === "select-my-order") {
+          quickTrack(trigger.dataset.id || "", "");
+        } else if (action === "open-order-detail") {
+          openOrderDetailModal(trigger.dataset.id || "");
+        } else if (action === "delete-record") {
+          openDeleteConfirm(trigger.dataset.sheet || "", trigger.dataset.id || "", trigger.dataset.label || "");
+        } else if (action === "toggle-product-status") {
+          toggleProductStatus(trigger.dataset.id || "");
+        } else if (action === "edit-product") {
+          editProductInForm(trigger.dataset.id || "");
+        } else if (action === "edit-finishing") {
+          editFinishingInForm(trigger.dataset.id || "");
+        } else if (action === "edit-user") {
+          editUserInForm(trigger.dataset.id || "");
+        } else if (action === "select-rev-month") {
+          selectRevenueMonth(
+            Number(trigger.dataset.month),
+            Number(trigger.dataset.year),
+            Number(trigger.dataset.amount),
+            Number(trigger.dataset.count)
+          );
+        }
+      });
+
+      document.getElementById("admin-orders-tbody")?.addEventListener("change", (e) => {
+        const sel = e.target.closest("select[data-action='update-status']");
+        if (!sel) return;
+        updateOrderStatus(sel.dataset.id || "", sel.dataset.field || "", sel.value, sel);
+      });
+
+      document.getElementById("revenue-chart-container")?.addEventListener("mouseover", (e) => {
+        const btn = e.target.closest("[data-action='select-rev-month']");
+        if (!btn) return;
+        selectRevenueMonth(
+          Number(btn.dataset.month),
+          Number(btn.dataset.year),
+          Number(btn.dataset.amount),
+          Number(btn.dataset.count)
+        );
+      });
+    }
+
     // Boot Aplikasi
     document.addEventListener("DOMContentLoaded", () => {
+      setupDelegatedEvents();
       fetchInitData();
     });
   </script>

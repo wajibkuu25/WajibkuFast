@@ -1,22 +1,17 @@
 /**
  * ============================================================================
- * Wajibku Fast — Backend Google Apps Script (Code.gs)
+ * Wajibku Fast — Backend Google Apps Script (Code.gs) [Hardened]
  * ============================================================================
  * Petunjuk Setup:
- * 1. Buka Google Sheets Anda, salin ID Spreadsheet dari URL browser:
- *    https://docs.google.com/spreadsheets/d/[SPREADSHEET_ID]/edit
- *    Tempelkan ke konstanta SPREADSHEET_ID di bawah (atau biarkan kosong jika
- *    script dibuat langsung dari menu Extensions > Apps Script di dalam Sheet).
- * 2. Pastikan terdapat 5 tab sheet dengan nama PERSIS:
- *    - Users
- *    - Produk
- *    - Finishing
- *    - Pesanan
- *    - Detail_Pesanan
- * 3. Klik Deploy > New deployment > Type: Web app
+ * 1. Pastikan SPREADSHEET_ID dan DRIVE_FOLDER_ID mengarah ke file/folder Anda.
+ * 2. Jalankan fungsi `setupDatabaseSheets()` satu kali dari editor Apps Script
+ *    untuk memastikan 5 tab wajib tersedia & meng-hash password plaintext lama.
+ *    (Cek Execution Log untuk password sementara jika baru membuat akun awal,
+ *    lalu ubah kata sandi melalui menu Akses Pengguna atau Apps Script.)
+ * 3. Klik Deploy > Manage deployments > Edit > Version: New version
  *    - Execute as: Me (Email Anda)
  *    - Who has access: Anyone
- * 4. Salin URL Web App (/exec) dan tempelkan pada menu Admin > Koneksi Database.
+ * ============================================================================
  */
 
 const SPREADSHEET_ID = "1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc";
@@ -24,6 +19,12 @@ const DRIVE_FOLDER_ID = "1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs";
 const DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs?usp=sharing";
 const DATABASE_FILE_NAME = "WajibkuFast_Database";
 const DRIVE_FOLDER_NAME = "WajibkuFast_Upload_Files";
+
+const TOKEN_TTL_SECONDS = 12 * 60 * 60; // 12 jam
+const HASH_ITERATIONS = 100;
+const ALLOWED_ORDER_STATUS = ["Menunggu Bayar", "Diproses", "Selesai", "Diambil"];
+const ALLOWED_PAY_STATUS = ["Belum Bayar", "Menunggu Verifikasi", "Lunas"];
+const ALLOWED_USER_ROLES = ["User", "Admin", "Super Admin"];
 
 /**
  * Definisi Header 5 Tab Wajib (Case-Sensitive)
@@ -36,9 +37,200 @@ const SCHEMA_HEADERS = {
   Detail_Pesanan: ["Detail_ID", "Order_ID", "Produk_ID", "Panjang_m", "Lebar_m", "Qty", "Finishing_ID", "File_Desain", "Keterangan_Item", "Subtotal"]
 };
 
-/**
- * Mengambil referensi Folder Database utama di Google Drive
- */
+// ============================================================================
+// UTILITAS KEAMANAN, HASHING PASSWORD, & HMAC TOKEN
+// ============================================================================
+
+function getHmacSecret_() {
+  const props = PropertiesService.getScriptProperties();
+  let secret = props.getProperty("AUTH_HMAC_SECRET");
+  if (!secret || secret.length < 32) {
+    secret = Utilities.getUuid() + "-" + Utilities.getUuid() + "-" + String(Date.now());
+    props.setProperty("AUTH_HMAC_SECRET", secret);
+  }
+  return secret;
+}
+
+function bytesToHex_(bytes) {
+  return bytes.map(function (b) {
+    const unsigned = b < 0 ? b + 256 : b;
+    return ("0" + unsigned.toString(16)).slice(-2);
+  }).join("");
+}
+
+function base64UrlEncodeBytes_(bytes) {
+  return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, "");
+}
+
+function base64UrlEncodeString_(str) {
+  const utf8 = Utilities.newBlob(String(str)).getBytes();
+  return base64UrlEncodeBytes_(utf8);
+}
+
+function base64UrlDecodeString_(b64url) {
+  const padded = String(b64url) + "===".slice((String(b64url).length + 3) % 4);
+  const bytes = Utilities.base64DecodeWebSafe(padded);
+  return Utilities.newBlob(bytes).getDataAsString("UTF-8");
+}
+
+function constantTimeEqual_(a, b) {
+  const strA = String(a || "");
+  const strB = String(b || "");
+  const maxLen = Math.max(strA.length, strB.length);
+  let diff = strA.length ^ strB.length;
+  for (let i = 0; i < maxLen; i++) {
+    const ca = i < strA.length ? strA.charCodeAt(i) : 0;
+    const cb = i < strB.length ? strB.charCodeAt(i) : 0;
+    diff |= (ca ^ cb);
+  }
+  return diff === 0 && maxLen > 0;
+}
+
+function hashPassword_(plainPassword, saltOpt) {
+  const plain = String(plainPassword || "");
+  if (!plain) return "";
+  const salt = saltOpt || Utilities.getUuid().replace(/-/g, "").slice(0, 16);
+  let digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + ":" + plain);
+  for (let i = 1; i < HASH_ITERATIONS; i++) {
+    digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytesToHex_(digest) + ":" + salt);
+  }
+  return "sha256$" + salt + "$" + bytesToHex_(digest);
+}
+
+function verifyPassword_(plainPassword, storedPassword) {
+  const plain = String(plainPassword || "");
+  const stored = String(storedPassword || "").trim();
+  if (!plain || !stored) {
+    return { valid: false, needsUpgrade: false };
+  }
+  if (stored.startsWith("sha256$")) {
+    const parts = stored.split("$");
+    if (parts.length !== 3 || !parts[1] || !parts[2]) {
+      return { valid: false, needsUpgrade: false };
+    }
+    const expectedHash = hashPassword_(plain, parts[1]);
+    return { valid: constantTimeEqual_(expectedHash, stored), needsUpgrade: false };
+  }
+  // Dukungan migrasi otomatis sekali pakai untuk password plaintext lama di Sheet
+  return { valid: constantTimeEqual_(plain, stored), needsUpgrade: true };
+}
+
+function normalizeRole_(roleVal) {
+  const r = String(roleVal || "").trim().toLowerCase();
+  if (r === "super admin" || r === "superadmin") return "Super Admin";
+  if (r === "admin") return "Admin";
+  return "User";
+}
+
+function sanitizeUser_(u) {
+  if (!u) return null;
+  return {
+    User_ID: String(u.User_ID || ""),
+    Nama: String(u.Nama || ""),
+    No_WA: String(u.No_WA || "").replace(/^'/, ""),
+    Email: String(u.Email || ""),
+    Role: normalizeRole_(u.Role),
+    Alamat: String(u.Alamat || "")
+  };
+}
+
+function createToken_(user) {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const payload = {
+    uid: String(user.User_ID || ""),
+    role: normalizeRole_(user.Role),
+    email: String(user.Email || ""),
+    nama: String(user.Nama || ""),
+    iat: nowSec,
+    exp: nowSec + TOKEN_TTL_SECONDS
+  };
+  const payloadB64 = base64UrlEncodeString_(JSON.stringify(payload));
+  const sigBytes = Utilities.computeHmacSha256Signature(payloadB64, getHmacSecret_());
+  const sigB64 = base64UrlEncodeBytes_(sigBytes);
+  return payloadB64 + "." + sigB64;
+}
+
+function verifyToken_(token) {
+  if (!token || typeof token !== "string") return null;
+  const parts = token.split(".");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+
+  const payloadB64 = parts[0];
+  const providedSig = parts[1];
+  const expectedSigBytes = Utilities.computeHmacSha256Signature(payloadB64, getHmacSecret_());
+  const expectedSig = base64UrlEncodeBytes_(expectedSigBytes);
+
+  if (!constantTimeEqual_(providedSig, expectedSig)) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(base64UrlDecodeString_(payloadB64));
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (!payload || !payload.uid || !payload.exp || Number(payload.exp) <= nowSec) {
+      return null;
+    }
+    return payload;
+  } catch (err) {
+    return null;
+  }
+}
+
+function requireRole_(ss, body, allowedRoles) {
+  const token = body && body.token ? String(body.token) : "";
+  const session = verifyToken_(token);
+  if (!session) {
+    throw new Error("Sesi tidak valid atau telah berakhir. Silakan login ulang.");
+  }
+
+  const users = sheetToObjects_(ss, "Users");
+  const liveUser = users.find(function (u) {
+    return String(u.User_ID || "").trim() === String(session.uid).trim();
+  });
+  if (!liveUser) {
+    throw new Error("Sesi tidak valid: akun pengguna tidak ditemukan.");
+  }
+
+  const liveRole = normalizeRole_(liveUser.Role);
+  if (allowedRoles && allowedRoles.indexOf(liveRole) === -1) {
+    throw new Error("Akses ditolak: Anda tidak memiliki izin (" + liveRole + ").");
+  }
+
+  return { session: session, user: liveUser, role: liveRole };
+}
+
+function generateUniqueOrderId_(existingOrders) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const datePart = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyMMdd");
+  const existingSet = {};
+  (existingOrders || []).forEach(function (o) {
+    existingSet[String(o.Order_ID || "").trim().toUpperCase()] = true;
+  });
+
+  for (let attempt = 0; attempt < 25; attempt++) {
+    let suffix = "";
+    for (let i = 0; i < 6; i++) {
+      suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const candidate = "ORD-" + datePart + "-" + suffix;
+    if (!existingSet[candidate]) {
+      return candidate;
+    }
+  }
+  return "ORD-" + datePart + "-" + String(Date.now()).slice(-6);
+}
+
+function maskWaForTracking_(rawWa) {
+  const norm = normalizeWa_(rawWa);
+  if (!norm) return "-";
+  if (norm.length <= 4) return norm;
+  return "••••••" + norm.slice(-4);
+}
+
+// ============================================================================
+// GOOGLE DRIVE & SPREADSHEET ACCESS
+// ============================================================================
+
 function getDatabaseFolder_() {
   if (DRIVE_FOLDER_ID) {
     try {
@@ -58,13 +250,6 @@ function openNonTrashedSpreadsheet_(fileId) {
   return SpreadsheetApp.openById(fileId);
 }
 
-/**
- * Mengambil referensi Spreadsheet:
- * 1. SPREADSHEET_ID jika diisi manual
- * 2. Spreadsheet baru/aktif yang tersimpan di ScriptProperties (FORCE_DB_SPREADSHEET_ID / DB_SPREADSHEET_ID)
- * 3. Spreadsheet di dalam Folder Drive DRIVE_FOLDER_ID (1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs) — otomatis cari atau buat baru di folder tersebut
- * 4. ActiveSpreadsheet jika script terikat langsung pada Sheet dan folder Drive tidak tersedia
- */
 function getSpreadsheet_() {
   if (SPREADSHEET_ID && SPREADSHEET_ID !== "MASUKKAN_ID_SPREADSHEET_ANDA_DI_SINI") {
     return SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -109,7 +294,6 @@ function getSpreadsheet_() {
       }
     }
 
-    // Buat Spreadsheet baru dan simpan langsung ke dalam Folder Drive 1rtEXH6wI0sm5tH4shNBXMUAuQ2mwzUDs
     const newSs = SpreadsheetApp.create(DATABASE_FILE_NAME);
     const newFile = DriveApp.getFileById(newSs.getId());
     newFile.moveTo(dbFolder);
@@ -125,10 +309,6 @@ function getSpreadsheet_() {
   throw new Error("Spreadsheet dan Folder Drive tidak ditemukan.");
 }
 
-/**
- * Mengambil atau membuat folder Google Drive untuk penyimpanan File Desain & Bukti Bayar
- * di dalam folder database utama DRIVE_FOLDER_ID
- */
 function getOrCreateUploadFolder_() {
   const dbFolder = getDatabaseFolder_();
   if (dbFolder) {
@@ -146,33 +326,38 @@ function getOrCreateUploadFolder_() {
 }
 
 /**
- * Menyimpan string Base64 (Data URL) ke Google Drive dan mengembalikan URL aksesnya
+ * Menyimpan string Base64 (Data URL) ke Google Drive secara PRIVAT (tanpa ANYONE_WITH_LINK)
  */
 function saveBase64ToDrive_(base64Data, fileNamePrefix, originalName) {
   if (!base64Data || typeof base64Data !== "string") return "";
   if (!base64Data.startsWith("data:")) {
-    // Sudah berupa URL atau nama file teks biasa
-    return base64Data;
+    // Hanya terima nama file teks aman, tolak skema URL berbahaya
+    const safeText = String(base64Data).trim().slice(0, 150);
+    if (/^(javascript:|vbscript:|data:)/i.test(safeText)) return "";
+    return safeText;
   }
 
   try {
     const parts = base64Data.split(",");
+    if (parts.length < 2) return "";
     const header = parts[0];
     const encoded = parts[1];
-    const mimeMatch = header.match(/data:([^;]+);base64/);
-    const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+    const mimeMatch = header.match(/^data:([^;]+);base64$/i);
+    if (!mimeMatch) return "";
+    const mimeType = mimeMatch[1];
 
     const decodedBytes = Utilities.base64Decode(encoded);
-    const safeName = (fileNamePrefix ? fileNamePrefix + "_" : "") + (originalName || "upload_file");
+    if (decodedBytes.length > 3 * 1024 * 1024) {
+      throw new Error("Ukuran file melebihi batas server (maks. 2.5 MB).");
+    }
+
+    const cleanOrig = String(originalName || "upload_file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
+    const safeName = (fileNamePrefix ? fileNamePrefix + "_" : "") + cleanOrig;
     const blob = Utilities.newBlob(decodedBytes, mimeType, safeName);
 
     const folder = getOrCreateUploadFolder_();
     const file = folder.createFile(blob);
-    try {
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    } catch (shareErr) {
-      Logger.log("Info setSharing Drive (file tetap tersimpan): " + shareErr.message);
-    }
+    // File tetap privat (hanya pemilik akun Drive / Admin internal yang memiliki akses)
     return file.getUrl();
   } catch (err) {
     Logger.log("Gagal simpan file ke Drive: " + err.message);
@@ -180,20 +365,14 @@ function saveBase64ToDrive_(base64Data, fileNamePrefix, originalName) {
   }
 }
 
-/**
- * Normalisasi nomor WhatsApp menjadi format 628... untuk pencocokan akurat
- */
 function normalizeWa_(val) {
-  const raw = String(val || "").replace(/\D/g, "");
+  const raw = String(val || "").replace(/^'/, "").replace(/\D/g, "");
   if (!raw) return "";
   if (raw.startsWith("0")) return "62" + raw.slice(1);
   if (raw.startsWith("8")) return "62" + raw;
   return raw;
 }
 
-/**
- * Membaca seluruh baris dari satu sheet menjadi Array of Objects (Case-Sensitive sesuai Header)
- */
 function sheetToObjects_(ss, sheetName) {
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) return [];
@@ -207,7 +386,6 @@ function sheetToObjects_(ss, sheetName) {
   const rows = [];
   for (let i = 1; i < values.length; i++) {
     const row = values[i];
-    // Lewati baris yang benar-benar kosong
     const isEmpty = row.every(function (cell) {
       return cell === "" || cell === null || cell === undefined;
     });
@@ -227,9 +405,6 @@ function sheetToObjects_(ss, sheetName) {
   return rows;
 }
 
-/**
- * Helper menambah baris ke sheet mengikuti urutan kolom header persis
- */
 function appendObjectRow_(ss, sheetName, dataObj) {
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) throw new Error("Sheet '" + sheetName + "' tidak ditemukan.");
@@ -242,19 +417,54 @@ function appendObjectRow_(ss, sheetName, dataObj) {
   sheet.appendRow(rowValues);
 }
 
-/**
- * Membuat JSON Response untuk Web App
- */
+function updateUserPasswordCell_(ss, userId, hashedPassword) {
+  const sheet = ss.getSheetByName("Users");
+  if (!sheet) return;
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return;
+  const headers = values[0].map(function (h) { return String(h).trim(); });
+  const colId = headers.indexOf("User_ID");
+  const colPass = headers.indexOf("Password");
+  if (colId === -1 || colPass === -1) return;
+
+  for (let r = 1; r < values.length; r++) {
+    if (String(values[r][colId]).trim() === String(userId).trim()) {
+      sheet.getRange(r + 1, colPass + 1).setValue(hashedPassword);
+      break;
+    }
+  }
+}
+
+function migratePlaintextPasswords_(ss) {
+  const sheet = ss.getSheetByName("Users");
+  if (!sheet) return 0;
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return 0;
+  const headers = values[0].map(function (h) { return String(h).trim(); });
+  const colPass = headers.indexOf("Password");
+  if (colPass === -1) return 0;
+
+  let upgradedCount = 0;
+  for (let r = 1; r < values.length; r++) {
+    const rawPass = String(values[r][colPass] || "").trim();
+    if (rawPass && !rawPass.startsWith("sha256$")) {
+      sheet.getRange(r + 1, colPass + 1).setValue(hashPassword_(rawPass));
+      upgradedCount++;
+    }
+  }
+  return upgradedCount;
+}
+
 function jsonResponse_(payload) {
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-/**
- * Memastikan 5 tab sheet beserta header kolom (Case-Sensitive) tersedia otomatis.
- * Jika tab belum ada atau baris header kosong, otomatis dibuatkan.
- */
+// ============================================================================
+// INISIALISASI 5 TAB SHEET & SEEDING AMAN
+// ============================================================================
+
 function ensureSheetsInitialized_(ss) {
   const createdSheets = [];
   const initializedHeaders = [];
@@ -289,7 +499,6 @@ function ensureSheetsInitialized_(ss) {
       sheet.setFrozenRows(1);
       initializedHeaders.push(sheetName);
     } else {
-      // Pastikan kolom baru (mis. Password pada sheet Users) otomatis ditambahkan jika belum ada
       const currentLastCol = Math.max(sheet.getLastColumn(), 1);
       const currentHeaders = sheet.getRange(1, 1, 1, currentLastCol).getValues()[0].map(function (h) {
         return String(h).trim();
@@ -309,49 +518,7 @@ function ensureSheetsInitialized_(ss) {
       });
     }
 
-    // Seed data awal untuk Spreadsheet yang baru dibuat
     if (isNewSheet || sheet.getLastRow() <= 1) {
-      if (sheetName === "Users" && sheet.getLastRow() <= 1) {
-        const seedUsers = [
-          {
-            User_ID: "USR-001",
-            Nama: "Admin Percetakan",
-            No_WA: "'6281234567890",
-            Email: "admin.cetak@gmail.com",
-            Role: "Admin",
-            Alamat: "Jl. Ngagel Jaya No. 10, Surabaya",
-            Password: "admin123"
-          },
-          {
-            User_ID: "USR-002",
-            Nama: "Budi Santoso",
-            No_WA: "'6285711223344",
-            Email: "budi.santoso@gmail.com",
-            Role: "User",
-            Alamat: "Jl. Ampel Suci No. 45, Surabaya",
-            Password: "user123"
-          },
-          {
-            User_ID: "USR-003",
-            Nama: "Siti Aminah",
-            No_WA: "'6281999887766",
-            Email: "siti.aminah@gmail.com",
-            Role: "User",
-            Alamat: "Jl. Raya Darmo No. 12, Surabaya",
-            Password: "user123"
-          },
-          {
-            User_ID: "SUP-001",
-            Nama: "Super Admin Wajibku Fast",
-            No_WA: "'6281100009999",
-            Email: "superadmin@wajibkufast.id",
-            Role: "Super Admin",
-            Alamat: "Kantor Pusat",
-            Password: "super123"
-          }
-        ];
-        seedUsers.forEach(function (u) { appendObjectRow_(ss, "Users", u); });
-      }
       if (sheetName === "Produk" && sheet.getLastRow() <= 1) {
         const seedProducts = [
           {
@@ -433,13 +600,13 @@ function ensureSheetsInitialized_(ss) {
     }
   });
 
-  // Pastikan minimal ada 1 akun Super Admin jika sheet Users sudah ada sebelumnya tanpa SUP-001
+  // Pastikan minimal ada 1 akun Super Admin dengan password acak ter-hash (tidak pernah plaintext lemah)
   const existingUsersList = sheetToObjects_(ss, "Users");
   const hasSuperAdmin = existingUsersList.some(function (u) {
-    const r = String(u.Role || "").trim().toLowerCase();
-    return r === "super admin" || r === "superadmin";
+    return normalizeRole_(u.Role) === "Super Admin";
   });
   if (!hasSuperAdmin) {
+    const initialSuperPass = "WF-" + Utilities.getUuid().replace(/-/g, "").slice(0, 12);
     appendObjectRow_(ss, "Users", {
       User_ID: "SUP-001",
       Nama: "Super Admin Wajibku Fast",
@@ -447,11 +614,11 @@ function ensureSheetsInitialized_(ss) {
       Email: "superadmin@wajibkufast.id",
       Role: "Super Admin",
       Alamat: "Kantor Pusat",
-      Password: "super123"
+      Password: hashPassword_(initialSuperPass)
     });
+    Logger.log("SUPER ADMIN AWAL DIBUAT -> Email: superadmin@wajibkufast.id | Password Sementara: " + initialSuperPass);
   }
 
-  // Hapus tab bawaan "Sheet1" jika kosong agar spreadsheet hanya berisi 5 tab database
   const defaultSheet1 = ss.getSheetByName("Sheet1");
   if (defaultSheet1 && ss.getSheets().length > 1 && defaultSheet1.getLastRow() <= 1) {
     try {
@@ -471,21 +638,26 @@ function ensureSheetsInitialized_(ss) {
 }
 
 /**
- * Fungsi manual yang dapat langsung dijalankan (Run) dari editor Google Apps Script
- * untuk menginisialisasi 5 tab database dan seluruh header kolomnya.
+ * Jalankan manual dari Editor Google Apps Script untuk menyiapkan 5 tab
+ * sekaligus meng-hash seluruh password plaintext lama di sheet Users.
  */
 function setupDatabaseSheets() {
   const ss = getSpreadsheet_();
   const result = ensureSheetsInitialized_(ss);
+  const migrated = migratePlaintextPasswords_(ss);
+  result.migratedPlaintextPasswords = migrated;
   Logger.log("Setup Database Selesai: " + JSON.stringify(result));
   return result;
 }
 
-/**
- * Membuat file Google Sheets database BARU (WajibkuFast_Database) di dalam Folder Drive
- * DRIVE_FOLDER_ID, lengkap dengan 5 tab sheet, header kolom, dan data awal, lalu mengikatnya sebagai DB aktif.
- */
-function buatDatabaseBaru() {
+function migratePasswordsToHash() {
+  const ss = getSpreadsheet_();
+  const migrated = migratePlaintextPasswords_(ss);
+  Logger.log("Password plaintext yang di-hash: " + migrated);
+  return migrated;
+}
+
+function buatDatabaseBaru_() {
   const dbFolder = getDatabaseFolder_();
   const newSs = SpreadsheetApp.create(DATABASE_FILE_NAME);
   if (dbFolder) {
@@ -500,63 +672,42 @@ function buatDatabaseBaru() {
   return initResult;
 }
 
-/**
- * Handler HTTP GET
- * Endpoint: ?action=getInitData | ?action=initSheets | ?action=createNewDatabase
- */
+// ============================================================================
+// HTTP GET (HANYA DATA KATALOG PUBLIK: Produk & Finishing)
+// ============================================================================
+
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "getInitData";
 
-    if (action === "createNewDatabase") {
-      const createdResult = buatDatabaseBaru();
-      return jsonResponse_({
-        status: "success",
-        message: "Database Google Sheets baru berhasil dibuat.",
-        data: createdResult
-      });
-    }
-
-    const ss = getSpreadsheet_();
-
-    if (action === "initSheets") {
-      const initResult = ensureSheetsInitialized_(ss);
-      return jsonResponse_({
-        status: "success",
-        message: "Inisialisasi 5 tab sheet dan header berhasil diperiksa.",
-        data: initResult
-      });
-    }
-
     if (action === "getInitData") {
-      ensureSheetsInitialized_(ss);
-      const data = {
-        users: sheetToObjects_(ss, "Users"),
-        produk: sheetToObjects_(ss, "Produk"),
-        finishing: sheetToObjects_(ss, "Finishing"),
-        pesanan: sheetToObjects_(ss, "Pesanan"),
-        detail_pesanan: sheetToObjects_(ss, "Detail_Pesanan")
-      };
+      const ss = getSpreadsheet_();
+      if (!ss.getSheetByName("Produk") || !ss.getSheetByName("Finishing") || !ss.getSheetByName("Users")) {
+        ensureSheetsInitialized_(ss);
+      }
+      // Hanya kirim katalog publik; JANGAN PERNAH kirim Users, Password, Pesanan, atau Detail_Pesanan secara publik
       return jsonResponse_({
         status: "success",
-        data: data,
+        data: {
+          produk: sheetToObjects_(ss, "Produk"),
+          finishing: sheetToObjects_(ss, "Finishing")
+        },
         meta: {
-          spreadsheetUrl: ss.getUrl(),
           driveFolderUrl: DRIVE_FOLDER_URL
         }
       });
     }
 
-    return jsonResponse_({ status: "error", message: "Action GET tidak dikenal: " + action });
+    return jsonResponse_({ status: "error", message: "Action GET tidak diizinkan atau tidak dikenal." });
   } catch (err) {
     return jsonResponse_({ status: "error", message: err.message });
   }
 }
 
-/**
- * Handler HTTP POST
- * Actions: createOrder, updateStatus, saveProduct
- */
+// ============================================================================
+// HTTP POST (AUTENTIKASI, PELANGGAN, & OPERASI ADMIN TERPROTEKSI)
+// ============================================================================
+
 function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
@@ -564,48 +715,389 @@ function doPost(e) {
     const body = JSON.parse(e.postData.contents);
     const action = body.action;
     const ss = getSpreadsheet_();
-    if (!ss.getSheetByName("Pesanan") || !ss.getSheetByName("Detail_Pesanan") || !ss.getSheetByName("Users")) {
+    if (!ss.getSheetByName("Pesanan") || !ss.getSheetByName("Detail_Pesanan") || !ss.getSheetByName("Users") || !ss.getSheetByName("Produk") || !ss.getSheetByName("Finishing")) {
       ensureSheetsInitialized_(ss);
     }
 
     // ------------------------------------------------------------------------
-    // 1. CREATE ORDER (Simpan User baru jika belum ada, Pesanan, & Detail_Pesanan)
+    // 1. LOGIN SERVER-SIDE -> Mengembalikan Token HMAC & Profil Tanpa Password
+    // ------------------------------------------------------------------------
+    if (action === "login") {
+      const identifierRaw = String(body.identifier || "").trim();
+      const identifier = identifierRaw.toLowerCase();
+      const normIdentifierWa = normalizeWa_(identifierRaw);
+      const password = String(body.password || "");
+
+      if (!identifier || !password) {
+        return jsonResponse_({ status: "error", message: "Email/WhatsApp dan kata sandi wajib diisi." });
+      }
+
+      const users = sheetToObjects_(ss, "Users");
+      const matched = users.find(function (u) {
+        const uEmail = String(u.Email || "").trim().toLowerCase();
+        const uWa = normalizeWa_(u.No_WA);
+        const uId = String(u.User_ID || "").trim().toLowerCase();
+        return (uEmail && uEmail === identifier) ||
+          (normIdentifierWa && uWa && uWa === normIdentifierWa) ||
+          (uId && uId === identifier);
+      });
+
+      if (!matched) {
+        return jsonResponse_({ status: "error", message: "Email/No. WhatsApp atau kata sandi salah." });
+      }
+
+      const storedPass = String(matched.Password || "").trim();
+      if (!storedPass) {
+        return jsonResponse_({
+          status: "error",
+          message: "Akun checkout tamu ini belum memiliki kata sandi. Silakan daftar member baru atau hubungi Admin untuk mengaktifkan akun."
+        });
+      }
+
+      const passCheck = verifyPassword_(password, storedPass);
+      if (!passCheck.valid) {
+        return jsonResponse_({ status: "error", message: "Email/No. WhatsApp atau kata sandi salah." });
+      }
+
+      if (passCheck.needsUpgrade) {
+        updateUserPasswordCell_(ss, matched.User_ID, hashPassword_(password));
+      }
+
+      const token = createToken_(matched);
+      return jsonResponse_({
+        status: "success",
+        message: "Login berhasil.",
+        data: {
+          token: token,
+          user: sanitizeUser_(matched)
+        }
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // 2. REGISTER MEMBER (Pendaftaran Mandiri -> Role: "User", Password Di-Hash)
+    // ------------------------------------------------------------------------
+    if (action === "registerMember") {
+      const usr = body.user || body;
+      const nama = String(usr.Nama || "").trim();
+      const email = String(usr.Email || "").trim().toLowerCase();
+      const normWa = normalizeWa_(usr.No_WA);
+      const password = String(usr.Password || "");
+      const alamat = String(usr.Alamat || "").trim();
+
+      if (!nama || !email || email.indexOf("@") === -1 || !normWa || normWa.length < 10) {
+        return jsonResponse_({
+          status: "error",
+          message: "Nama lengkap, Nomor WhatsApp valid, dan Email aktif wajib diisi."
+        });
+      }
+      if (password.length < 6) {
+        return jsonResponse_({
+          status: "error",
+          message: "Kata sandi minimal 6 karakter."
+        });
+      }
+
+      const existingUsers = sheetToObjects_(ss, "Users");
+      const duplicate = existingUsers.find(function (u) {
+        const uEmail = String(u.Email || "").trim().toLowerCase();
+        const uNormWa = normalizeWa_(u.No_WA);
+        return (uEmail && uEmail === email) || (uNormWa && uNormWa === normWa);
+      });
+
+      if (duplicate) {
+        return jsonResponse_({
+          status: "error",
+          message: "Email atau Nomor WhatsApp sudah terdaftar. Silakan masuk atau hubungi Admin."
+        });
+      }
+
+      const newUserId = "USR-" + String(existingUsers.length + 1).padStart(3, "0") + "-" + Date.now().toString().slice(-4);
+      const newMember = {
+        User_ID: newUserId,
+        Nama: nama,
+        No_WA: "'" + normWa,
+        Email: email,
+        Role: "User", // Paksa Role = User
+        Alamat: alamat,
+        Password: hashPassword_(password)
+      };
+
+      appendObjectRow_(ss, "Users", newMember);
+      const safeMember = sanitizeUser_(newMember);
+      const token = createToken_(safeMember);
+      return jsonResponse_({
+        status: "success",
+        message: "Pendaftaran member berhasil!",
+        data: {
+          token: token,
+          user: safeMember
+        }
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // 3. TRACK ORDER PUBLIK TERPROTEKSI (Wajib Order_ID persis + 4 digit WA)
+    // ------------------------------------------------------------------------
+    if (action === "trackOrder") {
+      const reqOrderId = String(body.orderId || "").trim().toUpperCase();
+      const reqWaLast4 = String(body.waLast4 || "").replace(/\D/g, "");
+
+      if (!reqOrderId || !/^\d{4}$/.test(reqWaLast4)) {
+        return jsonResponse_({
+          status: "error",
+          message: "Masukkan ID Pesanan lengkap dan 4 digit terakhir Nomor WhatsApp."
+        });
+      }
+
+      const allOrders = sheetToObjects_(ss, "Pesanan");
+      const order = allOrders.find(function (o) {
+        return String(o.Order_ID || "").trim().toUpperCase() === reqOrderId;
+      });
+      if (!order) {
+        return jsonResponse_({
+          status: "error",
+          message: "Pesanan tidak ditemukan atau 4 digit terakhir WhatsApp tidak cocok."
+        });
+      }
+
+      const allUsers = sheetToObjects_(ss, "Users");
+      const owner = allUsers.find(function (u) {
+        return String(u.User_ID || "").trim() === String(order.User_ID || "").trim();
+      }) || {};
+      const ownerWaNorm = normalizeWa_(owner.No_WA);
+
+      if (!ownerWaNorm || ownerWaNorm.slice(-4) !== reqWaLast4) {
+        return jsonResponse_({
+          status: "error",
+          message: "Pesanan tidak ditemukan atau 4 digit terakhir WhatsApp tidak cocok."
+        });
+      }
+
+      const allDetails = sheetToObjects_(ss, "Detail_Pesanan");
+      const items = allDetails
+        .filter(function (d) {
+          return String(d.Order_ID || "").trim().toUpperCase() === reqOrderId;
+        })
+        .map(function (d) {
+          return {
+            Detail_ID: d.Detail_ID,
+            Order_ID: d.Order_ID,
+            Produk_ID: d.Produk_ID,
+            Panjang_m: d.Panjang_m,
+            Lebar_m: d.Lebar_m,
+            Qty: d.Qty,
+            Finishing_ID: d.Finishing_ID,
+            File_Desain: d.File_Desain ? "File terlampir" : "",
+            Keterangan_Item: d.Keterangan_Item,
+            Subtotal: d.Subtotal
+          };
+        });
+
+      return jsonResponse_({
+        status: "success",
+        data: {
+          pesanan: {
+            Order_ID: order.Order_ID,
+            Tanggal: order.Tanggal,
+            User_ID: order.User_ID,
+            Status_Order: order.Status_Order,
+            Total_Tagihan: order.Total_Tagihan,
+            Bukti_Bayar: order.Bukti_Bayar ? "Sudah diunggah" : "",
+            Status_Bayar: order.Status_Bayar,
+            Catatan: order.Catatan
+          },
+          detail_pesanan: items,
+          customer: {
+            User_ID: owner.User_ID || order.User_ID,
+            Nama: owner.Nama || "Pelanggan",
+            No_WA: maskWaForTracking_(owner.No_WA)
+          }
+        }
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // 4. GET MY ORDERS (Riwayat Pesanan Khusus Member yang Login)
+    // ------------------------------------------------------------------------
+    if (action === "getMyOrders") {
+      const auth = requireRole_(ss, body, ["User", "Admin", "Super Admin"]);
+      const myOrders = sheetToObjects_(ss, "Pesanan").filter(function (o) {
+        return String(o.User_ID || "").trim() === String(auth.session.uid).trim();
+      });
+      const myOrderIds = {};
+      myOrders.forEach(function (o) {
+        myOrderIds[String(o.Order_ID || "").trim()] = true;
+      });
+      const myDetails = sheetToObjects_(ss, "Detail_Pesanan").filter(function (d) {
+        return Boolean(myOrderIds[String(d.Order_ID || "").trim()]);
+      });
+      return jsonResponse_({
+        status: "success",
+        data: {
+          user: sanitizeUser_(auth.user),
+          pesanan: myOrders,
+          detail_pesanan: myDetails
+        }
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // 5. ADMIN GET DATA (Terproteksi Admin / Super Admin, Tanpa Password)
+    // ------------------------------------------------------------------------
+    if (action === "adminGetData") {
+      const auth = requireRole_(ss, body, ["Admin", "Super Admin"]);
+      const users = sheetToObjects_(ss, "Users").map(sanitizeUser_);
+      return jsonResponse_({
+        status: "success",
+        data: {
+          users: users,
+          produk: sheetToObjects_(ss, "Produk"),
+          finishing: sheetToObjects_(ss, "Finishing"),
+          pesanan: sheetToObjects_(ss, "Pesanan"),
+          detail_pesanan: sheetToObjects_(ss, "Detail_Pesanan")
+        },
+        meta: {
+          spreadsheetUrl: ss.getUrl(),
+          driveFolderUrl: DRIVE_FOLDER_URL,
+          role: auth.role
+        }
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // 6. CREATE ORDER (Kalkulasi Harga & Pembuatan Order_ID di Server)
     // ------------------------------------------------------------------------
     if (action === "createOrder") {
       const userPayload = body.user || {};
       const orderPayload = body.pesanan || {};
-      const detailsPayload = body.detail_pesanan || [];
+      const detailsPayload = Array.isArray(body.detail_pesanan) ? body.detail_pesanan : [];
 
-      // Cek / Simpan User berdasarkan No_WA (ternormalisasi) atau Email
-      const existingUsers = sheetToObjects_(ss, "Users");
+      if (!detailsPayload.length) {
+        return jsonResponse_({ status: "error", message: "Keranjang pesanan kosong." });
+      }
+      if (detailsPayload.length > 50) {
+        return jsonResponse_({ status: "error", message: "Maksimal 50 item dalam satu pesanan." });
+      }
+
+      const namaPelanggan = String(userPayload.Nama || "").trim();
       const reqNormWa = normalizeWa_(userPayload.No_WA);
       const reqEmail = String(userPayload.Email || "").trim().toLowerCase();
-      let userId = userPayload.User_ID || "";
-      const matchedUser = existingUsers.find(function (u) {
-        const uWa = normalizeWa_(u.No_WA);
-        const uEmail = String(u.Email || "").trim().toLowerCase();
-        return (reqNormWa && uWa === reqNormWa) || (reqEmail && uEmail === reqEmail);
-      });
+      const reqAlamat = String(userPayload.Alamat || "").trim();
 
-      if (matchedUser) {
-        userId = matchedUser.User_ID;
-      } else {
-        userId = userId || ("USR-" + Math.floor(100 + Math.random() * 900) + "-" + Date.now().toString().slice(-3));
-        appendObjectRow_(ss, "Users", {
-          User_ID: userId,
-          Nama: userPayload.Nama || "Pelanggan",
-          No_WA: reqNormWa ? ("'" + reqNormWa) : ("'" + String(userPayload.No_WA || "")),
-          Email: reqEmail,
-          Role: "User",
-          Alamat: userPayload.Alamat || "",
-          Password: userPayload.Password || ""
+      if (!namaPelanggan || !reqNormWa || reqNormWa.length < 10) {
+        return jsonResponse_({ status: "error", message: "Nama pelanggan dan Nomor WhatsApp valid wajib diisi." });
+      }
+
+      // Bangun lookup Produk & Finishing dari database server (abaikan harga dari klien)
+      const produkList = sheetToObjects_(ss, "Produk");
+      const finishingList = sheetToObjects_(ss, "Finishing");
+      const produkMap = {};
+      produkList.forEach(function (p) { produkMap[String(p.Produk_ID).trim()] = p; });
+      const finishingMap = {};
+      finishingList.forEach(function (f) { finishingMap[String(f.Finishing_ID).trim()] = f; });
+
+      let serverTotal = 0;
+      const computedItems = [];
+      for (let i = 0; i < detailsPayload.length; i++) {
+        const rawItem = detailsPayload[i] || {};
+        const prodId = String(rawItem.Produk_ID || "").trim();
+        const prod = produkMap[prodId];
+        if (!prod || String(prod.Status).trim() !== "Tersedia") {
+          return jsonResponse_({
+            status: "error",
+            message: "Produk tidak valid atau sedang tidak tersedia: " + (prodId || "-")
+          });
+        }
+
+        const isDimensi = String(prod.Tipe_Hitung).trim() === "Dimensi";
+        const panjang = isDimensi ? Number(rawItem.Panjang_m) : 0;
+        const lebar = isDimensi ? Number(rawItem.Lebar_m) : 0;
+        const qty = Math.floor(Number(rawItem.Qty));
+        const minOrder = Number(prod.Min_Order) || 1;
+
+        if (!Number.isFinite(qty) || qty < minOrder || qty > 100000) {
+          return jsonResponse_({
+            status: "error",
+            message: "Qty untuk " + prod.Nama_Produk + " minimal " + minOrder + "."
+          });
+        }
+        if (isDimensi && (!Number.isFinite(panjang) || !Number.isFinite(lebar) || panjang <= 0 || lebar <= 0 || panjang > 500 || lebar > 500)) {
+          return jsonResponse_({
+            status: "error",
+            message: "Panjang dan lebar untuk " + prod.Nama_Produk + " harus lebih dari 0 meter."
+          });
+        }
+
+        const finId = String(rawItem.Finishing_ID || "FIN-000").trim();
+        const fin = finishingMap[finId] || finishingMap["FIN-000"] || null;
+        if (finId && !finishingMap[finId] && finId !== "FIN-000") {
+          return jsonResponse_({
+            status: "error",
+            message: "Opsi finishing tidak ditemukan: " + finId
+          });
+        }
+
+        const hargaDasar = Number(prod.Harga_Dasar) || 0;
+        const baseCost = isDimensi
+          ? Math.round(panjang * lebar * qty * hargaDasar)
+          : Math.round(qty * hargaDasar);
+        const finTambahan = fin ? (Number(fin.Tambahan_Harga) || 0) : 0;
+        const finCost = (fin && String(fin.Tipe_Biaya).trim() === "Per_Qty") ? (finTambahan * qty) : finTambahan;
+        const serverSubtotal = baseCost + finCost;
+
+        serverTotal += serverSubtotal;
+        computedItems.push({
+          Produk_ID: prodId,
+          Panjang_m: isDimensi ? panjang : 0,
+          Lebar_m: isDimensi ? lebar : 0,
+          Qty: qty,
+          Finishing_ID: fin ? String(fin.Finishing_ID) : "FIN-000",
+          File_Desain: rawItem.File_Desain || "",
+          File_Desain_Base64: rawItem.File_Desain_Base64 || "",
+          Keterangan_Item: String(rawItem.Keterangan_Item || "").slice(0, 500),
+          Subtotal: serverSubtotal
         });
       }
 
-      const orderId = orderPayload.Order_ID || ("ORD-" + Date.now().toString().slice(-4));
-      const tanggal = orderPayload.Tanggal || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+      // Identifikasi / Buat User (JANGAN pernah menyimpan atau menimpa Password dari checkout)
+      let authSession = body.token ? verifyToken_(String(body.token)) : null;
+      const existingUsers = sheetToObjects_(ss, "Users");
+      let userId = "";
+      let matchedUser = null;
 
-      // Upload Bukti_Bayar ke Drive jika berupa Base64
+      if (authSession) {
+        matchedUser = existingUsers.find(function (u) {
+          return String(u.User_ID || "").trim() === String(authSession.uid).trim();
+        });
+      }
+      if (!matchedUser) {
+        matchedUser = existingUsers.find(function (u) {
+          const uWa = normalizeWa_(u.No_WA);
+          const uEmail = String(u.Email || "").trim().toLowerCase();
+          return (reqNormWa && uWa === reqNormWa) || (reqEmail && uEmail === reqEmail);
+        });
+      }
+
+      if (matchedUser) {
+        userId = String(matchedUser.User_ID);
+      } else {
+        userId = "USR-" + String(existingUsers.length + 1).padStart(3, "0") + "-" + Date.now().toString().slice(-4);
+        appendObjectRow_(ss, "Users", {
+          User_ID: userId,
+          Nama: namaPelanggan,
+          No_WA: "'" + reqNormWa,
+          Email: reqEmail,
+          Role: "User",
+          Alamat: reqAlamat,
+          Password: "" // Tamu tanpa password tidak diizinkan login
+        });
+      }
+
+      const existingOrders = sheetToObjects_(ss, "Pesanan");
+      const orderId = generateUniqueOrderId_(existingOrders);
+      const tanggal = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+
       let buktiBayarUrl = "";
       if (orderPayload.Bukti_Bayar) {
         buktiBayarUrl = saveBase64ToDrive_(
@@ -619,19 +1111,18 @@ function doPost(e) {
         Order_ID: orderId,
         Tanggal: tanggal,
         User_ID: userId,
-        Status_Order: orderPayload.Status_Order || "Menunggu Bayar",
-        Total_Tagihan: Number(orderPayload.Total_Tagihan) || 0,
+        Status_Order: "Menunggu Bayar",
+        Total_Tagihan: serverTotal,
         Bukti_Bayar: buktiBayarUrl,
-        Status_Bayar: orderPayload.Status_Bayar || (buktiBayarUrl ? "Menunggu Verifikasi" : "Belum Bayar"),
-        Catatan: orderPayload.Catatan || ""
+        Status_Bayar: buktiBayarUrl ? "Menunggu Verifikasi" : "Belum Bayar",
+        Catatan: String(orderPayload.Catatan || "").slice(0, 500)
       };
       appendObjectRow_(ss, "Pesanan", savedOrder);
 
-      // Simpan setiap item ke Detail_Pesanan
       const savedDetails = [];
-      for (let i = 0; i < detailsPayload.length; i++) {
-        const item = detailsPayload[i];
-        const detailId = item.Detail_ID || ("DTL-" + orderId.replace("ORD-", "") + "-" + (i + 1));
+      for (let i = 0; i < computedItems.length; i++) {
+        const item = computedItems[i];
+        const detailId = "DTL-" + orderId.replace("ORD-", "") + "-" + (i + 1);
         let fileDesainUrl = "";
         if (item.File_Desain_Base64) {
           fileDesainUrl = saveBase64ToDrive_(
@@ -640,20 +1131,20 @@ function doPost(e) {
             item.File_Desain || "desain_cetak"
           );
         } else if (item.File_Desain) {
-          fileDesainUrl = item.File_Desain;
+          fileDesainUrl = saveBase64ToDrive_(item.File_Desain, detailId, item.File_Desain);
         }
 
         const detailRow = {
           Detail_ID: detailId,
           Order_ID: orderId,
           Produk_ID: item.Produk_ID,
-          Panjang_m: Number(item.Panjang_m) || 0,
-          Lebar_m: Number(item.Lebar_m) || 0,
-          Qty: Number(item.Qty) || 1,
-          Finishing_ID: item.Finishing_ID || "FIN-000",
+          Panjang_m: item.Panjang_m,
+          Lebar_m: item.Lebar_m,
+          Qty: item.Qty,
+          Finishing_ID: item.Finishing_ID,
           File_Desain: fileDesainUrl,
-          Keterangan_Item: item.Keterangan_Item || "",
-          Subtotal: Number(item.Subtotal) || 0
+          Keterangan_Item: item.Keterangan_Item,
+          Subtotal: item.Subtotal
         };
         appendObjectRow_(ss, "Detail_Pesanan", detailRow);
         savedDetails.push(detailRow);
@@ -664,6 +1155,11 @@ function doPost(e) {
         message: "Pesanan berhasil disimpan",
         data: {
           User_ID: userId,
+          customer: {
+            User_ID: userId,
+            Nama: namaPelanggan,
+            No_WA: maskWaForTracking_(reqNormWa)
+          },
           pesanan: savedOrder,
           detail_pesanan: savedDetails
         }
@@ -671,29 +1167,39 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // 2. UPDATE STATUS (Admin ubah Status_Order & Status_Bayar di sheet Pesanan)
+    // 7. UPDATE STATUS (Hanya Admin / Super Admin)
     // ------------------------------------------------------------------------
     if (action === "updateStatus") {
+      requireRole_(ss, body, ["Admin", "Super Admin"]);
+      const orderId = String(body.Order_ID || "").trim();
+      const statusOrder = body.Status_Order ? String(body.Status_Order).trim() : "";
+      const statusBayar = body.Status_Bayar ? String(body.Status_Bayar).trim() : "";
+
+      if (statusOrder && ALLOWED_ORDER_STATUS.indexOf(statusOrder) === -1) {
+        return jsonResponse_({ status: "error", message: "Status_Order tidak valid." });
+      }
+      if (statusBayar && ALLOWED_PAY_STATUS.indexOf(statusBayar) === -1) {
+        return jsonResponse_({ status: "error", message: "Status_Bayar tidak valid." });
+      }
+
       const sheet = ss.getSheetByName("Pesanan");
       if (!sheet) throw new Error("Sheet Pesanan tidak ditemukan.");
-      const dataRange = sheet.getDataRange();
-      const values = dataRange.getValues();
+      const values = sheet.getDataRange().getValues();
       const headers = values[0].map(function (h) { return String(h).trim(); });
 
       const colOrderId = headers.indexOf("Order_ID");
       const colStatusOrder = headers.indexOf("Status_Order");
       const colStatusBayar = headers.indexOf("Status_Bayar");
-
       if (colOrderId === -1) throw new Error("Kolom Order_ID tidak ditemukan.");
 
       let updated = false;
       for (let r = 1; r < values.length; r++) {
-        if (String(values[r][colOrderId]).trim() === String(body.Order_ID).trim()) {
-          if (body.Status_Order && colStatusOrder !== -1) {
-            sheet.getRange(r + 1, colStatusOrder + 1).setValue(body.Status_Order);
+        if (String(values[r][colOrderId]).trim() === orderId) {
+          if (statusOrder && colStatusOrder !== -1) {
+            sheet.getRange(r + 1, colStatusOrder + 1).setValue(statusOrder);
           }
-          if (body.Status_Bayar && colStatusBayar !== -1) {
-            sheet.getRange(r + 1, colStatusBayar + 1).setValue(body.Status_Bayar);
+          if (statusBayar && colStatusBayar !== -1) {
+            sheet.getRange(r + 1, colStatusBayar + 1).setValue(statusBayar);
           }
           updated = true;
           break;
@@ -701,18 +1207,29 @@ function doPost(e) {
       }
 
       if (!updated) {
-        return jsonResponse_({ status: "error", message: "Order_ID tidak ditemukan: " + body.Order_ID });
+        return jsonResponse_({ status: "error", message: "Order_ID tidak ditemukan: " + orderId });
       }
       return jsonResponse_({ status: "success", message: "Status pesanan diperbarui." });
     }
 
     // ------------------------------------------------------------------------
-    // 3. SAVE PRODUCT (Admin tambah / edit produk di sheet Produk)
+    // 8. SAVE PRODUCT (Hanya Admin / Super Admin)
     // ------------------------------------------------------------------------
     if (action === "saveProduct") {
+      requireRole_(ss, body, ["Admin", "Super Admin"]);
       const prod = body.produk || body;
       const sheet = ss.getSheetByName("Produk");
       if (!sheet) throw new Error("Sheet Produk tidak ditemukan.");
+
+      const prodId = String(prod.Produk_ID || "").trim() || ("PRD-" + Date.now().toString().slice(-4));
+      const hargaDasar = Number(prod.Harga_Dasar);
+      const minOrder = Math.floor(Number(prod.Min_Order));
+      const tipeHitung = String(prod.Tipe_Hitung || "").trim() === "Dimensi" ? "Dimensi" : "Unit";
+      const statusProd = String(prod.Status || "").trim() === "Habis" ? "Habis" : "Tersedia";
+
+      if (!String(prod.Nama_Produk || "").trim() || !Number.isFinite(hargaDasar) || hargaDasar < 0 || !Number.isFinite(minOrder) || minOrder < 1) {
+        return jsonResponse_({ status: "error", message: "Data produk tidak valid." });
+      }
 
       const values = sheet.getDataRange().getValues();
       const headers = values[0].map(function (h) { return String(h).trim(); });
@@ -720,32 +1237,30 @@ function doPost(e) {
 
       let rowIndex = -1;
       for (let r = 1; r < values.length; r++) {
-        if (String(values[r][colProdId]).trim() === String(prod.Produk_ID).trim()) {
+        if (String(values[r][colProdId]).trim() === prodId) {
           rowIndex = r + 1;
           break;
         }
       }
 
       const productData = {
-        Produk_ID: prod.Produk_ID || ("PRD-" + Date.now().toString().slice(-3)),
-        Nama_Produk: prod.Nama_Produk,
-        Kategori: prod.Kategori,
-        Tipe_Hitung: prod.Tipe_Hitung,
-        Harga_Dasar: Number(prod.Harga_Dasar) || 0,
-        Satuan: prod.Satuan,
-        Min_Order: Number(prod.Min_Order) || 1,
-        Status: prod.Status || "Tersedia"
+        Produk_ID: prodId,
+        Nama_Produk: String(prod.Nama_Produk || "").trim(),
+        Kategori: String(prod.Kategori || "").trim(),
+        Tipe_Hitung: tipeHitung,
+        Harga_Dasar: hargaDasar,
+        Satuan: String(prod.Satuan || "").trim(),
+        Min_Order: minOrder,
+        Status: statusProd
       };
 
       if (rowIndex > 0) {
-        // Update baris yang ada
         headers.forEach(function (h, idx) {
           if (productData.hasOwnProperty(h)) {
             sheet.getRange(rowIndex, idx + 1).setValue(productData[h]);
           }
         });
       } else {
-        // Tambah produk baru
         appendObjectRow_(ss, "Produk", productData);
       }
 
@@ -757,122 +1272,19 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // 4. SAVE USER (Super Admin kelola akun & role di sheet Users)
-    // ------------------------------------------------------------------------
-    if (action === "saveUser") {
-      const usr = body.user || body;
-      const sheet = ss.getSheetByName("Users");
-      if (!sheet) throw new Error("Sheet Users tidak ditemukan.");
-
-      const values = sheet.getDataRange().getValues();
-      const headers = values[0].map(function (h) { return String(h).trim(); });
-      const colUserId = headers.indexOf("User_ID");
-
-      let rowIndex = -1;
-      for (let r = 1; r < values.length; r++) {
-        if (String(values[r][colUserId]).trim() === String(usr.User_ID).trim()) {
-          rowIndex = r + 1;
-          break;
-        }
-      }
-
-      const userData = {
-        User_ID: usr.User_ID || ("USR-" + Date.now().toString().slice(-3)),
-        Nama: usr.Nama || "",
-        No_WA: "'" + String(usr.No_WA || "").replace(/^'/, ""),
-        Email: usr.Email || "",
-        Role: usr.Role || "User",
-        Alamat: usr.Alamat || "",
-        Password: usr.Password || ""
-      };
-
-      if (rowIndex > 0) {
-        headers.forEach(function (h, idx) {
-          if (userData.hasOwnProperty(h) && (h !== "Password" || userData.Password !== "")) {
-            sheet.getRange(rowIndex, idx + 1).setValue(userData[h]);
-          }
-        });
-      } else {
-        appendObjectRow_(ss, "Users", userData);
-      }
-
-      return jsonResponse_({
-        status: "success",
-        message: rowIndex > 0 ? "Data pengguna diperbarui" : "Pengguna ditambahkan",
-        data: userData
-      });
-    }
-
-    // ------------------------------------------------------------------------
-    // 4B. REGISTER MEMBER (Pendaftaran mandiri pelanggan baru -> Role: "User")
-    // ------------------------------------------------------------------------
-    if (action === "registerMember") {
-      const usr = body.user || body;
-      const sheet = ss.getSheetByName("Users");
-      if (!sheet) throw new Error("Sheet Users tidak ditemukan.");
-
-      const nama = String(usr.Nama || "").trim();
-      const email = String(usr.Email || "").trim().toLowerCase();
-      const rawWa = String(usr.No_WA || "").replace(/\D/g, "");
-      const normWa = rawWa.startsWith("0") ? ("62" + rawWa.slice(1)) : (rawWa.startsWith("8") ? ("62" + rawWa) : rawWa);
-      const password = String(usr.Password || "").trim();
-      const alamat = String(usr.Alamat || "").trim();
-
-      if (!nama || !email || !normWa || password.length < 4) {
-        return jsonResponse_({
-          status: "error",
-          message: "Nama, No. WhatsApp, Email, dan Kata Sandi (min. 4 karakter) wajib diisi."
-        });
-      }
-
-      const existingUsers = sheetToObjects_(ss, "Users");
-      const duplicate = existingUsers.find(function (u) {
-        const uEmail = String(u.Email || "").trim().toLowerCase();
-        const uRawWa = String(u.No_WA || "").replace(/\D/g, "");
-        const uNormWa = uRawWa.startsWith("0") ? ("62" + uRawWa.slice(1)) : (uRawWa.startsWith("8") ? ("62" + uRawWa) : uRawWa);
-        return (uEmail && uEmail === email) || (uNormWa && uNormWa === normWa);
-      });
-
-      if (duplicate) {
-        return jsonResponse_({
-          status: "error",
-          message: "Email atau Nomor WhatsApp sudah terdaftar. Silakan langsung masuk."
-        });
-      }
-
-      const newUserId = "USR-" + String(existingUsers.length + 1).padStart(3, "0") + "-" + Date.now().toString().slice(-3);
-      const newMember = {
-        User_ID: usr.User_ID || newUserId,
-        Nama: nama,
-        No_WA: "'" + normWa,
-        Email: email,
-        Role: "User", // Paksa Role = User agar tidak bisa daftar sebagai Admin
-        Alamat: alamat,
-        Password: password
-      };
-
-      appendObjectRow_(ss, "Users", newMember);
-      return jsonResponse_({
-        status: "success",
-        message: "Pendaftaran member berhasil!",
-        data: {
-          User_ID: newMember.User_ID,
-          Nama: newMember.Nama,
-          No_WA: normWa,
-          Email: newMember.Email,
-          Role: newMember.Role,
-          Alamat: newMember.Alamat
-        }
-      });
-    }
-
-    // ------------------------------------------------------------------------
-    // 5. SAVE FINISHING (Admin tambah / edit opsi finishing di sheet Finishing)
+    // 9. SAVE FINISHING (Hanya Admin / Super Admin)
     // ------------------------------------------------------------------------
     if (action === "saveFinishing") {
+      requireRole_(ss, body, ["Admin", "Super Admin"]);
       const fin = body.finishing || body;
       const sheet = ss.getSheetByName("Finishing");
       if (!sheet) throw new Error("Sheet Finishing tidak ditemukan.");
+
+      const finId = String(fin.Finishing_ID || "").trim() || ("FIN-" + Date.now().toString().slice(-4));
+      const tambahanHarga = Number(fin.Tambahan_Harga);
+      if (!String(fin.Nama_Finishing || "").trim() || !Number.isFinite(tambahanHarga) || tambahanHarga < 0) {
+        return jsonResponse_({ status: "error", message: "Data finishing tidak valid." });
+      }
 
       const values = sheet.getDataRange().getValues();
       const headers = values[0].map(function (h) { return String(h).trim(); });
@@ -880,18 +1292,18 @@ function doPost(e) {
 
       let rowIndex = -1;
       for (let r = 1; r < values.length; r++) {
-        if (String(values[r][colFinId]).trim() === String(fin.Finishing_ID).trim()) {
+        if (String(values[r][colFinId]).trim() === finId) {
           rowIndex = r + 1;
           break;
         }
       }
 
       const finData = {
-        Finishing_ID: fin.Finishing_ID || ("FIN-" + Date.now().toString().slice(-3)),
-        Nama_Finishing: fin.Nama_Finishing || "",
+        Finishing_ID: finId,
+        Nama_Finishing: String(fin.Nama_Finishing || "").trim(),
         Tipe_Biaya: fin.Tipe_Biaya === "Per_Qty" ? "Per_Qty" : "Tetap",
-        Tambahan_Harga: Number(fin.Tambahan_Harga) || 0,
-        Keterangan: fin.Keterangan || ""
+        Tambahan_Harga: tambahanHarga,
+        Keterangan: String(fin.Keterangan || "").trim()
       };
 
       if (rowIndex > 0) {
@@ -912,10 +1324,77 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // 6. DELETE RECORD (Hapus Produk, Finishing, Users, atau Pesanan + Detail)
+    // 10. SAVE USER (Hanya Super Admin, Password Di-Hash & Tidak Dikembalikan)
+    // ------------------------------------------------------------------------
+    if (action === "saveUser") {
+      requireRole_(ss, body, ["Super Admin"]);
+      const usr = body.user || body;
+      const sheet = ss.getSheetByName("Users");
+      if (!sheet) throw new Error("Sheet Users tidak ditemukan.");
+
+      const userId = String(usr.User_ID || "").trim() || ("USR-" + Date.now().toString().slice(-4));
+      const roleVal = normalizeRole_(usr.Role);
+      if (ALLOWED_USER_ROLES.indexOf(roleVal) === -1) {
+        return jsonResponse_({ status: "error", message: "Role tidak valid." });
+      }
+
+      const values = sheet.getDataRange().getValues();
+      const headers = values[0].map(function (h) { return String(h).trim(); });
+      const colUserId = headers.indexOf("User_ID");
+
+      let rowIndex = -1;
+      for (let r = 1; r < values.length; r++) {
+        if (String(values[r][colUserId]).trim() === userId) {
+          rowIndex = r + 1;
+          break;
+        }
+      }
+
+      const rawPassword = String(usr.Password || "").trim();
+      if (rowIndex === -1 && rawPassword.length < 6) {
+        return jsonResponse_({ status: "error", message: "Akun baru wajib memiliki kata sandi minimal 6 karakter." });
+      }
+      if (rowIndex > 0 && rawPassword && !rawPassword.startsWith("sha256$") && rawPassword.length < 6) {
+        return jsonResponse_({ status: "error", message: "Kata sandi baru minimal 6 karakter." });
+      }
+
+      const hashedPass = rawPassword
+        ? (rawPassword.startsWith("sha256$") ? rawPassword : hashPassword_(rawPassword))
+        : "";
+      const normWa = normalizeWa_(usr.No_WA);
+
+      const userData = {
+        User_ID: userId,
+        Nama: String(usr.Nama || "").trim(),
+        No_WA: normWa ? ("'" + normWa) : ("'" + String(usr.No_WA || "").replace(/^'/, "")),
+        Email: String(usr.Email || "").trim().toLowerCase(),
+        Role: roleVal,
+        Alamat: String(usr.Alamat || "").trim(),
+        Password: hashedPass
+      };
+
+      if (rowIndex > 0) {
+        headers.forEach(function (h, idx) {
+          if (userData.hasOwnProperty(h) && (h !== "Password" || userData.Password !== "")) {
+            sheet.getRange(rowIndex, idx + 1).setValue(userData[h]);
+          }
+        });
+      } else {
+        appendObjectRow_(ss, "Users", userData);
+      }
+
+      return jsonResponse_({
+        status: "success",
+        message: rowIndex > 0 ? "Data pengguna diperbarui" : "Pengguna ditambahkan",
+        data: sanitizeUser_(userData)
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // 11. DELETE RECORD (Admin: Produk/Finishing/Pesanan; Super Admin: + Users)
     // ------------------------------------------------------------------------
     if (action === "deleteRecord") {
-      const sheetName = body.sheetName;
+      const sheetName = String(body.sheetName || "").trim();
       const recordId = String(body.id || "").trim();
       const idColMap = {
         Produk: "Produk_ID",
@@ -926,6 +1405,12 @@ function doPost(e) {
       const idColName = idColMap[sheetName];
       if (!idColName || !recordId) {
         return jsonResponse_({ status: "error", message: "Parameter sheetName atau id tidak valid." });
+      }
+
+      const allowed = sheetName === "Users" ? ["Super Admin"] : ["Admin", "Super Admin"];
+      const auth = requireRole_(ss, body, allowed);
+      if (sheetName === "Users" && recordId === String(auth.session.uid).trim()) {
+        return jsonResponse_({ status: "error", message: "Akun yang sedang aktif login tidak dapat dihapus." });
       }
 
       const sheet = ss.getSheetByName(sheetName);
@@ -944,7 +1429,6 @@ function doPost(e) {
         }
       }
 
-      // Jika Pesanan dihapus, hapus juga baris terkait di Detail_Pesanan
       if (sheetName === "Pesanan") {
         const detailSheet = ss.getSheetByName("Detail_Pesanan");
         if (detailSheet) {
@@ -971,19 +1455,23 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // 7. INIT SHEETS & CREATE NEW DATABASE
+    // 12. INIT SHEETS & CREATE NEW DATABASE (Hanya Super Admin)
     // ------------------------------------------------------------------------
     if (action === "initSheets") {
+      requireRole_(ss, body, ["Super Admin"]);
       const initResult = ensureSheetsInitialized_(ss);
+      const migrated = migratePlaintextPasswords_(ss);
+      initResult.migratedPlaintextPasswords = migrated;
       return jsonResponse_({
         status: "success",
-        message: "Inisialisasi 5 tab & header sheet selesai.",
+        message: "Inisialisasi 5 tab & hash password selesai.",
         data: initResult
       });
     }
 
     if (action === "createNewDatabase") {
-      const createdResult = buatDatabaseBaru();
+      requireRole_(ss, body, ["Super Admin"]);
+      const createdResult = buatDatabaseBaru_();
       return jsonResponse_({
         status: "success",
         message: "Database Google Sheets baru berhasil dibuat di Google Drive.",

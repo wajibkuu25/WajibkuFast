@@ -659,13 +659,13 @@ function ensureSheetsInitialized_(ss) {
     }
   });
 
-  // Pastikan minimal ada 1 akun Super Admin dengan password acak ter-hash (tidak pernah plaintext lemah)
+  // Pastikan minimal ada 1 akun Super Admin dengan password ter-hash
   const existingUsersList = sheetToObjects_(ss, "Users");
   const hasSuperAdmin = existingUsersList.some(function (u) {
     return normalizeRole_(u.Role) === "Super Admin";
   });
   if (!hasSuperAdmin) {
-    const initialSuperPass = "WF-" + Utilities.getUuid().replace(/-/g, "").slice(0, 12);
+    const initialSuperPass = "123456";
     appendObjectRow_(ss, "Users", {
       User_ID: "SUP-001",
       Nama: "Super Admin Wajibku Fast",
@@ -675,7 +675,7 @@ function ensureSheetsInitialized_(ss) {
       Alamat: "Kantor Pusat",
       Password: hashPassword_(initialSuperPass)
     });
-    Logger.log("SUPER ADMIN AWAL DIBUAT -> Email: superadmin@wajibkufast.id | Password Sementara: " + initialSuperPass);
+    Logger.log("SUPER ADMIN AWAL DIBUAT -> Email: superadmin@wajibkufast.id | Password: " + initialSuperPass);
   }
 
   const defaultSheet1 = ss.getSheetByName("Sheet1");
@@ -711,14 +711,16 @@ function setupDatabaseSheets() {
   return result;
 }
 
-function resetSuperAdminAccess() {
+function resetSuperAdminAccess(customPassword) {
   const ss = getSpreadsheet_();
   ensureSheetsInitialized_(ss);
   const users = sheetToObjects_(ss, "Users");
   const superAdmin = users.find(function (u) {
     return normalizeRole_(u.Role) === "Super Admin";
   });
-  const newPass = "WF-" + Utilities.getUuid().replace(/-/g, "").slice(0, 10);
+  const newPass = (typeof customPassword === "string" && customPassword.trim().length >= 6)
+    ? customPassword.trim()
+    : "123456";
   const recoveryKey = getOrCreateOwnerRecoveryKey_();
 
   if (superAdmin) {

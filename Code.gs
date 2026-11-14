@@ -605,6 +605,69 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
+    // 4B. REGISTER MEMBER (Pendaftaran mandiri pelanggan baru -> Role: "User")
+    // ------------------------------------------------------------------------
+    if (action === "registerMember") {
+      const usr = body.user || body;
+      const sheet = ss.getSheetByName("Users");
+      if (!sheet) throw new Error("Sheet Users tidak ditemukan.");
+
+      const nama = String(usr.Nama || "").trim();
+      const email = String(usr.Email || "").trim().toLowerCase();
+      const rawWa = String(usr.No_WA || "").replace(/\D/g, "");
+      const normWa = rawWa.startsWith("0") ? ("62" + rawWa.slice(1)) : (rawWa.startsWith("8") ? ("62" + rawWa) : rawWa);
+      const password = String(usr.Password || "").trim();
+      const alamat = String(usr.Alamat || "").trim();
+
+      if (!nama || !email || !normWa || password.length < 4) {
+        return jsonResponse_({
+          status: "error",
+          message: "Nama, No. WhatsApp, Email, dan Kata Sandi (min. 4 karakter) wajib diisi."
+        });
+      }
+
+      const existingUsers = sheetToObjects_(ss, "Users");
+      const duplicate = existingUsers.find(function (u) {
+        const uEmail = String(u.Email || "").trim().toLowerCase();
+        const uRawWa = String(u.No_WA || "").replace(/\D/g, "");
+        const uNormWa = uRawWa.startsWith("0") ? ("62" + uRawWa.slice(1)) : (uRawWa.startsWith("8") ? ("62" + uRawWa) : uRawWa);
+        return (uEmail && uEmail === email) || (uNormWa && uNormWa === normWa);
+      });
+
+      if (duplicate) {
+        return jsonResponse_({
+          status: "error",
+          message: "Email atau Nomor WhatsApp sudah terdaftar. Silakan langsung masuk."
+        });
+      }
+
+      const newUserId = "USR-" + String(existingUsers.length + 1).padStart(3, "0") + "-" + Date.now().toString().slice(-3);
+      const newMember = {
+        User_ID: usr.User_ID || newUserId,
+        Nama: nama,
+        No_WA: "'" + normWa,
+        Email: email,
+        Role: "User", // Paksa Role = User agar tidak bisa daftar sebagai Admin
+        Alamat: alamat,
+        Password: password
+      };
+
+      appendObjectRow_(ss, "Users", newMember);
+      return jsonResponse_({
+        status: "success",
+        message: "Pendaftaran member berhasil!",
+        data: {
+          User_ID: newMember.User_ID,
+          Nama: newMember.Nama,
+          No_WA: normWa,
+          Email: newMember.Email,
+          Role: newMember.Role,
+          Alamat: newMember.Alamat
+        }
+      });
+    }
+
+    // ------------------------------------------------------------------------
     // 5. SAVE FINISHING (Admin tambah / edit opsi finishing di sheet Finishing)
     // ------------------------------------------------------------------------
     if (action === "saveFinishing") {

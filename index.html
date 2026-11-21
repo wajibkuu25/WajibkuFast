@@ -10,20 +10,52 @@
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
 
-  <!-- Fonts: Plus Jakarta Sans, DM Sans, JetBrains Mono -->
+  <!-- Fonts: Inter (satu sistem tipografi utama) + JetBrains Mono untuk angka & kode -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
-  <!-- Tailwind CSS via CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Theme bootstrap: tetapkan mode tema sebelum halaman dirender (mencegah flash warna salah) -->
+  <script>
+    (function () {
+      var KEY = "WAJIBKU_THEME";
+      var mq = window.matchMedia("(prefers-color-scheme: dark)");
+      function readStored() {
+        try { return localStorage.getItem(KEY); } catch (e) { return null; }
+      }
+      function applyTheme(mode) {
+        var dark = mode === "dark";
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      }
+      applyTheme(readStored() || (mq.matches ? "dark" : "light"));
+
+      window.toggleTheme = function () {
+        var root = document.documentElement;
+        var next = root.classList.contains("dark") ? "light" : "dark";
+        root.classList.add("theme-animating");
+        applyTheme(next);
+        try { localStorage.setItem(KEY, next); } catch (e) {}
+        setTimeout(function () { root.classList.remove("theme-animating"); }, 300);
+      };
+
+      if (mq.addEventListener) {
+        mq.addEventListener("change", function (e) {
+          if (!readStored()) applyTheme(e.matches ? "dark" : "light");
+        });
+      }
+    })();
+  </script>
+
+  <!-- Tailwind CSS via CDN (versi dikunci 3.4.16) -->
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            display: ['"Plus Jakarta Sans"', 'sans-serif'],
-            sans: ['"DM Sans"', 'sans-serif'],
+            display: ['Inter', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
             mono: ['"JetBrains Mono"', 'monospace'],
           },
           colors: {
@@ -41,18 +73,168 @@
     };
   </script>
 
-  <!-- Lucide Icons via CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Lucide Icons via CDN (versi dikunci 0.469.0) -->
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" crossorigin="anonymous"></script>
 
   <style>
+    /* ---------------------------------------------------------------
+       DESIGN TOKENS — satu sumber kebenaran untuk warna, radius, & bayangan.
+       Light mode = default. Dark mode = html.dark (diatur di head script).
+       --------------------------------------------------------------- */
+    :root {
+      --c-bg: #F8FAFC;
+      --c-surface: #FFFFFF;
+      --c-surface-2: #F1F5F9;
+      --c-border: #E2E8F0;
+      --c-border-strong: #CBD5E1;
+      --c-text: #0F172A;
+      --c-text-2: #334155;
+      --c-muted: #64748B;
+      --c-primary: #1D4ED8;
+      --c-primary-hover: #1E40AF;
+      --c-focus: #2563EB;
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 8px 24px -12px rgba(15, 23, 42, 0.18);
+    }
+    html.dark {
+      --c-bg: #0B1120;
+      --c-surface: #111827;
+      --c-surface-2: #1B2433;
+      --c-border: #1F2A3D;
+      --c-border-strong: #334155;
+      --c-text: #F1F5F9;
+      --c-text-2: #CBD5E1;
+      --c-muted: #94A3B8;
+      --c-primary: #3B82F6;
+      --c-primary-hover: #2563EB;
+      --c-focus: #60A5FA;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+    }
+
     body {
-      font-family: 'DM Sans', sans-serif;
-      background-color: #F8FAFC;
-      color: #0F172A;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background-color: var(--c-bg);
+      color: var(--c-text);
       -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.003em;
     }
     h1, h2, h3, h4, .font-display {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      letter-spacing: -0.015em;
+    }
+    .font-mono, .tabular-nums { font-feature-settings: "tnum" 1; }
+
+    :focus-visible {
+      outline: 2px solid var(--c-focus);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+
+    button:not(:disabled), a[href], label[for] {
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:not(:disabled):active { transform: translateY(0.5px) scale(0.995); }
+    button, a, input, select, textarea { transition-property: color, background-color, border-color, box-shadow, transform, opacity; }
+
+    tbody tr { transition: background-color 0.15s ease; }
+    tbody tr:hover { background-color: rgba(148, 163, 184, 0.08); }
+
+    .theme-icon-dark { display: none; }
+    html.dark .theme-icon-light { display: none; }
+    html.dark .theme-icon-dark { display: inline-block; }
+
+    html.theme-animating,
+    html.theme-animating *,
+    html.theme-animating *::before,
+    html.theme-animating *::after {
+      transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, fill 0.25s ease !important;
+    }
+
+    @media screen {
+      html.dark { color-scheme: dark; }
+      html.dark body { background-color: #0B1120; color: #F1F5F9; }
+
+      html.dark .bg-white { background-color: #111827; }
+      html.dark .bg-white\/95 { background-color: rgba(17, 24, 39, 0.92); }
+      html.dark .bg-slate-50 { background-color: #0B1120; }
+      html.dark .bg-slate-100 { background-color: #1B2433; }
+      html.dark .bg-slate-200 { background-color: #243044; }
+      html.dark .bg-slate-200\/70 { background-color: rgba(36, 48, 68, 0.7); }
+      html.dark .bg-slate-300 { background-color: #334155; }
+      html.dark .bg-slate-900 { background-color: #1E293B; }
+      html.dark .bg-press-50 { background-color: rgba(59, 130, 246, 0.14); }
+      html.dark .bg-press-50\/70 { background-color: rgba(59, 130, 246, 0.12); }
+      html.dark .bg-press-100 { background-color: rgba(59, 130, 246, 0.24); }
+      html.dark .bg-sky-50 { background-color: rgba(14, 165, 233, 0.14); }
+      html.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.12); }
+      html.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.22); }
+      html.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.12); }
+      html.dark .bg-rose-50 { background-color: rgba(244, 63, 94, 0.12); }
+      html.dark .hover\:bg-slate-50:hover { background-color: #1B2433; }
+      html.dark .hover\:bg-slate-100:hover { background-color: #243044; }
+      html.dark .hover\:bg-slate-200:hover { background-color: #2A3850; }
+      html.dark .hover\:bg-press-50:hover { background-color: rgba(59, 130, 246, 0.18); }
+      html.dark .hover\:bg-rose-50:hover { background-color: rgba(244, 63, 94, 0.18); }
+      html.dark .hover\:bg-emerald-100:hover { background-color: rgba(16, 185, 129, 0.3); }
+      html.dark .hover\:bg-press-700:hover { background-color: #1D4ED8; }
+      html.dark .disabled\:bg-slate-300:disabled { background-color: #334155; }
+
+      html.dark .text-slate-900 { color: #F1F5F9; }
+      html.dark .text-slate-800 { color: #E2E8F0; }
+      html.dark .text-slate-700 { color: #CBD5E1; }
+      html.dark .text-slate-600 { color: #94A3B8; }
+      html.dark .text-slate-500 { color: #94A3B8; }
+      html.dark .text-slate-400 { color: #64748B; }
+      html.dark .hover\:text-slate-900:hover { color: #F8FAFC; }
+      html.dark .hover\:text-slate-800:hover { color: #F1F5F9; }
+      html.dark .text-press-700 { color: #60A5FA; }
+      html.dark .text-press-800 { color: #93C5FD; }
+      html.dark .hover\:text-press-700:hover { color: #93C5FD; }
+      html.dark .text-rose-600 { color: #FB7185; }
+      html.dark .text-rose-700 { color: #FDA4AF; }
+      html.dark .text-rose-800 { color: #FECDD3; }
+      html.dark .text-rose-900 { color: #FFE4E6; }
+      html.dark .hover\:text-rose-700:hover { color: #FDA4AF; }
+      html.dark .text-emerald-700 { color: #34D399; }
+      html.dark .text-emerald-800 { color: #A7F3D0; }
+      html.dark .text-emerald-900 { color: #D1FAE5; }
+      html.dark .text-emerald-950 { color: #ECFDF5; }
+      html.dark .text-amber-600 { color: #FBBF24; }
+      html.dark .text-amber-700 { color: #FBBF24; }
+      html.dark .text-amber-800 { color: #FCD34D; }
+      html.dark .text-amber-900 { color: #FDE68A; }
+      html.dark .text-amber-950 { color: #FEF3C7; }
+      html.dark .text-sky-800 { color: #7DD3FC; }
+
+      html.dark .border-slate-200 { border-color: #1F2A3D; }
+      html.dark .border-slate-300 { border-color: #334155; }
+      html.dark .border-slate-700 { border-color: #2B3A52; }
+      html.dark .border-slate-800 { border-color: #334155; }
+      html.dark .hover\:border-slate-300:hover { border-color: #475569; }
+      html.dark .border-press-100,
+      html.dark .border-press-200 { border-color: rgba(59, 130, 246, 0.3); }
+      html.dark .border-sky-200 { border-color: rgba(14, 165, 233, 0.35); }
+      html.dark .border-rose-200 { border-color: rgba(244, 63, 94, 0.35); }
+      html.dark .border-rose-300 { border-color: rgba(244, 63, 94, 0.45); }
+      html.dark .border-emerald-200,
+      html.dark .border-emerald-300 { border-color: rgba(16, 185, 129, 0.35); }
+      html.dark .border-amber-200,
+      html.dark .border-amber-300 { border-color: rgba(245, 158, 11, 0.35); }
+      html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+      html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1F2A3D; }
+      html.dark tbody tr:hover { background-color: rgba(148, 163, 184, 0.06); }
+
+      html.dark ::placeholder { color: #64748B; opacity: 1; }
+      html.dark option { background-color: #111827; color: #F1F5F9; }
+      html.dark .shadow-xs { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+
+      html.dark ::-webkit-scrollbar-track { background: #111827; }
+      html.dark ::-webkit-scrollbar-thumb { background: #334155; }
+      html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
     }
     .tabular-nums {
       font-variant-numeric: tabular-nums;
@@ -60,7 +242,6 @@
     .text-balance {
       text-wrap: balance;
     }
-    /* Custom subtle scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -130,8 +311,13 @@
         <!-- Populated dynamically by renderNavigation() -->
       </nav>
 
-      <!-- Zone 3: Single Primary Action + Mobile Menu Trigger -->
+      <!-- Zone 3: Single Primary Action + Theme Toggle + Mobile Menu Trigger -->
       <div class="flex items-center gap-2 shrink-0">
+        <button type="button" onclick="toggleTheme()" aria-label="Ganti tema terang atau gelap" title="Ganti tema terang / gelap" class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors shrink-0">
+          <i data-lucide="moon" class="theme-icon-light w-4 h-4"></i>
+          <i data-lucide="sun" class="theme-icon-dark w-4 h-4"></i>
+        </button>
+
         <button type="button" id="header-primary-btn" onclick="handleHeaderPrimaryAction()" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors whitespace-nowrap shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-700">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
           <span id="header-primary-label">Keranjang (0)</span>
@@ -313,7 +499,7 @@
         </div>
       </div>
 
-      <!-- Alert Koneksi Server (Tampil jika endpoint live gagal dihubungi atau mode pratinjau aktif) -->
+      <!-- Alert Koneksi Server (Tampil jika endpoint live gagal dihubungi) -->
       <div id="catalog-connection-alert" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-900 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs sm:text-sm">
         <div class="min-w-0">
           <p id="catalog-connection-alert-title" class="font-bold">Gagal memuat data terbaru dari server</p>
@@ -323,9 +509,6 @@
           <a id="catalog-test-api-link" href="#" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 text-xs font-semibold text-rose-800 bg-white border border-rose-300 hover:bg-rose-100 rounded-lg transition-colors whitespace-nowrap">
             Cek Link API
           </a>
-          <button type="button" id="btn-load-sample-preview" data-action="load-sample-preview" class="px-3.5 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition-colors whitespace-nowrap">
-            Muat Katalog Contoh
-          </button>
           <button type="button" id="btn-retry-init" data-action="retry-init" class="px-4 py-2 text-xs font-semibold text-white bg-rose-700 hover:bg-rose-800 rounded-lg transition-colors whitespace-nowrap">
             Coba Muat Ulang
           </button>
@@ -395,7 +578,7 @@
                   <i data-lucide="upload" class="w-4 h-4"></i>
                   <span>Pilih File Desain</span>
                 </label>
-                <input type="file" id="calc-file-desain" accept=".pdf,.png,.jpg,.jpeg,.webp,.ai,.cdr,.zip,.rar" onchange="handleDesignFileSelect(event)" class="hidden" />
+                <input type="file" id="calc-file-desain" accept=".pdf,.png,.jpg,.jpeg,.webp,.ai,.eps,.zip" onchange="handleDesignFileSelect(event)" class="hidden" />
                 <div id="calc-file-status" class="text-xs text-slate-500 truncate">Belum ada file dipilih (Maks. 2,5 MB, opsional jika kirim menyusul)</div>
               </div>
               <div id="calc-file-preview-box" class="hidden mt-3 flex items-center justify-between gap-3 p-3 bg-white border border-slate-200 rounded-lg">
@@ -509,6 +692,192 @@
   </main>
 
   <!-- ===================================================================== -->
+  <!-- ===================================================================== -->
+  <!-- VIEW 3: AREA MEMBER — BANNER MEMBER REWARDS                           -->
+  <!-- ===================================================================== -->
+  <main id="view-member" class="hidden flex-1">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium text-slate-500">Program Member</p>
+          <h1 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mt-0.5">Banner Member Rewards</h1>
+          <p id="member-subtitle" class="text-sm text-slate-600 mt-1 max-w-2xl"></p>
+        </div>
+        <button type="button" onclick="refreshMemberArea()" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors self-start md:self-auto whitespace-nowrap">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          <span>Muat Ulang Data</span>
+        </button>
+      </div>
+
+      <!-- Kartu ringkasan saldo -->
+      <section aria-label="Ringkasan saldo" class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-medium text-slate-500">Saldo Tersedia</p>
+              <p id="member-saldo-tersedia" class="mt-2 font-mono text-xl sm:text-2xl font-bold text-emerald-700 tabular-nums">Rp 0</p>
+              <p class="mt-1 text-xs text-slate-500">Bisa dipakai diskon atau ditarik</p>
+            </div>
+            <i data-lucide="wallet" class="w-5 h-5 text-emerald-700 shrink-0"></i>
+          </div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-medium text-slate-500">Saldo Tertahan</p>
+              <p id="member-saldo-tertahan" class="mt-2 font-mono text-xl sm:text-2xl font-bold text-amber-700 tabular-nums">Rp 0</p>
+              <p class="mt-1 text-xs text-slate-500">Cair setelah pesanan diambil</p>
+            </div>
+            <i data-lucide="clock" class="w-5 h-5 text-amber-600 shrink-0"></i>
+          </div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-medium text-slate-500">Sedang Diproses Penarikan</p>
+              <p id="member-saldo-proses" class="mt-2 font-mono text-xl sm:text-2xl font-bold text-slate-900 tabular-nums">Rp 0</p>
+              <p class="mt-1 text-xs text-slate-500">Menunggu verifikasi admin</p>
+            </div>
+            <i data-lucide="send" class="w-5 h-5 text-slate-400 shrink-0"></i>
+          </div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <p class="text-xs font-medium text-slate-500">Total Reward Diperoleh</p>
+          <p id="member-total-reward" class="mt-2 font-mono text-lg font-bold text-slate-900 tabular-nums">Rp 0</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <p class="text-xs font-medium text-slate-500">Total Saldo Dipakai</p>
+          <p id="member-total-dipakai" class="mt-2 font-mono text-lg font-bold text-slate-900 tabular-nums">Rp 0</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <p class="text-xs font-medium text-slate-500">Total Saldo Ditarik</p>
+          <p id="member-total-ditarik" class="mt-2 font-mono text-lg font-bold text-slate-900 tabular-nums">Rp 0</p>
+        </div>
+      </section>
+
+      <!-- Menu member -->
+      <div role="tablist" aria-label="Menu member" class="flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg overflow-x-auto">
+        <button type="button" id="member-tab-ringkasan" onclick="switchMemberTab('ringkasan')" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-md bg-white text-slate-900 shadow-sm whitespace-nowrap shrink-0">Riwayat Pesanan &amp; Reward</button>
+        <button type="button" id="member-tab-riwayat" onclick="switchMemberTab('riwayat')" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">Riwayat Saldo</button>
+        <button type="button" id="member-tab-tarik" onclick="switchMemberTab('tarik')" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">Tarik Saldo</button>
+        <button type="button" id="member-tab-profil" onclick="switchMemberTab('profil')" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">Profil &amp; Rekening</button>
+        <button type="button" id="member-tab-panduan" onclick="switchMemberTab('panduan')" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">Panduan</button>
+      </div>
+
+      <!-- Panel: Riwayat pesanan & reward -->
+      <section id="member-panel-ringkasan" class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="p-5 border-b border-slate-200">
+          <h2 class="font-display text-lg font-bold text-slate-900">Pesanan &amp; Reward</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Reward dihitung dari luas banner yang sudah lunas dan selesai diproduksi.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                <th class="py-3 px-4 whitespace-nowrap">ID Pesanan</th>
+                <th class="py-3 px-4 whitespace-nowrap">Tanggal</th>
+                <th class="py-3 px-4 whitespace-nowrap">Status</th>
+                <th class="py-3 px-4 whitespace-nowrap text-right">Total Tagihan</th>
+                <th class="py-3 px-4 whitespace-nowrap">Reward</th>
+              </tr>
+            </thead>
+            <tbody id="member-orders-body" class="divide-y divide-slate-200 text-sm"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Panel: Riwayat saldo -->
+      <section id="member-panel-riwayat" class="hidden bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="p-5 border-b border-slate-200">
+          <h2 class="font-display text-lg font-bold text-slate-900">Riwayat Saldo</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Setiap perubahan saldo tercatat di sini beserta nomor transaksinya.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                <th class="py-3 px-4 whitespace-nowrap">Tanggal</th>
+                <th class="py-3 px-4 whitespace-nowrap">No. Transaksi</th>
+                <th class="py-3 px-4 whitespace-nowrap">Jenis &amp; Keterangan</th>
+                <th class="py-3 px-4 whitespace-nowrap">Indikator</th>
+                <th class="py-3 px-4 whitespace-nowrap text-right">Nominal</th>
+              </tr>
+            </thead>
+            <tbody id="member-tx-body" class="divide-y divide-slate-200 text-sm"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Panel: Tarik saldo -->
+      <section id="member-panel-tarik" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <form id="member-withdraw-form" onsubmit="submitWithdrawal(event)" class="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-5 sm:p-6 space-y-4">
+          <div>
+            <h2 class="font-display text-lg font-bold text-slate-900">Ajukan Penarikan</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Saldo langsung dicadangkan. Admin memverifikasi lalu mentransfer ke rekening Anda.</p>
+          </div>
+          <div>
+            <label for="wd-amount" class="block text-sm font-semibold text-slate-800 mb-1.5">Nominal Penarikan (Rp)</label>
+            <input type="number" id="wd-amount" required min="0" step="1000" inputmode="numeric" class="w-full px-3.5 py-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+            <p class="mt-1.5 text-xs text-slate-500" id="wd-hint"></p>
+          </div>
+          <div>
+            <label for="wd-bank" class="block text-sm font-semibold text-slate-800 mb-1.5">Bank / E-wallet</label>
+            <input type="text" id="wd-bank" required maxlength="60" placeholder="Contoh: BCA, Dana, OVO" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+          </div>
+          <div>
+            <label for="wd-account" class="block text-sm font-semibold text-slate-800 mb-1.5">Nomor Rekening / E-wallet</label>
+            <input type="text" id="wd-account" required inputmode="numeric" maxlength="24" autocomplete="off" placeholder="6–20 digit" class="w-full px-3.5 py-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+          </div>
+          <div>
+            <label for="wd-holder" class="block text-sm font-semibold text-slate-800 mb-1.5">Nama Pemilik Rekening</label>
+            <input type="text" id="wd-holder" required maxlength="80" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+          </div>
+          <p id="wd-error" class="hidden text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-3"></p>
+          <button type="submit" id="btn-submit-withdrawal" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg transition-colors">
+            <i data-lucide="landmark" class="w-4 h-4"></i>
+            <span>Ajukan Penarikan</span>
+          </button>
+        </form>
+        <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 sm:p-6">
+          <h2 class="font-display text-lg font-bold text-slate-900">Status Penarikan</h2>
+          <div id="member-withdraw-list" class="mt-4 space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- Panel: Profil & rekening -->
+      <section id="member-panel-profil" class="hidden max-w-2xl bg-white border border-slate-200 rounded-xl p-5 sm:p-6">
+        <h2 class="font-display text-lg font-bold text-slate-900">Profil &amp; Rekening</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Rekening ini dipakai sebagai tujuan transfer penarikan. Nomor rekening disimpan dan tidak ditampilkan lengkap.</p>
+        <form id="member-profile-form" onsubmit="saveMemberProfileForm(event)" class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="prof-bank" class="block text-sm font-semibold text-slate-800 mb-1.5">Bank / E-wallet</label>
+            <input type="text" id="prof-bank" required maxlength="60" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+          </div>
+          <div>
+            <label for="prof-account" class="block text-sm font-semibold text-slate-800 mb-1.5">Nomor Rekening / E-wallet</label>
+            <input type="text" id="prof-account" required inputmode="numeric" maxlength="24" autocomplete="off" class="w-full px-3.5 py-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+          </div>
+          <div class="sm:col-span-2">
+            <label for="prof-holder" class="block text-sm font-semibold text-slate-800 mb-1.5">Nama Pemilik Rekening</label>
+            <input type="text" id="prof-holder" required maxlength="80" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+          </div>
+          <div class="sm:col-span-2">
+            <button type="submit" id="btn-save-profile" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 disabled:bg-slate-300 rounded-lg transition-colors">
+              <i data-lucide="save" class="w-4 h-4"></i>
+              <span>Simpan Rekening</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Panel: Panduan -->
+      <section id="member-panel-panduan" class="hidden max-w-3xl bg-white border border-slate-200 rounded-xl p-5 sm:p-6">
+        <h2 class="font-display text-lg font-bold text-slate-900">Panduan Program Member</h2>
+        <div id="member-guide-body" class="mt-4"></div>
+      </section>
+    </div>
+  </main>
+
   <!-- VIEW 2: DASHBOARD ADMIN                                               -->
   <!-- ===================================================================== -->
   <main id="view-admin" class="hidden flex-1 bg-slate-50">
@@ -541,6 +910,15 @@
           </button>
           <button type="button" onclick="switchAdminTab('finishing')" id="admin-tab-finishing" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">
             Opsi Finishing
+          </button>
+          <button type="button" onclick="switchAdminTab('member')" id="admin-tab-member" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">
+            Member &amp; Saldo
+          </button>
+          <button type="button" onclick="switchAdminTab('penarikan')" id="admin-tab-penarikan" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">
+            Penarikan
+          </button>
+          <button type="button" onclick="switchAdminTab('laporan')" id="admin-tab-laporan" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">
+            Laporan Keuangan
           </button>
           <button type="button" onclick="switchAdminTab('pengguna')" id="admin-tab-pengguna" class="hidden px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0">
             Akses Pengguna
@@ -693,8 +1071,8 @@
             </div>
 
             <div>
-              <label for="prod-id" class="block text-xs font-semibold text-slate-700 mb-1">Produk_ID</label>
-              <input type="text" id="prod-id" required placeholder="Contoh: PRD-005" class="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <label for="prod-id" class="block text-xs font-semibold text-slate-700 mb-1">Produk_ID (Kosongkan untuk ID otomatis)</label>
+              <input type="text" id="prod-id" placeholder="Otomatis UUID (atau isi manual)" class="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
 
             <div>
@@ -737,6 +1115,7 @@
                 <select id="prod-status" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700">
                   <option value="Tersedia">Tersedia</option>
                   <option value="Habis">Habis</option>
+                  <option value="Arsip">Arsip</option>
                 </select>
               </div>
             </div>
@@ -787,8 +1166,8 @@
             </div>
 
             <div>
-              <label for="fin-id" class="block text-xs font-semibold text-slate-700 mb-1">Finishing_ID</label>
-              <input type="text" id="fin-id" required placeholder="Contoh: FIN-004" class="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <label for="fin-id" class="block text-xs font-semibold text-slate-700 mb-1">Finishing_ID (Kosongkan untuk ID otomatis)</label>
+              <input type="text" id="fin-id" placeholder="Otomatis UUID (atau isi manual)" class="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
 
             <div>
@@ -808,6 +1187,14 @@
                 <label for="fin-harga" class="block text-xs font-semibold text-slate-700 mb-1">Tambahan_Harga (Rp)</label>
                 <input type="number" id="fin-harga" required min="0" step="500" value="0" class="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
               </div>
+            </div>
+
+            <div>
+              <label for="fin-status" class="block text-xs font-semibold text-slate-700 mb-1">Status</label>
+              <select id="fin-status" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700">
+                <option value="Tersedia">Tersedia</option>
+                <option value="Arsip">Arsip</option>
+              </select>
             </div>
 
             <div>
@@ -850,6 +1237,200 @@
       </section>
 
       <!-- Admin Tab 3: Pengaturan Koneksi Database -->
+      <!-- ===================== ADMIN: MEMBER & SALDO ===================== -->
+      <section id="admin-panel-member" class="hidden space-y-6">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+          <form id="admin-reward-form" onsubmit="submitAdminRewardSettings(event)" class="xl:col-span-4 bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+            <div>
+              <h2 class="font-display text-base font-bold text-slate-900">Pengaturan Reward</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Harga per m² berlaku untuk semua produk berukuran m² (Dimensi) pada pesanan baru. Pesanan lama tetap memakai nilai saat dibuat.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="rw-harga" class="block text-xs font-semibold text-slate-700 mb-1">Harga jual / m²</label>
+                <input type="number" id="rw-harga" min="0" step="1" required class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+              <div>
+                <label for="rw-modal" class="block text-xs font-semibold text-slate-700 mb-1">Modal / m²</label>
+                <input type="number" id="rw-modal" min="0" step="1" required class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+              <div>
+                <label for="rw-reward" class="block text-xs font-semibold text-slate-700 mb-1">Reward / m²</label>
+                <input type="number" id="rw-reward" min="0" step="1" required class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+              <div>
+                <label for="rw-min" class="block text-xs font-semibold text-slate-700 mb-1">Minimal tarik (Rp)</label>
+                <input type="number" id="rw-min" min="0" step="1000" required class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+            </div>
+            <div>
+              <label for="rw-aktif" class="block text-xs font-semibold text-slate-700 mb-1">Status Program Reward</label>
+              <select id="rw-aktif" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700">
+                <option value="TRUE">Aktif (Reward &amp; tarif m² berlaku)</option>
+                <option value="FALSE">Nonaktif (Pakai harga katalog produk)</option>
+              </select>
+            </div>
+            <button type="submit" class="w-full px-4 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">Simpan Pengaturan</button>
+          </form>
+
+          <div class="xl:col-span-8 bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="p-5 border-b border-slate-200">
+              <h2 class="font-display text-base font-bold text-slate-900">Daftar Member &amp; Saldo</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Saldo dihitung dari buku besar. Perubahan saldo hanya lewat koreksi beralasan.</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                    <th class="py-3 px-4 whitespace-nowrap">Member</th>
+                    <th class="py-3 px-4 whitespace-nowrap text-right">Tersedia</th>
+                    <th class="py-3 px-4 whitespace-nowrap text-right">Tertahan</th>
+                    <th class="py-3 px-4 whitespace-nowrap text-right">Diproses</th>
+                    <th class="py-3 px-4 whitespace-nowrap text-right">Total Reward</th>
+                    <th class="py-3 px-4 whitespace-nowrap">Rekening</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-member-body" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <form id="admin-adjust-form" onsubmit="submitAdminAdjust(event)" class="bg-white border border-slate-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          <div class="md:col-span-4">
+            <label for="adj-member" class="block text-xs font-semibold text-slate-700 mb-1">Akun member</label>
+            <select id="adj-member" required class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg"></select>
+          </div>
+          <div class="md:col-span-2">
+            <label for="adj-arah" class="block text-xs font-semibold text-slate-700 mb-1">Koreksi</label>
+            <select id="adj-arah" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg">
+              <option value="TAMBAH">Tambah saldo</option>
+              <option value="KURANG">Kurangi saldo</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label for="adj-amount" class="block text-xs font-semibold text-slate-700 mb-1">Nominal (Rp)</label>
+            <input type="number" id="adj-amount" min="1" step="1" required class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg" />
+          </div>
+          <div class="md:col-span-3">
+            <label for="adj-alasan" class="block text-xs font-semibold text-slate-700 mb-1">Alasan (min. 5 karakter)</label>
+            <input type="text" id="adj-alasan" minlength="5" maxlength="300" required class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg" />
+          </div>
+          <div class="md:col-span-1">
+            <button type="submit" class="w-full px-3 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg">Catat</button>
+          </div>
+        </form>
+
+        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="p-5 border-b border-slate-200">
+            <h2 class="font-display text-base font-bold text-slate-900">Reward Pesanan</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Reward tertahan saat lunas dan cair saat pesanan Diambil.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                  <th class="py-3 px-3 whitespace-nowrap">ID Pesanan</th>
+                  <th class="py-3 px-3 whitespace-nowrap">Tanggal</th>
+                  <th class="py-3 px-3 whitespace-nowrap">Member</th>
+                  <th class="py-3 px-3 whitespace-nowrap">Status</th>
+                  <th class="py-3 px-3 whitespace-nowrap text-right">Reward</th>
+                  <th class="py-3 px-3 whitespace-nowrap">Status Reward</th>
+                </tr>
+              </thead>
+              <tbody id="admin-reward-body" class="divide-y divide-slate-200 text-sm"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <!-- ===================== ADMIN: PENARIKAN ===================== -->
+      <section id="admin-panel-penarikan" class="hidden space-y-6">
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="p-5 border-b border-slate-200">
+            <h2 class="font-display text-base font-bold text-slate-900">Verifikasi Penarikan Saldo</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Transfer dilakukan manual. Unggah bukti transfer sebelum mengubah status menjadi Berhasil.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                  <th class="py-3 px-4 whitespace-nowrap">Tanggal</th>
+                  <th class="py-3 px-4 whitespace-nowrap">ID</th>
+                  <th class="py-3 px-4 whitespace-nowrap">Member</th>
+                  <th class="py-3 px-4 whitespace-nowrap">Rekening Tujuan</th>
+                  <th class="py-3 px-4 whitespace-nowrap text-right">Nominal</th>
+                  <th class="py-3 px-4 whitespace-nowrap">Status</th>
+                  <th class="py-3 px-4 whitespace-nowrap">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-wd-body" class="divide-y divide-slate-200 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== ADMIN: LAPORAN KEUANGAN ===================== -->
+      <section id="admin-panel-laporan" class="hidden space-y-6">
+        <form id="admin-report-form" onsubmit="loadAdminFinancialReport(event)" class="bg-white border border-slate-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          <div class="md:col-span-3">
+            <label for="rep-dari" class="block text-xs font-semibold text-slate-700 mb-1">Dari tanggal</label>
+            <input type="date" id="rep-dari" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg" />
+          </div>
+          <div class="md:col-span-3">
+            <label for="rep-sampai" class="block text-xs font-semibold text-slate-700 mb-1">Sampai tanggal</label>
+            <input type="date" id="rep-sampai" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg" />
+          </div>
+          <div class="md:col-span-4">
+            <label for="rep-member" class="block text-xs font-semibold text-slate-700 mb-1">Member</label>
+            <select id="rep-member" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg"></select>
+          </div>
+          <div class="md:col-span-2">
+            <button type="submit" class="w-full px-3 py-2 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg">Tampilkan</button>
+          </div>
+        </form>
+
+        <div id="admin-rep-summary" class="grid grid-cols-2 lg:grid-cols-5 gap-3"></div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+          <div class="xl:col-span-8 bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="p-5 border-b border-slate-200">
+              <h2 class="font-display text-base font-bold text-slate-900">Pesanan Lunas</h2>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                    <th class="py-3 px-3 whitespace-nowrap">ID</th>
+                    <th class="py-3 px-3 whitespace-nowrap">Tanggal</th>
+                    <th class="py-3 px-3 whitespace-nowrap">Member</th>
+                    <th class="py-3 px-3 whitespace-nowrap text-right">Total</th>
+                    <th class="py-3 px-3 whitespace-nowrap text-right">Saldo Dipakai</th>
+                    <th class="py-3 px-3 whitespace-nowrap">Reward</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-rep-body" class="divide-y divide-slate-200 text-sm"></tbody>
+              </table>
+            </div>
+          </div>
+          <form id="admin-expense-form" onsubmit="submitAdminExpense(event)" class="xl:col-span-4 bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+            <div>
+              <h2 class="font-display text-base font-bold text-slate-900">Catat Biaya Tambahan</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Biaya mengurangi keuntungan bersih pada periode berjalan.</p>
+            </div>
+            <div>
+              <label for="ex-ket" class="block text-xs font-semibold text-slate-700 mb-1">Keterangan</label>
+              <input type="text" id="ex-ket" minlength="3" maxlength="200" required class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg" />
+            </div>
+            <div>
+              <label for="ex-jumlah" class="block text-xs font-semibold text-slate-700 mb-1">Jumlah (Rp)</label>
+              <input type="number" id="ex-jumlah" min="1" step="1" required class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg" />
+            </div>
+            <button type="submit" class="w-full px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg">Catat Biaya</button>
+          </form>
+        </div>
+      </section>
+
       <section id="admin-panel-pengaturan" class="hidden max-w-3xl bg-white border border-slate-200 rounded-xl p-6 space-y-6">
         <div class="border-b border-slate-200 pb-4">
           <h2 class="font-display text-lg font-bold text-slate-900">Pengaturan Koneksi Google Sheets &amp; Apps Script</h2>
@@ -857,11 +1438,11 @@
         </div>
 
         <div class="bg-press-50/70 border border-press-100 rounded-lg p-4 text-xs text-slate-700 space-y-1.5">
-          <p class="font-semibold text-press-800">Google Sheets Database Utama Terhubung:</p>
-          <p class="font-mono break-all text-slate-700">https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit?usp=sharing</p>
+          <p class="font-semibold text-press-800">Google Sheets Database Utama Terhubung (Pastikan Izin Berbagi: Terbatas / Restricted):</p>
+          <p class="font-mono break-all text-slate-700">https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit</p>
           <p class="font-semibold text-press-800 pt-1">Endpoint Web App Google Apps Script Aktif:</p>
           <p class="font-mono break-all text-slate-700">https://script.google.com/macros/s/AKfycbw2w-qDPo2ZXp2phIWISlWi0pNciiViEwUaA4NuTaS1o4SvKSfo2QIRwwPTaEc3XJJHpg/exec</p>
-          <p class="text-slate-600">Pastikan kode <span class="font-mono font-semibold">Code.gs</span> (dengan <span class="font-mono">SPREADSHEET_ID = "1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc"</span>) sudah ditempel di Apps Script dan di-deploy sebagai Web App (<span class="font-mono">Execute as: Me</span>, <span class="font-mono">Who has access: Anyone</span>).</p>
+          <p class="text-slate-600">Pastikan kode <span class="font-mono font-semibold">Code.gs</span> terbaru sudah ditempel di Apps Script, izin <span class="font-mono">MailApp</span> disetujui untuk pengiriman OTP, dan di-deploy sebagai Web App versi baru (<span class="font-mono">Execute as: Me</span>, <span class="font-mono">Who has access: Anyone</span>).</p>
         </div>
 
         <div id="setting-connection-status" class="rounded-lg border p-4 text-xs space-y-1">
@@ -872,12 +1453,12 @@
           <div>
             <label for="setting-api-url" class="block text-sm font-semibold text-slate-800 mb-1.5">URL Web App Google Apps Script (`API_URL`)</label>
             <input type="url" id="setting-api-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-            <p class="mt-1.5 text-xs text-slate-500">Harus berakhiran <span class="font-mono">/exec</span> (bukan link `/edit` Google Sheets). Saat belum aktif, aplikasi berjalan dalam Mode Lokal (Mock Data).</p>
+            <p class="mt-1.5 text-xs text-slate-500">Harus berakhiran <span class="font-mono">/exec</span> (bukan link `/edit` Google Sheets).</p>
           </div>
 
           <div>
-            <label for="setting-sheet-url" class="block text-sm font-semibold text-slate-800 mb-1.5">Tautan Google Sheets Database</label>
-            <input type="url" id="setting-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit?usp=sharing" class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            <label for="setting-sheet-url" class="block text-sm font-semibold text-slate-800 mb-1.5">Tautan Google Sheets Database (Khusus Pemilik)</label>
+            <input type="url" id="setting-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit" class="w-full px-3.5 py-2.5 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
           </div>
 
           <div class="flex flex-wrap items-center gap-3 pt-2">
@@ -893,7 +1474,7 @@
 
             <button type="button" id="btn-init-sheets" onclick="initSpreadsheetHeaders()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors">
               <i data-lucide="table-2" class="w-4 h-4"></i>
-              <span>Inisialisasi 5 Sheet Otomatis</span>
+              <span>Inisialisasi 11 Sheet Otomatis</span>
             </button>
 
             <button type="button" id="btn-create-new-db" onclick="createNewDatabaseFromUi()" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-800 bg-slate-100 border border-slate-300 hover:bg-slate-200 rounded-lg transition-colors">
@@ -901,7 +1482,7 @@
               <span>Buat Database Baru</span>
             </button>
 
-            <a id="btn-open-sheet" href="https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit?usp=sharing" target="_blank" rel="noopener noreferrer" onclick="return handleOpenSheetClick(event)" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
+            <a id="btn-open-sheet" href="https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit" target="_blank" rel="noopener noreferrer" onclick="return handleOpenSheetClick(event)" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
               <i data-lucide="external-link" class="w-4 h-4"></i>
               <span>Buka Google Sheets Database</span>
             </a>
@@ -914,13 +1495,14 @@
         </div>
 
         <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs text-slate-600 space-y-2">
-          <p class="font-semibold text-slate-800">Checklist 5 Tab Sheet Wajib (Case-Sensitive) — Dapat dibuat otomatis via tombol Inisialisasi:</p>
+          <p class="font-semibold text-slate-800">Checklist 11 Tab Sheet (5 Inti + 6 Banner Member Rewards) — Dapat dibuat otomatis via tombol Inisialisasi:</p>
           <ul class="list-disc pl-5 space-y-1 font-mono">
-            <li>Users: User_ID, Nama, No_WA, Email, Role, Alamat, Password</li>
+            <li>Users: User_ID, Nama, No_WA, Email, Role, Alamat, Password, Status_Akun, Token_Version</li>
             <li>Produk: Produk_ID, Nama_Produk, Kategori, Tipe_Hitung, Harga_Dasar, Satuan, Min_Order, Status</li>
-            <li>Finishing: Finishing_ID, Nama_Finishing, Tipe_Biaya, Tambahan_Harga, Keterangan</li>
-            <li>Pesanan: Order_ID, Tanggal, User_ID, Status_Order, Total_Tagihan, Bukti_Bayar, Status_Bayar, Catatan</li>
+            <li>Finishing: Finishing_ID, Nama_Finishing, Tipe_Biaya, Tambahan_Harga, Keterangan, Status</li>
+            <li>Pesanan: Order_ID, Tanggal, User_ID, Status_Order, Total_Tagihan, Bukti_Bayar, Status_Bayar, Catatan (+ kolom Harga_Kotor, Saldo_Dipakai, Reward)</li>
             <li>Detail_Pesanan: Detail_ID, Order_ID, Produk_ID, Panjang_m, Lebar_m, Qty, Finishing_ID, File_Desain, Keterangan_Item, Subtotal</li>
+            <li>Banner Member Rewards: Member_Profiles, Wallet_Accounts, Wallet_Transactions, Withdrawal_Requests, System_Settings, Biaya_Tambahan</li>
           </ul>
         </div>
       </section>
@@ -946,8 +1528,8 @@
             </div>
 
             <div>
-              <label for="usr-id" class="block text-xs font-semibold text-slate-700 mb-1">User_ID</label>
-              <input type="text" id="usr-id" required placeholder="Contoh: ADM-002" class="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <label for="usr-id" class="block text-xs font-semibold text-slate-700 mb-1">User_ID (Kosongkan untuk ID otomatis)</label>
+              <input type="text" id="usr-id" placeholder="Otomatis UUID (atau isi manual)" class="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
 
             <div>
@@ -970,14 +1552,23 @@
               </div>
             </div>
 
-            <div>
-              <label for="usr-email" class="block text-xs font-semibold text-slate-700 mb-1">Email</label>
-              <input type="email" id="usr-email" required placeholder="email@wajibkufast.id" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="usr-email" class="block text-xs font-semibold text-slate-700 mb-1">Email</label>
+                <input type="email" id="usr-email" required placeholder="email@wajibkufast.id" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+              <div>
+                <label for="usr-status" class="block text-xs font-semibold text-slate-700 mb-1">Status Akun</label>
+                <select id="usr-status" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700">
+                  <option value="Aktif">Aktif</option>
+                  <option value="Nonaktif">Nonaktif</option>
+                </select>
+              </div>
             </div>
 
             <div>
               <label for="usr-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Login</label>
-              <input type="password" id="usr-password" minlength="6" placeholder="Min. 6 karakter (kosongkan jika tidak diubah)" class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <input type="password" id="usr-password" minlength="8" placeholder="Min. 8 karakter (kosongkan jika tidak diubah)" class="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
 
             <div>
@@ -994,7 +1585,7 @@
           <div class="lg:col-span-8 bg-white border border-slate-200 rounded-xl overflow-hidden">
             <div class="p-5 border-b border-slate-200">
               <h2 class="font-display text-lg font-bold text-slate-900">Daftar Akun Sheet `Users`</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Pembagian hak akses: User (Layanan), Admin (Dashboard Admin), Super Admin (Layanan + Dashboard Admin).</p>
+              <p class="text-xs text-slate-500 mt-0.5">Kelola peran, aktif/nonaktif akun, serta pencabutan sesi. Super Admin utama/terakhir dilindungi otomatis.</p>
             </div>
             <div class="overflow-x-auto">
               <table class="w-full text-left border-collapse">
@@ -1002,7 +1593,7 @@
                   <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
                     <th class="py-3 px-4 whitespace-nowrap">User_ID</th>
                     <th class="py-3 px-4 whitespace-nowrap">Nama &amp; Kontak</th>
-                    <th class="py-3 px-4 whitespace-nowrap">Role &amp; Sandi</th>
+                    <th class="py-3 px-4 whitespace-nowrap">Role &amp; Status</th>
                     <th class="py-3 px-4 whitespace-nowrap text-right">Aksi</th>
                   </tr>
                 </thead>
@@ -1104,6 +1695,27 @@
             </div>
           </div>
 
+          <!-- Potongan saldo member (tampil jika sudah masuk sebagai member) -->
+          <div id="checkout-saldo-box" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-slate-900">Gunakan Saldo Member</p>
+            <p class="text-xs text-slate-500 mt-0.5">Saldo tersedia: <span id="checkout-saldo-available" class="font-mono font-semibold text-slate-800 tabular-nums">Rp 0</span></p>
+          </div>
+          <button type="button" id="checkout-saldo-max" onclick="applyMaxCheckoutSaldo()" class="px-3 py-1.5 text-xs font-semibold text-press-700 bg-press-50 hover:bg-press-100 disabled:opacity-50 rounded-lg transition-colors whitespace-nowrap shrink-0">Pakai maksimal</button>
+        </div>
+        <div>
+          <label for="checkout-saldo-input" class="block text-xs font-semibold text-slate-700 mb-1.5">Nominal saldo yang dipakai (Rp)</label>
+          <input type="number" id="checkout-saldo-input" min="0" step="1000" value="0" inputmode="numeric" oninput="updateCheckoutSaldoPreview()" class="w-full px-3.5 py-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700 focus:border-press-700" />
+          <p id="checkout-saldo-error" class="hidden mt-1.5 text-xs font-medium text-rose-700"></p>
+        </div>
+        <dl class="text-xs space-y-1.5 text-slate-600">
+          <div class="flex items-center justify-between gap-3"><dt>Harga sebelum potongan</dt><dd id="checkout-saldo-before" class="font-mono tabular-nums">Rp 0</dd></div>
+          <div class="flex items-center justify-between gap-3"><dt>Potongan saldo</dt><dd id="checkout-saldo-deduct" class="font-mono tabular-nums text-emerald-700">Rp 0</dd></div>
+          <div class="flex items-center justify-between gap-3 text-sm font-semibold text-slate-900 pt-1 border-t border-slate-200"><dt>Harga setelah potongan</dt><dd id="checkout-saldo-after" class="font-mono tabular-nums">Rp 0</dd></div>
+        </dl>
+        <p class="text-[11px] text-slate-500">Angka final dihitung ulang oleh server saat pesanan dibuat.</p>
+      </div>
           <!-- Form Data Pelanggan & Bukti Bayar -->
           <form id="checkout-form" onsubmit="submitCheckout(event)" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1269,11 +1881,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label for="reg-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi *</label>
-              <input type="password" id="reg-password" required minlength="6" placeholder="Min. 6 karakter" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <input type="password" id="reg-password" required minlength="8" placeholder="Min. 8 karakter" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
             <div>
               <label for="reg-password-confirm" class="block text-xs font-semibold text-slate-700 mb-1">Ulangi Sandi *</label>
-              <input type="password" id="reg-password-confirm" required minlength="6" placeholder="Ketik ulang sandi" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <input type="password" id="reg-password-confirm" required minlength="8" placeholder="Ketik ulang sandi" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
           </div>
 
@@ -1285,63 +1897,85 @@
           <p class="text-[11px] text-slate-500 text-center">Akun baru otomatis terdaftar sebagai member pelanggan.</p>
         </form>
 
-        <!-- Form Lupa Password (Khusus Pelanggan / User) -->
+        <!-- Form Lupa Password 2 Langkah (Khusus Pelanggan / User — OTP Email) -->
         <form id="forgot-form" onsubmit="handleForgotPasswordSubmit(event)" novalidate class="hidden p-6 space-y-3.5">
           <div id="forgot-error-box" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs font-medium text-rose-700"></div>
+          <div id="forgot-info-box" class="hidden p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-800"></div>
 
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Khusus akun pelanggan. Masukkan <strong>Nama Lengkap</strong> dan <strong>Email</strong> yang sama dengan data terdaftar di akun Anda untuk membuat kata sandi baru.
-          </p>
-
-          <div>
-            <label for="forgot-nama" class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap Terdaftar *</label>
-            <input type="text" id="forgot-nama" required placeholder="Contoh: Budi Santoso" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-          </div>
-
-          <div>
-            <label for="forgot-email" class="block text-xs font-semibold text-slate-700 mb-1">Email Terdaftar *</label>
-            <input type="email" id="forgot-email" required placeholder="nama@email.com" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Langkah 1: Minta OTP ke Email -->
+          <div id="forgot-step-request" class="space-y-3.5">
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Khusus akun pelanggan. Masukkan <strong>Email Terdaftar</strong> Anda untuk menerima kode verifikasi OTP 6 digit melalui email (berlaku 10 menit).
+            </p>
             <div>
-              <label for="forgot-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Baru *</label>
-              <input type="password" id="forgot-password" required minlength="6" placeholder="Min. 6 karakter" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <label for="forgot-email" class="block text-xs font-semibold text-slate-700 mb-1">Email Terdaftar *</label>
+              <input type="email" id="forgot-email" required placeholder="nama@email.com" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
             </div>
-            <div>
-              <label for="forgot-password-confirm" class="block text-xs font-semibold text-slate-700 mb-1">Ulangi Sandi Baru *</label>
-              <input type="password" id="forgot-password-confirm" required minlength="6" placeholder="Ketik ulang sandi" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-            </div>
+            <button type="submit" id="btn-request-otp" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">
+              <i data-lucide="mail" class="w-4 h-4"></i>
+              <span>Kirim Kode OTP</span>
+            </button>
           </div>
 
-          <button type="submit" id="btn-submit-forgot" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">
-            <i data-lucide="key-round" class="w-4 h-4"></i>
-            <span>Simpan Kata Sandi Baru</span>
-          </button>
+          <!-- Langkah 2: Verifikasi OTP 6 Digit + Kata Sandi Baru -->
+          <div id="forgot-step-verify" class="hidden space-y-3.5">
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-center justify-between gap-2">
+              <span class="truncate">Email: <strong id="forgot-target-email" class="font-mono"></strong></span>
+              <button type="button" onclick="resetForgotStep()" class="text-press-700 font-semibold hover:underline shrink-0">Ganti Email</button>
+            </div>
+
+            <div>
+              <label for="forgot-otp" class="block text-xs font-semibold text-slate-700 mb-1">Kode OTP 6 Digit *</label>
+              <input type="text" id="forgot-otp" maxlength="6" inputmode="numeric" pattern="\d{6}" placeholder="Masukkan 6 digit kode dari email" class="w-full px-3.5 py-2 text-sm font-mono tracking-widest bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="forgot-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Baru *</label>
+                <input type="password" id="forgot-password" minlength="8" placeholder="Min. 8 karakter" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+              <div>
+                <label for="forgot-password-confirm" class="block text-xs font-semibold text-slate-700 mb-1">Ulangi Sandi Baru *</label>
+                <input type="password" id="forgot-password-confirm" minlength="8" placeholder="Ketik ulang sandi" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+            </div>
+
+            <button type="submit" id="btn-submit-forgot" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">
+              <i data-lucide="key-round" class="w-4 h-4"></i>
+              <span>Verifikasi &amp; Simpan Sandi</span>
+            </button>
+
+            <div class="flex items-center justify-between text-xs pt-1">
+              <span class="text-slate-500">Belum menerima kode?</span>
+              <button type="button" id="btn-resend-otp" onclick="resendForgotOtp()" class="font-semibold text-press-700 hover:underline">
+                Kirim Ulang OTP
+              </button>
+            </div>
+          </div>
         </form>
       </div>
     </div>
   </div>
 
   <!-- ===================================================================== -->
-  <!-- MODAL KONFIRMASI HAPUS DATA (NON-NATIVE DIALOG)                       -->
+  <!-- MODAL KONFIRMASI ARSIPKAN DATA (NON-NATIVE DIALOG, NON-DESTRUKTIF)    -->
   <!-- ===================================================================== -->
   <div id="confirm-modal-backdrop" class="hidden fixed inset-0 z-[60] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white border border-slate-200 rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
       <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-        <h3 class="font-display text-base font-bold text-slate-900">Konfirmasi Hapus Data</h3>
+        <h3 class="font-display text-base font-bold text-slate-900">Konfirmasi Arsipkan Data</h3>
         <button type="button" onclick="closeConfirmModal()" aria-label="Tutup konfirmasi" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
       <div class="p-6 space-y-4">
-        <p id="confirm-modal-message" class="text-sm text-slate-700">Apakah Anda yakin ingin menghapus data ini?</p>
+        <p id="confirm-modal-message" class="text-sm text-slate-700">Apakah Anda yakin ingin mengarsipkan data ini?</p>
         <div class="flex items-center justify-end gap-2.5 pt-2">
           <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg">
             Batal
           </button>
           <button type="button" id="btn-confirm-delete" onclick="executeDeleteRecord()" class="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-rose-700 hover:bg-rose-800 disabled:bg-slate-400 disabled:cursor-not-allowed rounded-lg">
-            Ya, Hapus Permanen
+            Ya, Arsipkan Data
           </button>
         </div>
       </div>
@@ -1354,22 +1988,41 @@
   <div id="print-area" class="hidden bg-white text-slate-900"></div>
 
   <!-- ===================================================================== -->
-  <!-- APPLICATION LOGIC (VANILLA JAVASCRIPT + GAS INTEGRATION + MOCK DATA)  -->
+  <!-- APPLICATION LOGIC (VANILLA JAVASCRIPT + GAS INTEGRATION)              -->
   <!-- ===================================================================== -->
   <script>
     // -----------------------------------------------------------------------
-    // 1. KONFIGURASI API & KATALOG FALLBACK LOKAL (Tanpa Kredensial/Data Sensitif)
+    // 1. KONFIGURASI API & STATE APLIKASI (Tanpa Data Fiktif / Kredensial)
     // -----------------------------------------------------------------------
-    const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit?usp=sharing";
-    const API_CONFIG_VERSION = "2026-11-15-sec-v2";
+    const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1aJjDWtT3qMEm891oXI1FyKg4SaXGS1EV-kBjnPWXyDc/edit";
+    const API_CONFIG_VERSION = "2026-11-21-sec-v3";
     const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbw2w-qDPo2ZXp2phIWISlWi0pNciiViEwUaA4NuTaS1o4SvKSfo2QIRwwPTaEc3XJJHpg/exec";
-    const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
+    const MAX_FILE_BYTES = Math.floor(2.5 * 1024 * 1024);
     const MAX_IMAGE_INPUT_BYTES = 15 * 1024 * 1024;
     const MAX_PAYLOAD_CHARS = 14 * 1024 * 1024;
+    const AUTH_STORAGE_KEY = "WAJIBKU_AUTH_SESSION";
+
+    const ALLOWED_DESIGN_MIMES = new Set([
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "application/pdf",
+      "application/zip",
+      "application/x-zip-compressed",
+      "application/postscript"
+    ]);
+    const ALLOWED_DESIGN_EXTS = new Set(["jpg", "jpeg", "png", "webp", "pdf", "zip", "ai", "eps"]);
+    const ALLOWED_PROOF_MIMES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+
+    function stripSharingParam(url) {
+      return String(url || "").trim().replace(/([?&])usp=sharing(&?)/i, (m, p1, p2) => (p1 === "?" && p2 ? "?" : "")).replace(/[?&]$/, "");
+    }
 
     (function syncApiConfigVersion() {
       try {
         localStorage.removeItem("WAJIBKU_AUTH_USER");
+        localStorage.removeItem(AUTH_STORAGE_KEY);
         if (localStorage.getItem("GAS_API_VERSION") !== API_CONFIG_VERSION) {
           localStorage.removeItem("GAS_API_URL");
           localStorage.removeItem("GAS_SHEET_URL");
@@ -1379,83 +2032,19 @@
     })();
 
     let API_URL = localStorage.getItem("GAS_API_URL") || DEFAULT_API_URL;
-    let SHEET_URL = localStorage.getItem("GAS_SHEET_URL") || DEFAULT_SHEET_URL;
-    const AUTH_STORAGE_KEY = "WAJIBKU_AUTH_SESSION";
+    let SHEET_URL = stripSharingParam(localStorage.getItem("GAS_SHEET_URL") || DEFAULT_SHEET_URL) || DEFAULT_SHEET_URL;
 
-    // Hanya contoh katalog publik jika API_URL sengaja dikosongkan (tidak menyimpan akun/pesanan)
-    const SAMPLE_CATALOG = {
-      produk: [
-        {
-          Produk_ID: "PRD-001",
-          Nama_Produk: "Spanduk Flexi China 280gr",
-          Kategori: "Outdoor & Banner",
-          Tipe_Hitung: "Dimensi",
-          Harga_Dasar: 18000,
-          Satuan: "m2",
-          Min_Order: 1,
-          Status: "Tersedia"
-        },
-        {
-          Produk_ID: "PRD-002",
-          Nama_Produk: "X-Banner Flexi Korea",
-          Kategori: "Display & Stand",
-          Tipe_Hitung: "Unit",
-          Harga_Dasar: 85000,
-          Satuan: "Set",
-          Min_Order: 1,
-          Status: "Tersedia"
-        },
-        {
-          Produk_ID: "PRD-003",
-          Nama_Produk: "Stiker Vinyl Camel",
-          Kategori: "Stiker & Label",
-          Tipe_Hitung: "Unit",
-          Harga_Dasar: 12000,
-          Satuan: "Lembar A3+",
-          Min_Order: 5,
-          Status: "Tersedia"
-        },
-        {
-          Produk_ID: "PRD-004",
-          Nama_Produk: "Kertas Concorde 220gr",
-          Kategori: "Dokumen & Kartu",
-          Tipe_Hitung: "Unit",
-          Harga_Dasar: 5000,
-          Satuan: "Lembar A3+",
-          Min_Order: 10,
-          Status: "Tersedia"
-        }
-      ],
-      finishing: [
-        {
-          Finishing_ID: "FIN-000",
-          Nama_Finishing: "Tanpa Finishing",
-          Tipe_Biaya: "Tetap",
-          Tambahan_Harga: 0,
-          Keterangan: "Potong keliling standar"
-        },
-        {
-          Finishing_ID: "FIN-001",
-          Nama_Finishing: "Mata Ayam",
-          Tipe_Biaya: "Per_Qty",
-          Tambahan_Harga: 2000,
-          Keterangan: "Lubang ring besi 4 sudut per pcs"
-        },
-        {
-          Finishing_ID: "FIN-002",
-          Nama_Finishing: "Laminasi",
-          Tipe_Biaya: "Per_Qty",
-          Tambahan_Harga: 3000,
-          Keterangan: "Laminasi Doff / Glossy per pcs"
-        },
-        {
-          Finishing_ID: "FIN-003",
-          Nama_Finishing: "Cutting Pola",
-          Tipe_Biaya: "Tetap",
-          Tambahan_Harga: 4000,
-          Keterangan: "Biaya potong pola khusus per item"
-        }
-      ]
+    // Banner Member Rewards: state terpisah agar objek state utama tidak berubah
+    let memberViewOpen = false;
+    let memberDashboard = null;
+    let memberDashboardAt = 0;
+    let memberDashLoading = false;
+    let adminMemberData = null;
+    let adminMemberLoading = false;
+    const WD_NEXT_STATUS = {
+      "Menunggu Verifikasi": ["Disetujui", "Ditolak"],
+      "Disetujui": ["Sedang Diproses", "Berhasil", "Gagal"],
+      "Sedang Diproses": ["Berhasil", "Gagal"]
     };
 
     let state = {
@@ -1469,8 +2058,17 @@
       selectedMonthIndex: null,
       activeCategory: "Semua",
       pendingDelete: null,
-      connectionStatus: "idle", // "idle" | "mock" | "connected" | "error"
+      connectionStatus: "idle", // "idle" | "connected" | "error"
       connectionMessage: "",
+      forgotStep: "request", // "request" | "verify"
+      forgotEmail: "",
+      editingProductId: null,
+      editingFinishingId: null,
+      editingUserId: null,
+      statusOrderList: ["Menunggu Bayar", "Diproses", "Selesai", "Diambil", "Diarsipkan"],
+      publicOrderSteps: ["Menunggu Bayar", "Diproses", "Selesai", "Diambil"],
+      statusPayList: ["Belum Bayar", "Menunggu Verifikasi", "Lunas"],
+      memberProgram: null,
       users: [],
       produk: [],
       finishing: [],
@@ -1515,6 +2113,9 @@
       const rawTipe = String(p?.Tipe_Hitung || "").trim().toLowerCase();
       const rawStatus = String(p?.Status || "").trim().toLowerCase();
       const minOrd = Math.floor(parseClientNumber(p?.Min_Order));
+      let normStatus = "Tersedia";
+      if (rawStatus === "habis") normStatus = "Habis";
+      else if (rawStatus === "arsip") normStatus = "Arsip";
       return {
         Produk_ID: String(p?.Produk_ID || "").trim(),
         Nama_Produk: String(p?.Nama_Produk || "").trim(),
@@ -1523,18 +2124,20 @@
         Harga_Dasar: Math.max(0, Math.round(parseClientNumber(p?.Harga_Dasar))),
         Satuan: String(p?.Satuan || "").trim() || "Unit",
         Min_Order: minOrd >= 1 ? minOrd : 1,
-        Status: rawStatus === "habis" ? "Habis" : "Tersedia"
+        Status: normStatus
       };
     }
 
     function normalizeFinishingItem(f) {
       const rawTipe = String(f?.Tipe_Biaya || "").trim().toLowerCase();
+      const rawStatus = String(f?.Status || "").trim().toLowerCase();
       return {
         Finishing_ID: String(f?.Finishing_ID || "").trim(),
         Nama_Finishing: String(f?.Nama_Finishing || "").trim(),
         Tipe_Biaya: rawTipe === "per_qty" || rawTipe === "per qty" ? "Per_Qty" : "Tetap",
         Tambahan_Harga: Math.max(0, Math.round(parseClientNumber(f?.Tambahan_Harga))),
-        Keterangan: String(f?.Keterangan || "").trim()
+        Keterangan: String(f?.Keterangan || "").trim(),
+        Status: rawStatus === "arsip" ? "Arsip" : "Tersedia"
       };
     }
 
@@ -1719,20 +2322,11 @@
     // -----------------------------------------------------------------------
     // 3. INISIALISASI & SINKRONISASI DATA (GET PUBLIK + POST ADMIN TERPROTEKSI)
     // -----------------------------------------------------------------------
-    function loadSampleCatalog() {
-      state.users = [];
-      state.produk = JSON.parse(JSON.stringify(SAMPLE_CATALOG.produk));
-      state.finishing = JSON.parse(JSON.stringify(SAMPLE_CATALOG.finishing));
-      state.pesanan = [];
-      state.detail_pesanan = [];
-    }
-
     function renderCatalogConnectionAlert() {
       const box = document.getElementById("catalog-connection-alert");
       const titleEl = document.getElementById("catalog-connection-alert-title");
       const msgEl = document.getElementById("catalog-connection-alert-msg");
       const testLink = document.getElementById("catalog-test-api-link");
-      const sampleBtn = document.getElementById("btn-load-sample-preview");
       const retryBtn = document.getElementById("btn-retry-init");
       if (!box || !msgEl) return;
 
@@ -1746,28 +2340,11 @@
         if (titleEl) titleEl.textContent = "Gagal memuat katalog dari Google Apps Script";
         msgEl.className = "text-xs text-rose-800 mt-1 leading-relaxed";
         msgEl.textContent = state.connectionMessage || "Tidak dapat terhubung ke server Apps Script.";
-        if (sampleBtn) sampleBtn.classList.remove("hidden");
         if (retryBtn) retryBtn.className = "px-4 py-2 text-xs font-semibold text-white bg-rose-700 hover:bg-rose-800 rounded-lg transition-colors whitespace-nowrap";
-        box.classList.remove("hidden");
-      } else if (state.connectionStatus === "mock") {
-        box.className = "mb-6 bg-amber-50 border border-amber-200 text-amber-950 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs sm:text-sm";
-        if (titleEl) titleEl.textContent = "Mode Pratinjau Katalog (Offline)";
-        msgEl.className = "text-xs text-amber-900 mt-1 leading-relaxed";
-        msgEl.textContent = state.connectionMessage || "Menampilkan contoh katalog lokal. Untuk menyimpan pesanan ke Google Sheets, pastikan Web App Apps Script berstatus 'Who has access: Anyone'.";
-        if (sampleBtn) sampleBtn.classList.add("hidden");
-        if (retryBtn) retryBtn.className = "px-4 py-2 text-xs font-semibold text-white bg-amber-700 hover:bg-amber-800 rounded-lg transition-colors whitespace-nowrap";
         box.classList.remove("hidden");
       } else {
         box.classList.add("hidden");
       }
-    }
-
-    function enableSampleCatalogPreview() {
-      loadSampleCatalog();
-      state.connectionStatus = "mock";
-      state.connectionMessage = "Menampilkan contoh katalog untuk pratinjau kalkulator. Koneksi server Apps Script belum aktif, sehingga checkout & admin dinonaktifkan sampai server terhubung.";
-      renderAll();
-      showToast("Katalog contoh dimuat dalam Mode Pratinjau.", "info");
     }
 
     async function parseGasResponse(res) {
@@ -1811,7 +2388,7 @@
         throw new Error("URL Web App Apps Script (/exec) belum terkonfigurasi.");
       }
       const bodyPayload = { ...payload };
-      const publicActions = ["login", "registerMember", "forgotPassword", "trackOrder"];
+      const publicActions = ["login", "registerMember", "requestPasswordResetOtp", "verifyPasswordResetOtp", "trackOrder"];
       if (state.authToken && !publicActions.includes(bodyPayload.action) && !bodyPayload.token) {
         bodyPayload.token = state.authToken;
       }
@@ -1846,10 +2423,18 @@
           state.pesanan = Array.isArray(json.data.pesanan) ? json.data.pesanan : [];
           state.detail_pesanan = Array.isArray(json.data.detail_pesanan) ? json.data.detail_pesanan : [];
           state.adminDataLoaded = true;
-          if (json.meta && json.meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
-            SHEET_URL = json.meta.spreadsheetUrl;
-            localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
-            syncSheetAnchorHref();
+          if (json.meta) {
+            if (Array.isArray(json.meta.statusOrderList) && json.meta.statusOrderList.length) {
+              state.statusOrderList = json.meta.statusOrderList.map((s) => String(s));
+            }
+            if (Array.isArray(json.meta.statusPayList) && json.meta.statusPayList.length) {
+              state.statusPayList = json.meta.statusPayList.map((s) => String(s));
+            }
+            if (json.meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
+              SHEET_URL = stripSharingParam(json.meta.spreadsheetUrl);
+              localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
+              syncSheetAnchorHref();
+            }
           }
           return true;
         }
@@ -1887,12 +2472,16 @@
 
     async function fetchInitData(manualRetry = false) {
       if (!isApiConfigured()) {
-        state.connectionStatus = "mock";
-        state.connectionMessage = "API_URL belum diisi. Hanya menampilkan contoh katalog (transaksi & login memerlukan server Apps Script).";
+        state.connectionStatus = "error";
+        state.connectionMessage = "URL Web App Google Apps Script (/exec) belum terkonfigurasi. Hubungkan server untuk memuat katalog asli dari Google Sheets.";
         state.authToken = null;
         state.currentUser = null;
         state.adminDataLoaded = false;
-        loadSampleCatalog();
+        state.produk = [];
+        state.finishing = [];
+        state.users = [];
+        state.pesanan = [];
+        state.detail_pesanan = [];
         renderAll();
         return;
       }
@@ -1913,6 +2502,15 @@
           state.finishing = Array.isArray(json.data.finishing)
             ? json.data.finishing.map(normalizeFinishingItem).filter((f) => f.Finishing_ID)
             : [];
+          state.memberProgram = json.data.memberProgram || null;
+          if (json.meta) {
+            if (Array.isArray(json.meta.statusOrderList) && json.meta.statusOrderList.length) {
+              state.publicOrderSteps = json.meta.statusOrderList.map((s) => String(s));
+            }
+            if (Array.isArray(json.meta.statusPayList) && json.meta.statusPayList.length) {
+              state.statusPayList = json.meta.statusPayList.map((s) => String(s));
+            }
+          }
           state.connectionStatus = "connected";
           state.connectionMessage = `Terhubung live ke Google Sheets & Folder Drive (${state.produk.length} produk dimuat).`;
           if (manualRetry) {
@@ -1944,6 +2542,7 @@
           await fetchAdminData();
         } else {
           await fetchMyOrders();
+          ensureMemberDashboard(true);
         }
       }
       renderAll();
@@ -1986,20 +2585,21 @@
       }
 
       try {
-        const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        const raw = sessionStorage.getItem(AUTH_STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && typeof parsed.token === "string" && parsed.token.includes(".") && parsed.user && parsed.user.User_ID) {
             state.authToken = parsed.token;
             state.currentUser = parsed.user;
           } else {
-            localStorage.removeItem(AUTH_STORAGE_KEY);
+            sessionStorage.removeItem(AUTH_STORAGE_KEY);
           }
         }
       } catch (e) {
         state.authToken = null;
         state.currentUser = null;
-        localStorage.removeItem(AUTH_STORAGE_KEY);
+        try { sessionStorage.removeItem(AUTH_STORAGE_KEY); } catch (err) {}
       }
 
       if (getNormalizedRole(state.currentUser) === "Admin" && state.authToken) {
@@ -2009,6 +2609,26 @@
       } else {
         state.role = "user";
       }
+    }
+
+    function resetForgotStep() {
+      state.forgotStep = "request";
+      state.forgotEmail = "";
+      const stepReq = document.getElementById("forgot-step-request");
+      const stepVer = document.getElementById("forgot-step-verify");
+      const errForgot = document.getElementById("forgot-error-box");
+      const infoForgot = document.getElementById("forgot-info-box");
+      if (stepReq) stepReq.classList.remove("hidden");
+      if (stepVer) stepVer.classList.add("hidden");
+      if (errForgot) errForgot.classList.add("hidden");
+      if (infoForgot) infoForgot.classList.add("hidden");
+      const otpInput = document.getElementById("forgot-otp");
+      const passInput = document.getElementById("forgot-password");
+      const passConfirm = document.getElementById("forgot-password-confirm");
+      if (otpInput) otpInput.value = "";
+      if (passInput) passInput.value = "";
+      if (passConfirm) passConfirm.value = "";
+      refreshIcons();
     }
 
     function switchAuthMode(mode) {
@@ -2022,10 +2642,12 @@
       const errLogin = document.getElementById("login-error-box");
       const errReg = document.getElementById("register-error-box");
       const errForgot = document.getElementById("forgot-error-box");
+      const infoForgot = document.getElementById("forgot-info-box");
 
       if (errLogin) errLogin.classList.add("hidden");
       if (errReg) errReg.classList.add("hidden");
       if (errForgot) errForgot.classList.add("hidden");
+      if (infoForgot) infoForgot.classList.add("hidden");
 
       const activeCls = "py-2 text-xs font-semibold rounded-md bg-white text-slate-900 shadow-xs";
       const idleCls = "py-2 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900";
@@ -2045,6 +2667,7 @@
         forgotForm?.classList.remove("hidden");
         if (titleEl) titleEl.textContent = "Lupa Sandi Pelanggan";
         if (tabForgot) tabForgot.className = activeCls;
+        resetForgotStep();
       } else {
         loginForm?.classList.remove("hidden");
         if (titleEl) titleEl.textContent = "Masuk ke Wajibku Fast";
@@ -2093,7 +2716,11 @@
         state.authToken = res.data.token;
         state.currentUser = res.data.user;
         state.adminDataLoaded = false;
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+        memberViewOpen = false;
+        memberDashboard = null;
+        memberDashboardAt = 0;
+        adminMemberData = null;
+        sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
           token: state.authToken,
           user: state.currentUser
         }));
@@ -2110,6 +2737,7 @@
           }
         } else {
           await fetchMyOrders();
+          ensureMemberDashboard(true);
           switchRole("user");
           prefillCheckoutFromUser();
           showToast(`Selamat datang, ${state.currentUser.Nama}.`, "success");
@@ -2144,8 +2772,8 @@
         errBox.classList.remove("hidden");
         return;
       }
-      if (password.length < 6) {
-        errBox.textContent = "Kata sandi minimal 6 karakter.";
+      if (password.length < 8) {
+        errBox.textContent = "Kata sandi minimal 8 karakter.";
         errBox.classList.remove("hidden");
         return;
       }
@@ -2175,12 +2803,17 @@
         state.authToken = res.data.token;
         state.currentUser = res.data.user;
         state.adminDataLoaded = false;
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+        memberViewOpen = false;
+        memberDashboard = null;
+        memberDashboardAt = 0;
+        adminMemberData = null;
+        sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
           token: state.authToken,
           user: state.currentUser
         }));
         document.getElementById("register-form").reset();
         closeLoginModal();
+        ensureMemberDashboard(true);
         switchRole("user");
         prefillCheckoutFromUser();
         renderMyOrdersQuickList();
@@ -2194,28 +2827,99 @@
       }
     }
 
+    async function requestForgotOtp(email) {
+      const errBox = document.getElementById("forgot-error-box");
+      const infoBox = document.getElementById("forgot-info-box");
+      const reqBtn = document.getElementById("btn-request-otp");
+      const resendBtn = document.getElementById("btn-resend-otp");
+
+      if (errBox) errBox.classList.add("hidden");
+      if (infoBox) infoBox.classList.add("hidden");
+
+      if (!isApiConfigured()) {
+        if (errBox) {
+          errBox.textContent = "Reset kata sandi membutuhkan koneksi aktif ke server.";
+          errBox.classList.remove("hidden");
+        }
+        return false;
+      }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (errBox) {
+          errBox.textContent = "Masukkan alamat email terdaftar yang valid.";
+          errBox.classList.remove("hidden");
+        }
+        return false;
+      }
+
+      if (reqBtn) reqBtn.disabled = true;
+      if (resendBtn) resendBtn.disabled = true;
+      try {
+        const res = await postToGas({
+          action: "requestPasswordResetOtp",
+          Email: email
+        });
+        if (!res || res.status !== "success") {
+          throw new Error(res?.message || "Gagal mengirim kode OTP.");
+        }
+        state.forgotEmail = email;
+        state.forgotStep = "verify";
+        const targetEl = document.getElementById("forgot-target-email");
+        if (targetEl) targetEl.textContent = email;
+        document.getElementById("forgot-step-request")?.classList.add("hidden");
+        document.getElementById("forgot-step-verify")?.classList.remove("hidden");
+        if (infoBox) {
+          infoBox.textContent = res.message || "Jika email terdaftar sebagai akun pelanggan aktif, kode OTP 6 digit telah dikirim. Periksa kotak masuk atau folder spam Anda (berlaku 10 menit).";
+          infoBox.classList.remove("hidden");
+        }
+        document.getElementById("forgot-otp")?.focus();
+        refreshIcons();
+        return true;
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = err?.message || "Gagal mengirim kode OTP.";
+          errBox.classList.remove("hidden");
+        }
+        return false;
+      } finally {
+        if (reqBtn) reqBtn.disabled = false;
+        if (resendBtn) resendBtn.disabled = false;
+      }
+    }
+
+    async function resendForgotOtp() {
+      const email = state.forgotEmail || (document.getElementById("forgot-email")?.value || "").trim().toLowerCase();
+      await requestForgotOtp(email);
+    }
+
     async function handleForgotPasswordSubmit(e) {
       e.preventDefault();
-      const nama = document.getElementById("forgot-nama").value.trim();
-      const email = document.getElementById("forgot-email").value.trim().toLowerCase();
-      const newPassword = document.getElementById("forgot-password").value;
-      const confirmPass = document.getElementById("forgot-password-confirm").value;
       const errBox = document.getElementById("forgot-error-box");
+      const infoBox = document.getElementById("forgot-info-box");
+      if (errBox) errBox.classList.add("hidden");
 
-      errBox.classList.add("hidden");
+      if (state.forgotStep !== "verify") {
+        const email = (document.getElementById("forgot-email")?.value || "").trim().toLowerCase();
+        await requestForgotOtp(email);
+        return;
+      }
+
+      const email = state.forgotEmail || (document.getElementById("forgot-email")?.value || "").trim().toLowerCase();
+      const otp = (document.getElementById("forgot-otp")?.value || "").replace(/\D/g, "");
+      const newPassword = document.getElementById("forgot-password")?.value || "";
+      const confirmPass = document.getElementById("forgot-password-confirm")?.value || "";
+
       if (!isApiConfigured()) {
-        errBox.textContent = "Reset kata sandi membutuhkan koneksi aktif ke server.";
+        errBox.textContent = "Verifikasi OTP membutuhkan koneksi aktif ke server.";
         errBox.classList.remove("hidden");
         return;
       }
-
-      if (!nama || !email || email.indexOf("@") === -1) {
-        errBox.textContent = "Nama lengkap dan Email terdaftar wajib diisi.";
+      if (!/^\d{6}$/.test(otp)) {
+        errBox.textContent = "Masukkan kode OTP tepat 6 digit angka yang dikirim ke email Anda.";
         errBox.classList.remove("hidden");
         return;
       }
-      if (newPassword.length < 6) {
-        errBox.textContent = "Kata sandi baru minimal 6 karakter.";
+      if (newPassword.length < 8) {
+        errBox.textContent = "Kata sandi baru minimal 8 karakter.";
         errBox.classList.remove("hidden");
         return;
       }
@@ -2230,19 +2934,21 @@
 
       try {
         const res = await postToGas({
-          action: "forgotPassword",
-          Nama: nama,
+          action: "verifyPasswordResetOtp",
           Email: email,
+          otp: otp,
           Password: newPassword
         });
         if (!res || res.status !== "success") {
-          throw new Error(res?.message || "Gagal mereset kata sandi.");
+          throw new Error(res?.message || "Gagal memverifikasi OTP.");
         }
-        document.getElementById("forgot-form").reset();
+        document.getElementById("forgot-form")?.reset();
+        resetForgotStep();
+        if (infoBox) infoBox.classList.add("hidden");
         switchAuthMode("login");
         const idInput = document.getElementById("login-identifier");
         if (idInput) idInput.value = email;
-        showToast(res.message || "Kata sandi berhasil diperbarui. Silakan masuk.", "success");
+        showToast(res.message || "Kata sandi berhasil diperbarui. Silakan masuk dengan kata sandi baru.", "success");
       } catch (err) {
         errBox.textContent = err?.message || "Gagal mereset kata sandi.";
         errBox.classList.remove("hidden");
@@ -2252,6 +2958,10 @@
     }
 
     function logoutUser(silent = false) {
+      const prevToken = state.authToken;
+      if (prevToken && isApiConfigured()) {
+        postToGas({ action: "logout", token: prevToken }).catch(() => {});
+      }
       state.authToken = null;
       state.currentUser = null;
       state.adminDataLoaded = false;
@@ -2259,8 +2969,16 @@
       state.users = [];
       state.pesanan = [];
       state.detail_pesanan = [];
-      localStorage.removeItem(AUTH_STORAGE_KEY);
+      memberViewOpen = false;
+      memberDashboard = null;
+      memberDashboardAt = 0;
+      adminMemberData = null;
+      const saldoInput = document.getElementById("checkout-saldo-input");
+      if (saldoInput) saldoInput.value = "0";
+      try { sessionStorage.removeItem(AUTH_STORAGE_KEY); } catch (e) {}
+      try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (e) {}
       switchRole("user");
+      renderCheckoutSaldoBox();
       renderMyOrdersQuickList();
       if (!silent) {
         showToast("Anda telah keluar dari sesi login.", "info");
@@ -2333,12 +3051,24 @@
           <button type="button" onclick="switchAdminTab('finishing')" class="py-1 border-b-2 ${state.adminTab === "finishing" ? "border-press-700 text-slate-900 font-semibold" : "border-transparent hover:text-slate-900"} transition-colors whitespace-nowrap shrink-0">
             Opsi Finishing
           </button>
+          <button type="button" onclick="switchAdminTab('member')" class="py-1 border-b-2 ${state.adminTab === "member" ? "border-press-700 text-slate-900 font-semibold" : "border-transparent hover:text-slate-900"} transition-colors whitespace-nowrap shrink-0">
+            Member &amp; Saldo
+          </button>
+          <button type="button" onclick="switchAdminTab('penarikan')" class="py-1 border-b-2 ${state.adminTab === "penarikan" ? "border-press-700 text-slate-900 font-semibold" : "border-transparent hover:text-slate-900"} transition-colors whitespace-nowrap shrink-0">
+            Penarikan
+          </button>
+          <button type="button" onclick="switchAdminTab('laporan')" class="py-1 border-b-2 ${state.adminTab === "laporan" ? "border-press-700 text-slate-900 font-semibold" : "border-transparent hover:text-slate-900"} transition-colors whitespace-nowrap shrink-0">
+            Laporan
+          </button>
           <span class="text-xs text-slate-500 whitespace-nowrap shrink-0">Admin: ${escapeHtml(state.currentUser.Nama)}</span>
         `;
         mobileHtml = `
           <button type="button" onclick="switchAdminTab('pesanan'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Manajemen Pesanan</button>
           <button type="button" onclick="switchAdminTab('produk'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Katalog Produk</button>
           <button type="button" onclick="switchAdminTab('finishing'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Opsi Finishing</button>
+          <button type="button" onclick="switchAdminTab('member'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Member &amp; Saldo</button>
+          <button type="button" onclick="switchAdminTab('penarikan'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Penarikan Saldo</button>
+          <button type="button" onclick="switchAdminTab('laporan'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Laporan Keuangan</button>
           <button type="button" onclick="logoutUser(); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 rounded-lg">Keluar</button>
         `;
         footerHtml = `
@@ -2356,7 +3086,7 @@
           : `<button type="button" onclick="openLoginModal(); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-semibold text-press-700 hover:bg-press-50 rounded-lg">Masuk Akun</button>`;
 
         desktopHtml = `
-          <button type="button" onclick="navigateCustomerSection('katalog')" id="nav-katalog" class="nav-link py-1 border-b-2 border-press-700 text-slate-900 transition-colors whitespace-nowrap shrink-0">
+          <button type="button" onclick="navigateCustomerSection('katalog')" id="nav-katalog" class="nav-link py-1 border-b-2 ${memberViewOpen ? "border-transparent hover:text-slate-900" : "border-press-700 text-slate-900"} transition-colors whitespace-nowrap shrink-0">
             Katalog
           </button>
           <button type="button" onclick="navigateCustomerSection('kalkulator')" id="nav-kalkulator" class="nav-link py-1 border-b-2 border-transparent hover:text-slate-900 transition-colors whitespace-nowrap shrink-0">
@@ -2365,12 +3095,14 @@
           <button type="button" onclick="navigateCustomerSection('lacak')" id="nav-lacak" class="nav-link py-1 border-b-2 border-transparent hover:text-slate-900 transition-colors whitespace-nowrap shrink-0">
             Lacak Pesanan
           </button>
+          ${isMemberSession() ? `<button type="button" id="nav-member" onclick="showMemberView()" class="nav-link py-1 border-b-2 ${memberViewOpen ? "border-press-700 text-slate-900 font-semibold" : "border-transparent hover:text-slate-900"} transition-colors whitespace-nowrap shrink-0">Saldo Member</button>` : ""}
           ${authLinkDesktop}
         `;
         mobileHtml = `
           <button type="button" onclick="navigateCustomerSection('katalog'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Katalog Produk</button>
           <button type="button" onclick="navigateCustomerSection('kalkulator'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Kalkulator &amp; Pemesanan</button>
           <button type="button" onclick="navigateCustomerSection('lacak'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Lacak Pesanan</button>
+          ${isMemberSession() ? `<button type="button" onclick="showMemberView(); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Saldo Member</button>` : ""}
           ${authLinkMobile}
         `;
         footerHtml = state.currentUser
@@ -2413,6 +3145,8 @@
         return;
       }
 
+      memberViewOpen = false;
+      document.getElementById("view-member")?.classList.add("hidden");
       state.role = role;
       const viewUser = document.getElementById("view-user");
       const viewAdmin = document.getElementById("view-admin");
@@ -2435,17 +3169,17 @@
 
     function navigateCustomerSection(sectionId) {
       if (!canAccessLayanan()) return;
-      if (state.role !== "user") {
+      if (state.role !== "user" || memberViewOpen) {
         switchRole("user");
       }
-      ["nav-katalog", "nav-kalkulator", "nav-lacak"].forEach((id) => {
+      ["nav-katalog", "nav-kalkulator", "nav-lacak", "nav-member"].forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
         if (id === "nav-" + sectionId) {
           el.classList.add("border-press-700", "text-slate-900");
           el.classList.remove("border-transparent");
         } else {
-          el.classList.remove("border-press-700", "text-slate-900");
+          el.classList.remove("border-press-700", "text-slate-900", "font-semibold");
           el.classList.add("border-transparent");
         }
       });
@@ -2507,6 +3241,19 @@
       renderCatalog();
     }
 
+    function getEffectiveProductPrice(prod) {
+      if (!prod) return 0;
+      if (
+        prod.Tipe_Hitung === "Dimensi" &&
+        state.memberProgram &&
+        state.memberProgram.aktif &&
+        Number(state.memberProgram.hargaJualPerM2) > 0
+      ) {
+        return Number(state.memberProgram.hargaJualPerM2);
+      }
+      return Number(prod.Harga_Dasar) || 0;
+    }
+
     function renderCatalog() {
       const query = (document.getElementById("catalog-search")?.value || "").trim().toLowerCase();
       const grid = document.getElementById("catalog-grid");
@@ -2530,7 +3277,9 @@
         return;
       }
 
-      grid.innerHTML = items.map((p) => `
+      grid.innerHTML = items.map((p) => {
+        const displayPrice = getEffectiveProductPrice(p);
+        return `
         <article class="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <div>
             <div class="aspect-[4/3] w-full bg-slate-100 border-b border-slate-200 overflow-hidden">
@@ -2544,7 +3293,7 @@
                 ${escapeHtml(p.Nama_Produk)}
               </h3>
               <div class="mt-3 flex items-baseline gap-1.5">
-                <span class="font-mono text-lg font-bold text-slate-900 tabular-nums">${formatRupiah(p.Harga_Dasar)}</span>
+                <span class="font-mono text-lg font-bold text-slate-900 tabular-nums">${formatRupiah(displayPrice)}</span>
                 <span class="text-xs text-slate-500">/ ${escapeHtml(p.Satuan)}</span>
               </div>
               <p class="mt-1 text-xs text-slate-500 tabular-nums">
@@ -2559,7 +3308,8 @@
             </button>
           </div>
         </article>
-      `).join("");
+      `;
+      }).join("");
 
       refreshIcons();
     }
@@ -2597,7 +3347,7 @@
       } else {
         prodSel.disabled = false;
         prodSel.innerHTML = availableProducts.map((p) => `
-          <option value="${escapeHtml(p.Produk_ID)}">${escapeHtml(p.Nama_Produk)} — ${formatRupiah(p.Harga_Dasar)} / ${escapeHtml(p.Satuan)}</option>
+          <option value="${escapeHtml(p.Produk_ID)}">${escapeHtml(p.Nama_Produk)} — ${formatRupiah(getEffectiveProductPrice(p))} / ${escapeHtml(p.Satuan)}</option>
         `).join("");
 
         const prevMatch = availableProducts.find((p) => String(p.Produk_ID).trim() === prevProd);
@@ -2606,21 +3356,22 @@
         }
       }
 
+      const availableFinishings = state.finishing.filter((f) => f.Status !== "Arsip");
       const finSel = document.getElementById("calc-finishing");
       const prevFin = String(finSel.value || "").trim();
-      if (!state.finishing.length) {
+      if (!availableFinishings.length) {
         finSel.innerHTML = `<option value="">Opsi finishing belum tersedia</option>`;
         finSel.disabled = true;
       } else {
         finSel.disabled = false;
-        finSel.innerHTML = state.finishing.map((f) => {
+        finSel.innerHTML = availableFinishings.map((f) => {
           const biayaText = Number(f.Tambahan_Harga) === 0
             ? "Gratis"
             : `+${formatRupiah(f.Tambahan_Harga)} (${f.Tipe_Biaya === "Per_Qty" ? "per Qty" : "Tetap"})`;
-          return `<option value="${escapeHtml(f.Finishing_ID)}">${escapeHtml(f.Nama_Finishing)} — ${biayaText}</option>`;
+          return `<option value="${escapeHtml(f.Finishing_ID)}">${escapeHtml(f.Nama_Finishing)} — ${escapeHtml(biayaText)}</option>`;
         }).join("");
 
-        const prevFinMatch = state.finishing.find((f) => String(f.Finishing_ID).trim() === prevFin);
+        const prevFinMatch = availableFinishings.find((f) => String(f.Finishing_ID).trim() === prevFin);
         if (prevFinMatch) {
           finSel.value = prevFinMatch.Finishing_ID;
         }
@@ -2632,12 +3383,15 @@
     function getSelectedProduct() {
       const id = String(document.getElementById("calc-produk").value || "").trim();
       if (!id) return null;
-      return state.produk.find((p) => String(p.Produk_ID).trim() === id) || state.produk.find((p) => p.Status === "Tersedia") || null;
+      return state.produk.find((p) => String(p.Produk_ID).trim() === id && p.Status === "Tersedia")
+        || state.produk.find((p) => p.Status === "Tersedia")
+        || null;
     }
 
     function getSelectedFinishing() {
       const id = String(document.getElementById("calc-finishing").value || "").trim();
-      return state.finishing.find((f) => String(f.Finishing_ID).trim() === id) || state.finishing[0] || null;
+      const availableFinishings = state.finishing.filter((f) => f.Status !== "Arsip");
+      return availableFinishings.find((f) => String(f.Finishing_ID).trim() === id) || availableFinishings[0] || null;
     }
 
     function onProductChange() {
@@ -2697,7 +3451,7 @@
       qtyEl.min = minOrder;
 
       document.getElementById("calc-produk-meta").textContent =
-        `Kategori: ${prod.Kategori} · Tipe Hitung: ${prod.Tipe_Hitung} · Harga Dasar: ${formatRupiah(prod.Harga_Dasar)}/${prod.Satuan} · Min. Order: ${minOrder}`;
+        `Kategori: ${prod.Kategori} · Tipe Hitung: ${prod.Tipe_Hitung} · Harga Dasar: ${formatRupiah(getEffectiveProductPrice(prod))}/${prod.Satuan} · Min. Order: ${minOrder}`;
 
       recalculateItem();
     }
@@ -2739,8 +3493,8 @@
       }
       if (submitBtn) submitBtn.disabled = false;
 
-      // Rumus Harga Dasar
-      const hargaDasar = Number(prod.Harga_Dasar) || 0;
+      // Rumus Harga Dasar (sinkron dengan tarif m² server untuk produk Dimensi)
+      const hargaDasar = getEffectiveProductPrice(prod);
       const baseCost = isDimensi
         ? Math.round(panjang * lebar * qty * hargaDasar)
         : Math.round(qty * hargaDasar);
@@ -2852,10 +3606,19 @@
     async function handleDesignFileSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
-      const isRasterImage = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type);
+      const ext = String(file.name || "").split(".").pop().toLowerCase();
+      const mime = String(file.type || "").toLowerCase();
+      const isAllowedMime = mime ? ALLOWED_DESIGN_MIMES.has(mime) : false;
+      const isAllowedExt = ALLOWED_DESIGN_EXTS.has(ext);
+      if (!isAllowedExt || (mime && !isAllowedMime)) {
+        showToast("Format file desain tidak diizinkan. Gunakan JPG, PNG, WebP, PDF, ZIP, AI, atau EPS.", "error");
+        e.target.value = "";
+        return;
+      }
+      const isRasterImage = /^image\/(jpeg|jpg|png|webp)$/i.test(mime);
 
       if (!isRasterImage && file.size > MAX_FILE_BYTES) {
-        showToast("Ukuran file desain (PDF/AI/CDR/ZIP) maksimal 2,5 MB untuk pengiriman langsung.", "error");
+        showToast("Ukuran file desain (PDF/AI/EPS/ZIP) maksimal 2,5 MB untuk pengiriman langsung.", "error");
         e.target.value = "";
         return;
       }
@@ -3008,7 +3771,7 @@
         <ul class="divide-y divide-slate-100">
           ${state.cart.map((item) => `
             <li class="py-2 flex items-center justify-between gap-2 text-xs">
-              <span class="font-medium text-slate-800 truncate">${escapeHtml(item.Nama_Produk)} (×${item.Qty})</span>
+              <span class="font-medium text-slate-800 truncate">${escapeHtml(item.Nama_Produk)} (×${escapeHtml(item.Qty)})</span>
               <span class="font-mono font-semibold text-slate-900 tabular-nums shrink-0">${formatRupiah(item.Subtotal)}</span>
             </li>
           `).join("")}
@@ -3022,6 +3785,7 @@
 
     function openCartDrawer() {
       renderCartDrawer();
+      if (isMemberSession()) ensureMemberDashboard(true);
       document.getElementById("cart-drawer-backdrop").classList.remove("hidden");
       refreshIcons();
     }
@@ -3037,6 +3801,7 @@
       const submitBtn = document.getElementById("btn-submit-checkout");
 
       if (!state.cart.length) {
+        renderCheckoutSaldoBox();
         listEl.innerHTML = `
           <div class="py-12 text-center border border-dashed border-slate-300 rounded-xl p-6">
             <p class="font-display font-semibold text-slate-800">Keranjang Masih Kosong</p>
@@ -3053,6 +3818,7 @@
       totalEl.textContent = formatRupiah(total);
       checkoutSec.classList.remove("hidden");
       submitBtn.disabled = false;
+      renderCheckoutSaldoBox();
 
       listEl.innerHTML = state.cart.map((item) => {
         const specText = item.Tipe_Hitung === "Dimensi"
@@ -3062,7 +3828,7 @@
           <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between gap-3">
             <div class="min-w-0 space-y-1">
               <p class="font-display text-sm font-bold text-slate-900">${escapeHtml(item.Nama_Produk)}</p>
-              <p class="text-xs text-slate-600 font-mono tabular-nums">${specText} · ${escapeHtml(item.Nama_Finishing)}</p>
+              <p class="text-xs text-slate-600 font-mono tabular-nums">${escapeHtml(specText)} · ${escapeHtml(item.Nama_Finishing)}</p>
               ${item.File_Desain ? `<p class="text-xs text-press-700 truncate">File: ${escapeHtml(item.File_Desain)}</p>` : `<p class="text-xs text-slate-400">Tanpa file desain</p>`}
               ${item.Keterangan_Item ? `<p class="text-xs text-slate-500 italic">"${escapeHtml(item.Keterangan_Item)}"</p>` : ""}
             </div>
@@ -3078,6 +3844,13 @@
     async function handlePaymentProofSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
+      const ext = String(file.name || "").split(".").pop().toLowerCase();
+      const mime = String(file.type || "").toLowerCase();
+      if (!ALLOWED_PROOF_MIMES.has(mime) || !["jpg", "jpeg", "png", "webp"].includes(ext)) {
+        showToast("Bukti pembayaran harus berupa gambar JPG, PNG, atau WebP.", "error");
+        e.target.value = "";
+        return;
+      }
       if (file.size > MAX_IMAGE_INPUT_BYTES) {
         showToast("Ukuran gambar bukti bayar maksimal 15 MB.", "error");
         e.target.value = "";
@@ -3138,6 +3911,10 @@
       }
 
       const hasProof = Boolean(state.currentPaymentProof && state.currentPaymentProof.base64);
+      if (!checkoutSaldoIsValid()) {
+        showToast("Nominal saldo melebihi saldo tersedia atau total pesanan.", "error");
+        return;
+      }
 
       // Hanya kirim kontak pelanggan yang diperlukan (tanpa Password / Role / objek user penuh)
       const userPayload = {
@@ -3148,6 +3925,7 @@
       };
 
       const orderPayload = {
+        Gunakan_Saldo: getCheckoutSaldoValue(),
         Bukti_Bayar: hasProof ? state.currentPaymentProof.base64 : "",
         Bukti_Bayar_Name: hasProof ? state.currentPaymentProof.name : "",
         Catatan: catatan
@@ -3211,7 +3989,10 @@
 
         state.cart = [];
         document.getElementById("checkout-form").reset();
+        const saldoInput = document.getElementById("checkout-saldo-input");
+        if (saldoInput) saldoInput.value = "0";
         clearPaymentProof();
+        if (isMemberSession()) ensureMemberDashboard(true);
         updateCartBadges();
         renderInlineCartPreview();
         closeCartDrawer();
@@ -3314,12 +4095,15 @@
         return;
       }
 
-      const steps = ["Menunggu Bayar", "Diproses", "Selesai", "Diambil"];
+      const steps = (Array.isArray(state.publicOrderSteps) && state.publicOrderSteps.length)
+        ? state.publicOrderSteps
+        : ["Menunggu Bayar", "Diproses", "Selesai", "Diambil"];
       container.innerHTML = entries.map((entry) => {
         const order = entry.order || {};
         const user = entry.customer || {};
         const items = entry.details || [];
-        const currentStepIdx = Math.max(0, steps.indexOf(order.Status_Order));
+        const isArchived = order.Status_Order === "Diarsipkan";
+        const currentStepIdx = isArchived ? -1 : Math.max(0, steps.indexOf(order.Status_Order));
 
         return `
           <div class="border border-slate-200 rounded-xl p-6 space-y-5 bg-slate-50/60">
@@ -3339,18 +4123,24 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              ${steps.map((step, idx) => {
-                const done = idx <= currentStepIdx;
-                const active = idx === currentStepIdx;
-                return `
-                  <div class="p-3 rounded-lg border ${active ? "bg-white border-press-700" : done ? "bg-white border-slate-200" : "bg-slate-100/60 border-slate-200 opacity-60"}">
-                    <p class="font-mono text-[11px] ${active ? "text-press-700 font-bold" : "text-slate-500"}">Tahap 0${idx + 1}</p>
-                    <p class="text-xs font-semibold text-slate-900 mt-0.5">${step}</p>
-                  </div>
-                `;
-              }).join("")}
-            </div>
+            ${isArchived ? `
+              <div class="p-3 rounded-lg border border-slate-300 bg-slate-100 text-xs font-medium text-slate-700">
+                Status Pesanan: <strong>Diarsipkan</strong> oleh pengelola.
+              </div>
+            ` : `
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                ${steps.map((step, idx) => {
+                  const done = idx <= currentStepIdx;
+                  const active = idx === currentStepIdx;
+                  return `
+                    <div class="p-3 rounded-lg border ${active ? "bg-white border-press-700" : done ? "bg-white border-slate-200" : "bg-slate-100/60 border-slate-200 opacity-60"}">
+                      <p class="font-mono text-[11px] ${active ? "text-press-700 font-bold" : "text-slate-500"}">Tahap 0${idx + 1}</p>
+                      <p class="text-xs font-semibold text-slate-900 mt-0.5">${escapeHtml(step)}</p>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+            `}
 
             <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
               <table class="w-full text-left text-xs">
@@ -3450,7 +4240,7 @@
         tabName = "pesanan";
       }
       state.adminTab = tabName;
-      ["pesanan", "produk", "finishing", "pengguna", "pengaturan"].forEach((t) => {
+      ["pesanan", "produk", "finishing", "pengguna", "pengaturan", "member", "penarikan", "laporan"].forEach((t) => {
         const tabBtn = document.getElementById("admin-tab-" + t);
         const panel = document.getElementById("admin-panel-" + t);
         if (!tabBtn || !panel) return;
@@ -3465,6 +4255,10 @@
         }
       });
 
+      if (["member", "penarikan", "laporan"].includes(tabName)) {
+        loadAdminMemberData();
+        if (tabName === "laporan") runAdminReport().catch(() => {});
+      }
       if (tabName === "pengaturan") {
         document.getElementById("setting-api-url").value = API_URL === "MASUKKAN_URL_APPS_SCRIPT_DI_SINI" ? "" : API_URL;
         document.getElementById("setting-sheet-url").value = SHEET_URL;
@@ -3483,10 +4277,11 @@
     }
 
     function renderAdminMetrics() {
-      const totalOrders = state.pesanan.length;
-      const pendingVerify = state.pesanan.filter((p) => p.Status_Bayar === "Menunggu Verifikasi").length;
-      const inProgress = state.pesanan.filter((p) => p.Status_Order === "Diproses").length;
-      const revenue = state.pesanan
+      const activeOrders = state.pesanan.filter((p) => p.Status_Order !== "Diarsipkan");
+      const totalOrders = activeOrders.length;
+      const pendingVerify = activeOrders.filter((p) => p.Status_Bayar === "Menunggu Verifikasi").length;
+      const inProgress = activeOrders.filter((p) => p.Status_Order === "Diproses").length;
+      const revenue = activeOrders
         .filter((p) => p.Status_Bayar === "Lunas")
         .reduce((sum, p) => sum + (Number(p.Total_Tagihan) || 0), 0);
 
@@ -3496,7 +4291,19 @@
       document.getElementById("metric-revenue").textContent = formatRupiah(revenue);
     }
 
+    function syncAdminOrderFilterOptions() {
+      const filterEl = document.getElementById("admin-order-filter");
+      if (!filterEl) return;
+      const currentVal = filterEl.value || "ALL";
+      const opts = ["ALL", ...state.statusOrderList];
+      filterEl.innerHTML = opts.map((opt) => {
+        const label = opt === "ALL" ? "Semua Status Order" : opt;
+        return `<option value="${escapeHtml(opt)}" ${currentVal === opt ? "selected" : ""}>${escapeHtml(label)}</option>`;
+      }).join("");
+    }
+
     function renderAdminOrders() {
+      syncAdminOrderFilterOptions();
       const search = (document.getElementById("admin-order-search")?.value || "").trim().toLowerCase();
       const filterStatus = document.getElementById("admin-order-filter")?.value || "ALL";
       const tbody = document.getElementById("admin-orders-tbody");
@@ -3521,11 +4328,17 @@
         return;
       }
 
+      const bayarOptions = (Array.isArray(state.statusPayList) && state.statusPayList.length)
+        ? state.statusPayList
+        : ["Belum Bayar", "Menunggu Verifikasi", "Lunas"];
+      const orderOptions = (Array.isArray(state.statusOrderList) && state.statusOrderList.length)
+        ? state.statusOrderList
+        : ["Menunggu Bayar", "Diproses", "Selesai", "Diambil", "Diarsipkan"];
+
       tbody.innerHTML = filtered.map((o) => {
         const user = state.users.find((u) => u.User_ID === o.User_ID) || {};
-        const bayarOptions = ["Belum Bayar", "Menunggu Verifikasi", "Lunas"];
-        const orderOptions = ["Menunggu Bayar", "Diproses", "Selesai", "Diambil"];
         const waUrl = buildWaOrderUrl(o, user);
+        const isArchived = o.Status_Order === "Diarsipkan";
 
         const bayarColor = o.Status_Bayar === "Lunas"
           ? "text-emerald-700 border-emerald-300 bg-emerald-50"
@@ -3534,7 +4347,7 @@
             : "text-rose-700 border-rose-300 bg-rose-50";
 
         return `
-          <tr class="hover:bg-slate-50/80 transition-colors">
+          <tr class="hover:bg-slate-50/80 transition-colors ${isArchived ? "opacity-70" : ""}">
             <td class="py-3 px-4 font-mono font-semibold text-slate-900 whitespace-nowrap tabular-nums">${escapeHtml(o.Order_ID)}</td>
             <td class="py-3 px-4 font-mono text-xs text-slate-600 whitespace-nowrap tabular-nums">${escapeHtml(o.Tanggal)}</td>
             <td class="py-3 px-4">
@@ -3544,12 +4357,12 @@
             <td class="py-3 px-4 text-right font-mono font-semibold text-slate-900 whitespace-nowrap tabular-nums">${formatRupiah(o.Total_Tagihan)}</td>
             <td class="py-3 px-4">
               <select data-action="update-status" data-id="${escapeHtml(o.Order_ID)}" data-field="Status_Bayar" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg border ${bayarColor} focus:outline-none focus:ring-2 focus:ring-press-700">
-                ${bayarOptions.map((opt) => `<option value="${opt}" ${o.Status_Bayar === opt ? "selected" : ""}>${opt}</option>`).join("")}
+                ${bayarOptions.map((opt) => `<option value="${escapeHtml(opt)}" ${o.Status_Bayar === opt ? "selected" : ""}>${escapeHtml(opt)}</option>`).join("")}
               </select>
             </td>
             <td class="py-3 px-4">
               <select data-action="update-status" data-id="${escapeHtml(o.Order_ID)}" data-field="Status_Order" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-press-700">
-                ${orderOptions.map((opt) => `<option value="${opt}" ${o.Status_Order === opt ? "selected" : ""}>${opt}</option>`).join("")}
+                ${orderOptions.map((opt) => `<option value="${escapeHtml(opt)}" ${o.Status_Order === opt ? "selected" : ""}>${escapeHtml(opt)}</option>`).join("")}
               </select>
             </td>
             <td class="py-3 px-4 text-right whitespace-nowrap">
@@ -3564,9 +4377,11 @@
                   <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                   <span>Detail</span>
                 </button>
-                <button type="button" data-action="delete-record" data-sheet="Pesanan" data-id="${escapeHtml(o.Order_ID)}" data-label="Pesanan ${escapeHtml(o.Order_ID)}" title="Hapus pesanan" class="inline-flex items-center justify-center p-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 rounded-lg transition-colors">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                </button>
+                ${!isArchived ? `
+                  <button type="button" data-action="delete-record" data-sheet="Pesanan" data-id="${escapeHtml(o.Order_ID)}" data-label="Pesanan ${escapeHtml(o.Order_ID)}" title="Arsipkan pesanan" class="inline-flex items-center justify-center p-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 rounded-lg transition-colors">
+                    <i data-lucide="archive" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ""}
               </div>
             </td>
           </tr>
@@ -3701,7 +4516,7 @@
                         <p class="font-semibold text-slate-900">${escapeHtml(p.Nama_Produk || d.Produk_ID)}</p>
                         ${d.Keterangan_Item ? `<p class="text-slate-500 mt-0.5">${escapeHtml(d.Keterangan_Item)}</p>` : ""}
                       </td>
-                      <td class="py-2.5 px-3 font-mono tabular-nums text-slate-700">${dimText}</td>
+                      <td class="py-2.5 px-3 font-mono tabular-nums text-slate-700">${escapeHtml(dimText)}</td>
                       <td class="py-2.5 px-3 text-slate-700">${escapeHtml(f.Nama_Finishing || d.Finishing_ID)}</td>
                       <td class="py-2.5 px-3">${fileHtml}</td>
                       <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-900 tabular-nums">${formatRupiah(d.Subtotal)}</td>
@@ -3788,7 +4603,7 @@
                         <p class="text-[11px] text-slate-600">${escapeHtml(p.Kategori || "-")}</p>
                       </td>
                       <td class="border border-slate-300 py-2.5 px-2.5 font-mono tabular-nums">${escapeHtml(dimLabel)}</td>
-                      <td class="border border-slate-300 py-2.5 px-2.5 text-center font-mono font-bold text-sm tabular-nums">${d.Qty}</td>
+                      <td class="border border-slate-300 py-2.5 px-2.5 text-center font-mono font-bold text-sm tabular-nums">${escapeHtml(d.Qty)}</td>
                       <td class="border border-slate-300 py-2.5 px-2.5 font-semibold">${escapeHtml(f.Nama_Finishing || d.Finishing_ID)}</td>
                       <td class="border border-slate-300 py-2.5 px-2.5">
                         <p class="font-mono text-[11px] break-all">${escapeHtml(fileLabel)}</p>
@@ -3945,17 +4760,23 @@
       const tbody = document.getElementById("admin-products-tbody");
       tbody.innerHTML = state.produk.map((p) => {
         const isAvailable = p.Status === "Tersedia";
+        const isArchived = p.Status === "Arsip";
+        const statusCls = isAvailable
+          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+          : isArchived
+            ? "bg-slate-100 text-slate-500 border-slate-300"
+            : "bg-amber-50 text-amber-800 border-amber-200";
         return `
-          <tr class="hover:bg-slate-50/80 transition-colors">
+          <tr class="hover:bg-slate-50/80 transition-colors ${isArchived ? "opacity-70" : ""}">
             <td class="py-3 px-4 font-mono text-xs font-semibold text-slate-700">${escapeHtml(p.Produk_ID)}</td>
             <td class="py-3 px-4">
               <p class="font-semibold text-slate-900">${escapeHtml(p.Nama_Produk)}</p>
-              <p class="text-xs text-slate-500">${escapeHtml(p.Kategori)} · Min. ${p.Min_Order} ${escapeHtml(p.Satuan)}</p>
+              <p class="text-xs text-slate-500">${escapeHtml(p.Kategori)} · Min. ${escapeHtml(p.Min_Order)} ${escapeHtml(p.Satuan)}</p>
             </td>
             <td class="py-3 px-4 text-xs text-slate-700">${escapeHtml(p.Tipe_Hitung)}</td>
             <td class="py-3 px-4 text-right font-mono font-semibold text-slate-900 tabular-nums">${formatRupiah(p.Harga_Dasar)} / ${escapeHtml(p.Satuan)}</td>
             <td class="py-3 px-4">
-              <button type="button" data-action="toggle-product-status" data-id="${escapeHtml(p.Produk_ID)}" class="px-2.5 py-1 text-xs font-semibold rounded-md border ${isAvailable ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-300"}">
+              <button type="button" data-action="toggle-product-status" data-id="${escapeHtml(p.Produk_ID)}" title="Klik untuk mengubah status ketersediaan" class="px-2.5 py-1 text-xs font-semibold rounded-md border ${statusCls}">
                 ${escapeHtml(p.Status)}
               </button>
             </td>
@@ -3964,9 +4785,11 @@
                 <button type="button" data-action="edit-product" data-id="${escapeHtml(p.Produk_ID)}" class="text-xs font-semibold text-press-700 hover:underline">
                   Ubah
                 </button>
-                <button type="button" data-action="delete-record" data-sheet="Produk" data-id="${escapeHtml(p.Produk_ID)}" data-label="${escapeHtml(p.Nama_Produk)}" class="text-xs font-semibold text-rose-700 hover:underline">
-                  Hapus
-                </button>
+                ${!isArchived ? `
+                  <button type="button" data-action="delete-record" data-sheet="Produk" data-id="${escapeHtml(p.Produk_ID)}" data-label="${escapeHtml(p.Nama_Produk)}" class="text-xs font-semibold text-rose-700 hover:underline">
+                    Arsipkan
+                  </button>
+                ` : ""}
               </div>
             </td>
           </tr>
@@ -3977,8 +4800,11 @@
     function editProductInForm(produkId) {
       const p = state.produk.find((pr) => pr.Produk_ID === produkId);
       if (!p) return;
+      state.editingProductId = p.Produk_ID;
       document.getElementById("admin-product-form-title").textContent = "Edit Produk: " + p.Produk_ID;
-      document.getElementById("prod-id").value = p.Produk_ID;
+      const idEl = document.getElementById("prod-id");
+      idEl.value = p.Produk_ID;
+      idEl.readOnly = true;
       document.getElementById("prod-nama").value = p.Nama_Produk;
       document.getElementById("prod-kategori").value = p.Kategori;
       document.getElementById("prod-tipe").value = p.Tipe_Hitung;
@@ -3989,13 +4815,16 @@
     }
 
     function resetProductForm() {
-      document.getElementById("admin-product-form-title").textContent = "Tambah Produk Baru";
-      document.getElementById("admin-product-form").reset();
-      const maxNum = state.produk.reduce((m, p) => {
-        const match = String(p.Produk_ID || "").match(/(\d+)$/);
-        return match ? Math.max(m, Number(match[1])) : m;
-      }, state.produk.length);
-      document.getElementById("prod-id").value = "PRD-" + String(maxNum + 1).padStart(3, "0");
+      state.editingProductId = null;
+      const titleEl = document.getElementById("admin-product-form-title");
+      const form = document.getElementById("admin-product-form");
+      const idEl = document.getElementById("prod-id");
+      if (titleEl) titleEl.textContent = "Tambah Produk Baru";
+      if (form) form.reset();
+      if (idEl) {
+        idEl.value = "";
+        idEl.readOnly = false;
+      }
     }
 
     async function toggleProductStatus(produkId) {
@@ -4007,7 +4836,7 @@
       const updatedProd = { ...p, Status: nextStatus };
 
       try {
-        await postToGas({ action: "saveProduct", produk: updatedProd });
+        await postToGas({ action: "saveProduct", isEdit: true, produk: updatedProd });
         p.Status = nextStatus;
         renderAdminProducts();
         renderCustomerAll();
@@ -4022,8 +4851,9 @@
     async function saveAdminProduct(e) {
       e.preventDefault();
       if (!canAccessAdmin()) return;
+      const isEdit = Boolean(state.editingProductId);
       const prodObj = {
-        Produk_ID: document.getElementById("prod-id").value.trim(),
+        Produk_ID: isEdit ? state.editingProductId : document.getElementById("prod-id").value.trim(),
         Nama_Produk: document.getElementById("prod-nama").value.trim(),
         Kategori: document.getElementById("prod-kategori").value.trim(),
         Tipe_Hitung: document.getElementById("prod-tipe").value,
@@ -4034,7 +4864,7 @@
       };
 
       try {
-        const res = await postToGas({ action: "saveProduct", produk: prodObj });
+        const res = await postToGas({ action: "saveProduct", isEdit, produk: prodObj });
         const saved = normalizeProductItem((res && res.data) ? res.data : prodObj);
         const idx = state.produk.findIndex((p) => p.Produk_ID === saved.Produk_ID);
         if (idx >= 0) {
@@ -4063,11 +4893,15 @@
       }
       tbody.innerHTML = state.finishing.map((f) => {
         const tipeLabel = f.Tipe_Biaya === "Per_Qty" ? "Per_Qty (× Qty)" : "Tetap";
+        const isArchived = f.Status === "Arsip";
         return `
-          <tr class="hover:bg-slate-50/80 transition-colors">
+          <tr class="hover:bg-slate-50/80 transition-colors ${isArchived ? "opacity-70" : ""}">
             <td class="py-3 px-4 font-mono text-xs font-semibold text-slate-700">${escapeHtml(f.Finishing_ID)}</td>
             <td class="py-3 px-4">
-              <p class="font-semibold text-slate-900">${escapeHtml(f.Nama_Finishing)}</p>
+              <p class="font-semibold text-slate-900">
+                ${escapeHtml(f.Nama_Finishing)}
+                ${isArchived ? '<span class="text-xs font-normal text-slate-500"> · Arsip</span>' : ""}
+              </p>
               <p class="text-xs text-slate-500">${escapeHtml(f.Keterangan || "-")}</p>
             </td>
             <td class="py-3 px-4 font-mono text-xs text-slate-700">${escapeHtml(tipeLabel)}</td>
@@ -4077,9 +4911,11 @@
                 <button type="button" data-action="edit-finishing" data-id="${escapeHtml(f.Finishing_ID)}" class="text-xs font-semibold text-press-700 hover:underline">
                   Ubah
                 </button>
-                <button type="button" data-action="delete-record" data-sheet="Finishing" data-id="${escapeHtml(f.Finishing_ID)}" data-label="${escapeHtml(f.Nama_Finishing)}" class="text-xs font-semibold text-rose-700 hover:underline">
-                  Hapus
-                </button>
+                ${!isArchived ? `
+                  <button type="button" data-action="delete-record" data-sheet="Finishing" data-id="${escapeHtml(f.Finishing_ID)}" data-label="${escapeHtml(f.Nama_Finishing)}" class="text-xs font-semibold text-rose-700 hover:underline">
+                    Arsipkan
+                  </button>
+                ` : ""}
               </div>
             </td>
           </tr>
@@ -4090,35 +4926,49 @@
     function editFinishingInForm(finishingId) {
       const f = state.finishing.find((fi) => fi.Finishing_ID === finishingId);
       if (!f) return;
+      state.editingFinishingId = f.Finishing_ID;
       document.getElementById("admin-finishing-form-title").textContent = "Edit Finishing: " + f.Finishing_ID;
-      document.getElementById("fin-id").value = f.Finishing_ID;
+      const idEl = document.getElementById("fin-id");
+      idEl.value = f.Finishing_ID;
+      idEl.readOnly = true;
       document.getElementById("fin-nama").value = f.Nama_Finishing || "";
       document.getElementById("fin-tipe").value = f.Tipe_Biaya === "Per_Qty" ? "Per_Qty" : "Tetap";
       document.getElementById("fin-harga").value = Number(f.Tambahan_Harga) || 0;
+      const statusEl = document.getElementById("fin-status");
+      if (statusEl) statusEl.value = f.Status === "Arsip" ? "Arsip" : "Tersedia";
       document.getElementById("fin-ket").value = f.Keterangan || "";
     }
 
     function resetFinishingForm() {
+      state.editingFinishingId = null;
       const form = document.getElementById("admin-finishing-form");
       if (!form) return;
       document.getElementById("admin-finishing-form-title").textContent = "Tambah Opsi Finishing";
       form.reset();
-      document.getElementById("fin-id").value = "FIN-" + String(state.finishing.length).padStart(3, "0");
+      const idEl = document.getElementById("fin-id");
+      if (idEl) {
+        idEl.value = "";
+        idEl.readOnly = false;
+      }
+      const statusEl = document.getElementById("fin-status");
+      if (statusEl) statusEl.value = "Tersedia";
     }
 
     async function saveAdminFinishing(e) {
       e.preventDefault();
       if (!canAccessAdmin()) return;
+      const isEdit = Boolean(state.editingFinishingId);
       const finObj = {
-        Finishing_ID: document.getElementById("fin-id").value.trim(),
+        Finishing_ID: isEdit ? state.editingFinishingId : document.getElementById("fin-id").value.trim(),
         Nama_Finishing: document.getElementById("fin-nama").value.trim(),
         Tipe_Biaya: document.getElementById("fin-tipe").value,
         Tambahan_Harga: Number(document.getElementById("fin-harga").value) || 0,
+        Status: document.getElementById("fin-status")?.value || "Tersedia",
         Keterangan: document.getElementById("fin-ket").value.trim()
       };
 
       try {
-        const res = await postToGas({ action: "saveFinishing", finishing: finObj });
+        const res = await postToGas({ action: "saveFinishing", isEdit, finishing: finObj });
         const saved = normalizeFinishingItem((res && res.data) ? res.data : finObj);
         const idx = state.finishing.findIndex((f) => f.Finishing_ID === saved.Finishing_ID);
         if (idx >= 0) {
@@ -4214,8 +5064,8 @@
       }
 
       if (sheetInput) {
-        SHEET_URL = sheetInput;
-        localStorage.setItem("GAS_SHEET_URL", sheetInput);
+        SHEET_URL = stripSharingParam(sheetInput);
+        localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
       } else {
         SHEET_URL = DEFAULT_SHEET_URL;
         localStorage.removeItem("GAS_SHEET_URL");
@@ -4352,38 +5202,57 @@
     // -----------------------------------------------------------------------
     // 11B. MANAJEMEN AKUN & ROLE (KHUSUS SUPER ADMIN)
     // -----------------------------------------------------------------------
-    function renderAdminUsers() {
+    function isProtectedSuperAdminClient(u) {
+      if (!u) return false;
+      if (String(u.User_ID || "").trim().toUpperCase() === "SUP-001") return true;
+      if (getNormalizedRole(u) === "Super Admin" && u.Status_Akun !== "Nonaktif") {
+        const activeSupers = state.users.filter((usr) => getNormalizedRole(usr) === "Super Admin" && usr.Status_Akun !== "Nonaktif");
+        if (activeSupers.length <= 1) return true;
+      }
+      return false;
+    }
 
+    function renderAdminUsers() {
       const tbody = document.getElementById("admin-users-tbody");
       if (!tbody) return;
       tbody.innerHTML = state.users.map((u) => {
         const roleNorm = getNormalizedRole(u);
         const isCurrent = state.currentUser && state.currentUser.User_ID === u.User_ID;
+        const isProtected = isProtectedSuperAdminClient(u);
+        const isActive = u.Status_Akun !== "Nonaktif";
         const roleColor = roleNorm === "Super Admin"
           ? "text-press-700 font-semibold"
           : roleNorm === "Admin"
             ? "text-emerald-700 font-semibold"
             : "text-slate-700";
-        const passLabel = u.Has_Password === false ? "Belum ada sandi" : "Sandi terenkripsi (SHA-256)";
+        const statusColor = isActive ? "text-emerald-700 font-semibold" : "text-rose-700 font-semibold";
+        const passLabel = u.Has_Password === false ? "Belum ada sandi" : "PBKDF2-SHA256";
         return `
-          <tr class="hover:bg-slate-50/80 transition-colors">
+          <tr class="hover:bg-slate-50/80 transition-colors ${!isActive ? "opacity-70" : ""}">
             <td class="py-3 px-4 font-mono text-xs font-semibold text-slate-700">${escapeHtml(u.User_ID)}</td>
             <td class="py-3 px-4">
-              <p class="font-semibold text-slate-900">${escapeHtml(u.Nama)} ${isCurrent ? '<span class="text-xs font-normal text-press-700">(Aktif)</span>' : ""}</p>
+              <p class="font-semibold text-slate-900">
+                ${escapeHtml(u.Nama)}
+                ${isCurrent ? '<span class="text-xs font-normal text-press-700"> (Anda)</span>' : ""}
+                ${isProtected ? '<span class="text-[11px] font-normal text-slate-500"> · Dilindungi</span>' : ""}
+              </p>
               <p class="text-xs text-slate-500 font-mono">${escapeHtml(u.Email || "-")} · ${escapeHtml(u.No_WA || "-")}</p>
             </td>
             <td class="py-3 px-4 text-xs">
-              <p class="${roleColor}">${escapeHtml(roleNorm)}</p>
+              <p class="${roleColor}">${escapeHtml(roleNorm)} · <span class="${statusColor}">${isActive ? "Aktif" : "Nonaktif"}</span></p>
               <p class="text-[11px] text-slate-500">${passLabel}</p>
             </td>
             <td class="py-3 px-4 text-right whitespace-nowrap">
               <div class="inline-flex items-center gap-3">
                 <button type="button" data-action="edit-user" data-id="${escapeHtml(u.User_ID)}" class="text-xs font-semibold text-press-700 hover:underline">
-                  Ubah / Reset Sandi
+                  Ubah / Sandi
                 </button>
-                ${!isCurrent ? `
-                  <button type="button" data-action="delete-record" data-sheet="Users" data-id="${escapeHtml(u.User_ID)}" data-label="${escapeHtml(u.Nama)}" class="text-xs font-semibold text-rose-700 hover:underline">
-                    Hapus
+                <button type="button" data-action="revoke-user-sessions" data-id="${escapeHtml(u.User_ID)}" class="text-xs font-semibold text-amber-700 hover:underline">
+                  Cabut Sesi
+                </button>
+                ${(!isCurrent && !isProtected) ? `
+                  <button type="button" data-action="toggle-user-status" data-id="${escapeHtml(u.User_ID)}" class="text-xs font-semibold ${isActive ? "text-rose-700" : "text-emerald-700"} hover:underline">
+                    ${isActive ? "Nonaktifkan" : "Aktifkan"}
                   </button>
                 ` : ""}
               </div>
@@ -4397,12 +5266,23 @@
     function editUserInForm(userId) {
       const u = state.users.find((usr) => usr.User_ID === userId);
       if (!u) return;
+      state.editingUserId = u.User_ID;
+      const isProtected = isProtectedSuperAdminClient(u);
       document.getElementById("admin-user-form-title").textContent = "Edit / Reset Sandi: " + u.User_ID;
-      document.getElementById("usr-id").value = u.User_ID;
+      const idEl = document.getElementById("usr-id");
+      idEl.value = u.User_ID;
+      idEl.readOnly = true;
       document.getElementById("usr-nama").value = u.Nama || "";
       document.getElementById("usr-wa").value = u.No_WA || "";
       document.getElementById("usr-email").value = u.Email || "";
-      document.getElementById("usr-role").value = getNormalizedRole(u);
+      const roleEl = document.getElementById("usr-role");
+      roleEl.value = getNormalizedRole(u);
+      roleEl.disabled = isProtected;
+      const statusEl = document.getElementById("usr-status");
+      if (statusEl) {
+        statusEl.value = u.Status_Akun === "Nonaktif" ? "Nonaktif" : "Aktif";
+        statusEl.disabled = isProtected;
+      }
       document.getElementById("usr-alamat").value = u.Alamat || "";
       const passEl = document.getElementById("usr-password");
       if (passEl) {
@@ -4412,27 +5292,39 @@
     }
 
     function resetUserForm() {
+      state.editingUserId = null;
       const form = document.getElementById("admin-user-form");
       if (!form) return;
       document.getElementById("admin-user-form-title").textContent = "Kelola Akun & Role";
       form.reset();
-      document.getElementById("usr-id").value = "USR-" + String(state.users.length + 1).padStart(3, "0");
+      const idEl = document.getElementById("usr-id");
+      if (idEl) {
+        idEl.value = "";
+        idEl.readOnly = false;
+      }
+      const roleEl = document.getElementById("usr-role");
+      if (roleEl) roleEl.disabled = false;
+      const statusEl = document.getElementById("usr-status");
+      if (statusEl) {
+        statusEl.disabled = false;
+        statusEl.value = "Aktif";
+      }
     }
 
     async function saveAdminUser(e) {
       e.preventDefault();
       if (!isSuperAdmin()) return;
 
-      const userId = document.getElementById("usr-id").value.trim();
-      const existing = state.users.find((u) => u.User_ID === userId);
+      const isEdit = Boolean(state.editingUserId);
+      const userId = isEdit ? state.editingUserId : document.getElementById("usr-id").value.trim();
       const newPass = document.getElementById("usr-password").value.trim();
 
-      if (!existing && newPass.length < 6) {
-        showToast("Akun baru wajib memiliki kata sandi minimal 6 karakter.", "error");
+      if (!isEdit && newPass.length < 8) {
+        showToast("Akun baru wajib memiliki kata sandi minimal 8 karakter.", "error");
         return;
       }
-      if (newPass && newPass.length < 6) {
-        showToast("Kata sandi baru minimal 6 karakter.", "error");
+      if (newPass && newPass.length < 8) {
+        showToast("Kata sandi baru minimal 8 karakter.", "error");
         return;
       }
 
@@ -4442,6 +5334,7 @@
         No_WA: document.getElementById("usr-wa").value.trim(),
         Email: document.getElementById("usr-email").value.trim(),
         Role: document.getElementById("usr-role").value,
+        Status_Akun: document.getElementById("usr-status")?.value || "Aktif",
         Alamat: document.getElementById("usr-alamat").value.trim()
       };
       if (newPass) {
@@ -4449,7 +5342,7 @@
       }
 
       try {
-        const res = await postToGas({ action: "saveUser", user: userPayload });
+        const res = await postToGas({ action: "saveUser", isEdit, user: userPayload });
         const saved = (res && res.data) ? res.data : { ...userPayload };
         delete saved.Password;
         if (newPass) saved.Has_Password = true;
@@ -4484,25 +5377,76 @@
       }
     }
 
+    async function toggleAdminUserStatus(userId) {
+      if (!isSuperAdmin()) return;
+      const u = state.users.find((usr) => usr.User_ID === userId);
+      if (!u) return;
+      if (isProtectedSuperAdminClient(u)) {
+        showToast("Akun Super Admin utama/terakhir dilindungi dan tidak dapat dinonaktifkan.", "error");
+        return;
+      }
+      const nextStatus = u.Status_Akun === "Nonaktif" ? "Aktif" : "Nonaktif";
+      try {
+        const res = await postToGas({ action: "toggleUserStatus", User_ID: userId, Status_Akun: nextStatus });
+        const updated = (res && res.data) ? res.data : { ...u, Status_Akun: nextStatus };
+        const idx = state.users.findIndex((usr) => usr.User_ID === userId);
+        if (idx >= 0) state.users[idx] = updated;
+        renderAdminUsers();
+        showToast(`Akun ${u.Nama} diubah menjadi ${updated.Status_Akun}.`, "success");
+      } catch (err) {
+        showToast("Gagal mengubah status akun: " + (err.message || ""), "error");
+      }
+    }
+
+    async function revokeAdminUserSessions(userId) {
+      if (!isSuperAdmin()) return;
+      const u = state.users.find((usr) => usr.User_ID === userId);
+      if (!u) return;
+      try {
+        const res = await postToGas({ action: "revokeUserSessions", User_ID: userId });
+        if (res && res.data && typeof res.data.Token_Version !== "undefined") {
+          u.Token_Version = res.data.Token_Version;
+        }
+        renderAdminUsers();
+        if (state.currentUser && state.currentUser.User_ID === userId) {
+          showToast("Seluruh sesi Anda telah dicabut. Silakan masuk kembali.", "info");
+          logoutUser(true);
+        } else {
+          showToast(`Seluruh sesi login ${u.Nama} berhasil dicabut.`, "success");
+        }
+      } catch (err) {
+        showToast("Gagal mencabut sesi akun: " + (err.message || ""), "error");
+      }
+    }
+
     // -----------------------------------------------------------------------
-    // 11D. KONFIRMASI & HAPUS DATA (MENUNGGU KONFIRMASI SERVER)
+    // 11D. KONFIRMASI & ARSIPKAN DATA (NON-DESTRUKTIF, TERVERIFIKASI SERVER)
     // -----------------------------------------------------------------------
     function openDeleteConfirm(sheetName, id, label) {
       if (!canAccessAdmin()) return;
-      if (sheetName === "Users" && !isSuperAdmin()) {
-        showToast("Hanya Super Admin yang dapat menghapus akun.", "error");
-        return;
-      }
-      if (sheetName === "Users" && state.currentUser && state.currentUser.User_ID === id) {
-        showToast("Akun yang sedang aktif login tidak dapat dihapus.", "error");
-        return;
+      if (sheetName === "Users") {
+        if (!isSuperAdmin()) {
+          showToast("Hanya Super Admin yang dapat menonaktifkan akun.", "error");
+          return;
+        }
+        if (state.currentUser && state.currentUser.User_ID === id) {
+          showToast("Akun yang sedang aktif login tidak dapat dinonaktifkan.", "error");
+          return;
+        }
+        const targetUser = state.users.find((u) => u.User_ID === id);
+        if (isProtectedSuperAdminClient(targetUser)) {
+          showToast("Super Admin utama/terakhir dilindungi dan tidak dapat dinonaktifkan.", "error");
+          return;
+        }
       }
       state.pendingDelete = { sheetName, id, label };
-      const extraNote = sheetName === "Pesanan"
-        ? " Seluruh item rincian di sheet Detail_Pesanan untuk pesanan ini juga akan ikut dihapus."
-        : "";
-      document.getElementById("confirm-modal-message").textContent =
-        `Yakin ingin menghapus "${label}" (${id}) dari sheet ${sheetName}?${extraNote}`;
+      let actionDesc = `Yakin ingin mengarsipkan "${label}" (${id}) di sheet ${sheetName}? Data tetap tersimpan rapi untuk riwayat dan tidak dihapus permanen.`;
+      if (sheetName === "Pesanan") {
+        actionDesc = `Yakin ingin mengarsipkan "${label}" (${id})? Status pesanan akan diubah menjadi "Diarsipkan" sementara rincian item tetap terjaga.`;
+      } else if (sheetName === "Users") {
+        actionDesc = `Yakin ingin menonaktifkan akun "${label}" (${id})? Sesi aktif akun akan langsung dicabut sementara riwayat transaksi tetap aman.`;
+      }
+      document.getElementById("confirm-modal-message").textContent = actionDesc;
       document.getElementById("confirm-modal-backdrop").classList.remove("hidden");
       refreshIcons();
     }
@@ -4512,7 +5456,7 @@
       const btn = document.getElementById("btn-confirm-delete");
       if (btn) {
         btn.disabled = false;
-        btn.textContent = "Ya, Hapus Permanen";
+        btn.textContent = "Ya, Arsipkan Data";
       }
       document.getElementById("confirm-modal-backdrop").classList.add("hidden");
     }
@@ -4524,42 +5468,44 @@
       const btn = document.getElementById("btn-confirm-delete");
       if (btn) {
         btn.disabled = true;
-        btn.textContent = "Menghapus...";
+        btn.textContent = "Mengarsipkan...";
       }
 
       try {
         await postToGas({ action: "deleteRecord", sheetName, id });
 
         if (sheetName === "Produk") {
-          state.produk = state.produk.filter((p) => p.Produk_ID !== id);
+          const p = state.produk.find((item) => item.Produk_ID === id);
+          if (p) p.Status = "Arsip";
           renderAdminProducts();
           renderCustomerAll();
         } else if (sheetName === "Finishing") {
-          state.finishing = state.finishing.filter((f) => f.Finishing_ID !== id);
+          const f = state.finishing.find((item) => item.Finishing_ID === id);
+          if (f) f.Status = "Arsip";
           renderAdminFinishing();
           populateCalculatorDropdowns();
           recalculateItem();
         } else if (sheetName === "Users") {
-          state.users = state.users.filter((u) => u.User_ID !== id);
+          const u = state.users.find((item) => item.User_ID === id);
+          if (u) u.Status_Akun = "Nonaktif";
           renderAdminUsers();
         } else if (sheetName === "Pesanan") {
-          state.pesanan = state.pesanan.filter((o) => o.Order_ID !== id);
-          state.detail_pesanan = state.detail_pesanan.filter((d) => d.Order_ID !== id);
-          delete state.trackedOrderCache[id];
+          const o = state.pesanan.find((item) => item.Order_ID === id);
+          if (o) o.Status_Order = "Diarsipkan";
           renderAdminMetrics();
           renderMonthlyRevenueChart();
           renderAdminOrders();
         }
 
         closeConfirmModal();
-        showToast(`${label} berhasil dihapus dari ${sheetName}.`, "success");
+        showToast(`${label} berhasil diarsipkan di ${sheetName}.`, "success");
       } catch (err) {
-        console.warn("Gagal menghapus data:", err);
+        console.warn("Gagal mengarsipkan data:", err);
         if (btn) {
           btn.disabled = false;
-          btn.textContent = "Ya, Hapus Permanen";
+          btn.textContent = "Ya, Arsipkan Data";
         }
-        showToast("Gagal menghapus dari Google Sheets: " + (err.message || ""), "error");
+        showToast("Gagal mengarsipkan data di Google Sheets: " + (err.message || ""), "error");
       }
     }
 
@@ -4633,8 +5579,8 @@
       const modeLabel = state.revenueChartMode === "lunas" ? "Lunas" : "Semua Status";
       if (detailEl) {
         detailEl.innerHTML = `
-          <span>Bulan terpilih: <strong class="text-slate-900">${BULAN_LONG[monthIdx]} ${year}</strong> (${modeLabel})</span>
-          <span class="font-mono font-semibold text-slate-900 tabular-nums">${count} pesanan · ${formatRupiah(amount)}</span>
+          <span>Bulan terpilih: <strong class="text-slate-900">${escapeHtml(BULAN_LONG[monthIdx] || "")} ${escapeHtml(year)}</strong> (${escapeHtml(modeLabel)})</span>
+          <span class="font-mono font-semibold text-slate-900 tabular-nums">${escapeHtml(count)} pesanan · ${formatRupiah(amount)}</span>
         `;
       }
       document.querySelectorAll("[data-rev-bar]").forEach((bar) => {
@@ -4652,9 +5598,11 @@
       const yearSelect = document.getElementById("revenue-chart-year");
       if (!container || !yearSelect) return;
 
-      // Kumpulkan daftar tahun unik dari Pesanan
+      const activeOrders = state.pesanan.filter((o) => o.Status_Order !== "Diarsipkan");
+
+      // Kumpulkan daftar tahun unik dari Pesanan aktif
       const yearsSet = new Set();
-      state.pesanan.forEach((o) => {
+      activeOrders.forEach((o) => {
         const ym = parseOrderYearMonth(o.Tanggal);
         if (ym) yearsSet.add(ym.year);
       });
@@ -4662,7 +5610,7 @@
 
       const years = Array.from(yearsSet).sort((a, b) => b - a);
       const prevYear = Number(yearSelect.value);
-      yearSelect.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
+      yearSelect.innerHTML = years.map((y) => `<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join("");
       const selectedYear = years.includes(prevYear) ? prevYear : years[0];
       yearSelect.value = selectedYear;
 
@@ -4670,7 +5618,7 @@
       const monthlyTotals = Array(12).fill(0);
       const monthlyCounts = Array(12).fill(0);
 
-      state.pesanan.forEach((o) => {
+      activeOrders.forEach((o) => {
         if (state.revenueChartMode === "lunas" && o.Status_Bayar !== "Lunas") return;
         const ym = parseOrderYearMonth(o.Tanggal);
         if (!ym || ym.year !== selectedYear || ym.month < 0 || ym.month > 11) return;
@@ -4697,7 +5645,7 @@
       if (maxVal === 0) {
         container.innerHTML = `
           <div class="py-10 text-center text-xs text-slate-500 border border-dashed border-slate-200 rounded-lg">
-            Belum ada data pendapatan pada tahun ${selectedYear} untuk filter ini.
+            Belum ada data pendapatan pada tahun ${escapeHtml(selectedYear)} untuk filter ini.
           </div>
         `;
         return;
@@ -4717,7 +5665,7 @@
             <!-- Sumbu Y (sejajar dengan area batang setinggi h-48 di bawah ruang label pt-5) -->
             <div class="w-16 shrink-0 pt-5">
               <div class="flex flex-col justify-between h-48 text-right pr-2 font-mono text-[11px] text-slate-400 tabular-nums select-none">
-                ${ySteps.map((ratio) => `<span>${ratio === 0 ? "0" : formatCompactRupiah(Math.round(niceMax * ratio))}</span>`).join("")}
+                ${ySteps.map((ratio) => `<span>${ratio === 0 ? "0" : escapeHtml(formatCompactRupiah(Math.round(niceMax * ratio)))}</span>`).join("")}
               </div>
             </div>
 
@@ -4740,15 +5688,15 @@
                         data-rev-bar="${idx}"
                         data-action="select-rev-month"
                         data-month="${idx}"
-                        data-year="${selectedYear}"
+                        data-year="${escapeHtml(selectedYear)}"
                         data-amount="${val}"
                         data-count="${count}"
-                        aria-label="${BULAN_LONG[idx]} ${selectedYear}: ${formatRupiah(val)} (${count} pesanan)"
+                        aria-label="${escapeHtml(BULAN_LONG[idx])} ${escapeHtml(selectedYear)}: ${escapeHtml(formatRupiah(val))} (${count} pesanan)"
                         style="height: ${pct}%"
                         class="relative w-full max-w-[34px] rounded-t-md transition-all duration-200 ${val > 0 ? barColorClass + " cursor-pointer" : "bg-slate-200/70 min-h-[3px] cursor-default"}"
                       >
                         <span class="absolute -top-5 left-1/2 -translate-x-1/2 font-mono text-[10px] font-semibold text-slate-700 tabular-nums whitespace-nowrap pointer-events-none ${val > 0 ? "opacity-100" : "opacity-0"}">
-                          ${formatCompactRupiah(val)}
+                          ${escapeHtml(formatCompactRupiah(val))}
                         </span>
                       </button>
                     </div>
@@ -4762,7 +5710,7 @@
           <div class="flex gap-3 mt-2">
             <div class="w-16 shrink-0"></div>
             <div class="flex-1 grid grid-cols-12 gap-2 sm:gap-3 px-1 text-center">
-              ${BULAN_SHORT.map((b) => `<span class="text-xs font-medium text-slate-600">${b}</span>`).join("")}
+              ${BULAN_SHORT.map((b) => `<span class="text-xs font-medium text-slate-600">${escapeHtml(b)}</span>`).join("")}
             </div>
           </div>
         </div>
@@ -4817,6 +5765,667 @@
       resetFinishingForm();
       resetUserForm();
       refreshIcons();
+      syncMemberViewVisibility();
+    }
+
+    // -----------------------------------------------------------------------
+    // 10. BANNER MEMBER REWARDS: AREA MEMBER, SALDO CHECKOUT, ADMIN MEMBER
+    // Saldo final, potongan, reward dan validasi nominal dihitung di server.
+    // Frontend hanya menampilkan data dan mengirim permintaan.
+    // -----------------------------------------------------------------------
+    function setMemberText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    function getInputValue(id) {
+      const el = document.getElementById(id);
+      return el ? String(el.value || "").trim() : "";
+    }
+
+    function getNumInput(id) {
+      const el = document.getElementById(id);
+      return el ? Math.round(Number(el.value) || 0) : 0;
+    }
+
+    function getCartSubtotal() {
+      return state.cart.reduce((acc, item) => acc + (Number(item.Subtotal) || 0), 0);
+    }
+
+    function isMemberSession() {
+      return Boolean(state.authToken && state.currentUser && getNormalizedRole(state.currentUser) === "User");
+    }
+
+    function getMemberSaldoTersedia() {
+      return Number(memberDashboard && memberDashboard.saldo && memberDashboard.saldo.tersedia) || 0;
+    }
+
+    function getMemberMinTarik() {
+      return Number(memberDashboard && memberDashboard.program && memberDashboard.program.minTarik) || 0;
+    }
+
+    function fmtMemberDate(stamp) {
+      const raw = String(stamp || "").trim();
+      if (!raw) return "-";
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return escapeHtml(raw.slice(0, 16));
+      return escapeHtml(d.toLocaleString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }));
+    }
+
+    function memberStatusBadge(status) {
+      const s = String(status || "").trim();
+      const map = {
+        "Menunggu Verifikasi": "bg-amber-50 text-amber-800 border-amber-200",
+        "Disetujui": "bg-sky-50 text-sky-800 border-sky-200",
+        "Sedang Diproses": "bg-sky-50 text-sky-800 border-sky-200",
+        "Berhasil": "bg-emerald-50 text-emerald-800 border-emerald-200",
+        "Ditolak": "bg-rose-50 text-rose-800 border-rose-200",
+        "Gagal": "bg-rose-50 text-rose-800 border-rose-200"
+      };
+      const cls = map[s] || "bg-slate-100 text-slate-700 border-slate-200";
+      return `<span class="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold border rounded-md ${cls}">${escapeHtml(s || "-")}</span>`;
+    }
+
+    function memberRewardBadge(status) {
+      const s = String(status || "").trim();
+      if (!s) return `<span class="text-xs text-slate-400">-</span>`;
+      const cls = s === "Dirilis" ? "text-emerald-700" : (s === "Ditahan" ? "text-amber-700" : "text-slate-600");
+      return `<span class="text-xs font-semibold ${cls}">${escapeHtml(s)}</span>`;
+    }
+
+    const MEMBER_TX_LABEL = {
+      REWARD_HELD: "Reward pesanan ditahan",
+      REWARD_RELEASED: "Reward cair ke saldo tersedia",
+      REWARD_REVERSED: "Reward pesanan dibatalkan",
+      DISCOUNT_USED: "Saldo dipakai sebagai potongan",
+      DISCOUNT_RESTORED: "Pengembalian potongan saldo",
+      WITHDRAW_HOLD: "Saldo dicadangkan untuk penarikan",
+      WITHDRAW_PAID: "Penarikan sudah ditransfer",
+      WITHDRAW_RELEASED: "Saldo penarikan dikembalikan",
+      ADJUST_IN: "Penambahan saldo oleh admin",
+      ADJUST_OUT: "Pengurangan saldo oleh admin"
+    };
+
+    async function loadMemberDashboard() {
+      const json = await postToGas({ action: "getMemberDashboard" });
+      memberDashboard = json.data || null;
+      memberDashboardAt = Date.now();
+      return memberDashboard;
+    }
+
+    async function ensureMemberDashboard(force = false) {
+      if (!isMemberSession() || memberDashLoading) return;
+      if (!force && memberDashboard && Date.now() - memberDashboardAt < 60000) return;
+      memberDashLoading = true;
+      memberDashboardAt = Date.now();
+      try {
+        await loadMemberDashboard();
+      } catch (err) {
+        console.warn("Gagal memuat saldo member:", err);
+      } finally {
+        memberDashLoading = false;
+        renderCheckoutSaldoBox();
+      }
+    }
+
+    function syncMemberViewVisibility() {
+      const viewMember = document.getElementById("view-member");
+      if (!viewMember) return;
+      if (memberViewOpen && isMemberSession()) {
+        document.getElementById("view-user").classList.add("hidden");
+        document.getElementById("view-admin").classList.add("hidden");
+        viewMember.classList.remove("hidden");
+      } else {
+        memberViewOpen = false;
+        viewMember.classList.add("hidden");
+      }
+    }
+
+    async function showMemberView() {
+      if (!isMemberSession()) {
+        openLoginModal("Masuk sebagai member untuk melihat saldo Anda.");
+        return;
+      }
+      await switchRole("user");
+      document.getElementById("view-user").classList.add("hidden");
+      document.getElementById("view-admin").classList.add("hidden");
+      document.getElementById("view-member").classList.remove("hidden");
+      memberViewOpen = true;
+      renderNavigation();
+      switchMemberTab("ringkasan");
+      try {
+        await loadMemberDashboard();
+      } catch (err) {
+        showToast(err.message || "Gagal memuat data member.", "error");
+      }
+      renderMemberArea();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function refreshMemberArea() {
+      try {
+        await loadMemberDashboard();
+        renderMemberArea();
+        showToast("Data member diperbarui.", "success");
+      } catch (err) {
+        showToast(err.message || "Gagal memuat data member.", "error");
+      }
+    }
+
+    function switchMemberTab(tabName) {
+      ["ringkasan", "riwayat", "tarik", "profil", "panduan"].forEach((t) => {
+        const btn = document.getElementById("member-tab-" + t);
+        const panel = document.getElementById("member-panel-" + t);
+        const active = t === tabName;
+        if (btn) {
+          btn.classList.toggle("bg-white", active);
+          btn.classList.toggle("text-slate-900", active);
+          btn.classList.toggle("shadow-sm", active);
+          btn.classList.toggle("font-semibold", active);
+          btn.classList.toggle("text-slate-600", !active);
+          btn.classList.toggle("font-medium", !active);
+        }
+        if (panel) panel.classList.toggle("hidden", !active);
+      });
+    }
+
+    function renderMemberArea() {
+      const d = memberDashboard || {};
+      const s = d.saldo || {};
+      const p = d.program || {};
+
+      setMemberText("member-subtitle", `Dapatkan ${formatRupiah(p.rewardPerM2)} per m² dari setiap banner. Saldo cair setelah pesanan diambil. Minimal penarikan ${formatRupiah(p.minTarik)}.`);
+      setMemberText("member-saldo-tersedia", formatRupiah(s.tersedia));
+      setMemberText("member-saldo-tertahan", formatRupiah(s.tertahan));
+      setMemberText("member-saldo-proses", formatRupiah(s.penarikanProses));
+      setMemberText("member-total-reward", formatRupiah(s.totalReward));
+      setMemberText("member-total-dipakai", formatRupiah(s.totalDipakai));
+      setMemberText("member-total-ditarik", formatRupiah(s.totalDitarik));
+
+      const orders = Array.isArray(d.pesanan) ? d.pesanan : [];
+      const ob = document.getElementById("member-orders-body");
+      if (ob) {
+        ob.innerHTML = orders.length ? orders.map((o) => `
+          <tr class="hover:bg-slate-50">
+            <td class="py-3 px-4 font-mono text-xs font-semibold text-slate-900 whitespace-nowrap">${escapeHtml(o.Order_ID)}</td>
+            <td class="py-3 px-4 text-xs text-slate-600 whitespace-nowrap">${fmtMemberDate(o.Tanggal)}</td>
+            <td class="py-3 px-4 text-xs whitespace-nowrap">${escapeHtml(o.Status_Order)} <span class="text-slate-400">·</span> ${escapeHtml(o.Status_Bayar)}</td>
+            <td class="py-3 px-4 text-right font-mono text-xs tabular-nums whitespace-nowrap">${formatRupiah(o.Total_Tagihan)}</td>
+            <td class="py-3 px-4 whitespace-nowrap">${memberRewardBadge(o.Reward_Status)}${o.Reward_Amount ? `<span class="block font-mono text-xs tabular-nums text-slate-700">${formatRupiah(o.Reward_Amount)}</span>` : ""}</td>
+          </tr>`).join("") : `<tr><td colspan="5" class="py-10 px-4 text-center text-sm text-slate-500">Belum ada pesanan. Reward muncul setelah pesanan lunas.</td></tr>`;
+      }
+
+      const txs = Array.isArray(d.transaksi) ? d.transaksi : [];
+      const txb = document.getElementById("member-tx-body");
+      if (txb) {
+        const arahMeta = {
+          masuk: { label: "Masuk", cls: "text-emerald-700", sign: "+ " },
+          keluar: { label: "Keluar", cls: "text-rose-700", sign: "− " },
+          tertahan: { label: "Tertahan", cls: "text-amber-700", sign: "" },
+          batal: { label: "Batal", cls: "text-rose-700", sign: "− " }
+        };
+        txb.innerHTML = txs.length ? txs.map((t) => {
+          const arahKey = String(t.Arah || "").trim().toLowerCase();
+          const meta = arahMeta[arahKey] || { label: t.Arah || "-", cls: "text-slate-600", sign: "" };
+          return `
+          <tr class="hover:bg-slate-50 align-top">
+            <td class="py-3 px-4 text-xs text-slate-600 whitespace-nowrap">${fmtMemberDate(t.Created_At)}</td>
+            <td class="py-3 px-4 font-mono text-xs text-slate-800 whitespace-nowrap">${escapeHtml(t.Trx_ID)}${t.Order_ID ? `<span class="block text-[11px] text-slate-500">${escapeHtml(t.Order_ID)}</span>` : ""}</td>
+            <td class="py-3 px-4 text-xs"><p class="font-semibold text-slate-900">${escapeHtml(MEMBER_TX_LABEL[t.Transaction_Type] || t.Transaction_Type || "-")}</p><p class="text-slate-500 mt-0.5">${escapeHtml(t.Description || "")}</p></td>
+            <td class="py-3 px-4 whitespace-nowrap"><span class="text-[11px] font-semibold ${meta.cls}">${escapeHtml(meta.label)}</span></td>
+            <td class="py-3 px-4 text-right font-mono text-xs font-semibold tabular-nums whitespace-nowrap ${meta.cls}">${meta.sign}${formatRupiah(t.Amount)}</td>
+          </tr>`;
+        }).join("") : `<tr><td colspan="5" class="py-10 px-4 text-center text-sm text-slate-500">Belum ada riwayat saldo.</td></tr>`;
+      }
+
+      const wds = Array.isArray(d.penarikan) ? d.penarikan : [];
+      const wl = document.getElementById("member-withdraw-list");
+      if (wl) {
+        wl.innerHTML = wds.length ? wds.map((w) => `
+          <div class="border border-slate-200 rounded-lg p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-mono text-xs font-semibold text-slate-900">${escapeHtml(w.Withdraw_ID)}</p>
+                <p class="text-xs text-slate-500 mt-0.5">${fmtMemberDate(w.Created_At)} · ${escapeHtml(w.Bank_Name)} ${escapeHtml(w.Account_Number_Masked)}</p>
+              </div>
+              ${memberStatusBadge(w.Status)}
+            </div>
+            <div class="mt-3 flex items-center justify-between text-sm">
+              <span class="text-slate-600">Nominal</span>
+              <span class="font-mono font-semibold tabular-nums">${formatRupiah(w.Amount)}</span>
+            </div>
+            ${w.Admin_Note ? `<p class="mt-2 text-xs text-slate-600">Catatan admin: ${escapeHtml(w.Admin_Note)}</p>` : ""}
+            ${w.Reference_ID ? `<p class="mt-1 text-xs text-slate-500">Referensi transfer: ${escapeHtml(w.Reference_ID)}</p>` : ""}
+          </div>`).join("") : `<p class="text-sm text-slate-500">Belum ada pengajuan penarikan.</p>`;
+      }
+
+      const minT = getMemberMinTarik();
+      const avail = getMemberSaldoTersedia();
+      setMemberText("wd-hint", `Minimal ${formatRupiah(minT)}. Saldo tersedia ${formatRupiah(avail)}.`);
+      const wdAmount = document.getElementById("wd-amount");
+      if (wdAmount) { wdAmount.min = String(minT); wdAmount.max = String(avail); }
+
+      const pr = d.profil || {};
+      const fillIfEmpty = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && !el.value && val) el.value = val;
+      };
+      fillIfEmpty("prof-bank", pr.Nama_Bank);
+      fillIfEmpty("prof-holder", pr.Nama_Pemilik);
+      fillIfEmpty("wd-bank", pr.Nama_Bank);
+      fillIfEmpty("wd-holder", pr.Nama_Pemilik);
+      const masked = pr.Nomor_Rekening_Masked ? "Tersimpan: " + pr.Nomor_Rekening_Masked : "Masukkan nomor rekening";
+      ["prof-account", "wd-account"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.placeholder = masked;
+      });
+
+      setMemberText("member-total-reward", formatRupiah(s.totalReward));
+      const guide = document.getElementById("member-guide-body");
+      if (guide && !guide.dataset.ready) {
+        guide.innerHTML = `
+          <ol class="list-decimal pl-5 space-y-2.5 text-sm text-slate-700">
+            <li>Reward dihitung dari luas (m²) setiap banner berukuran Dimensi. Besaran per m² ditetapkan pengelola.</li>
+            <li>Reward masuk ke saldo tertahan saat pesanan lunas. Saldo pindah ke saldo tersedia saat pesanan berstatus Diambil.</li>
+            <li>Saldo tersedia bisa dipakai sebagai potongan di checkout, atau ditarik ke rekening Anda.</li>
+            <li>Penarikan memerlukan verifikasi admin. Admin mentransfer secara manual lalu mengunggah bukti transfer. Pantau statusnya di tab Tarik Saldo.</li>
+            <li>Jika pesanan dibatalkan setelah reward dirilis, penyesuaian saldo dilakukan oleh admin.</li>
+          </ol>`;
+        guide.dataset.ready = "1";
+      }
+      refreshIcons();
+    }
+
+    async function submitWithdrawal(e) {
+      e.preventDefault();
+      if (!isMemberSession()) return;
+      const errEl = document.getElementById("wd-error");
+      const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove("hidden"); };
+      errEl.classList.add("hidden");
+
+      const amount = Math.floor(Number(getInputValue("wd-amount")) || 0);
+      const bank = getInputValue("wd-bank");
+      const acc = getInputValue("wd-account").replace(/[\s-]/g, "");
+      const holder = getInputValue("wd-holder");
+      const minT = getMemberMinTarik();
+      const avail = getMemberSaldoTersedia();
+
+      if (amount <= 0) return showErr("Nominal penarikan harus lebih dari 0.");
+      if (amount < minT) return showErr(`Minimal penarikan ${formatRupiah(minT)}.`);
+      if (amount > avail) return showErr("Nominal melebihi saldo tersedia.");
+      if (!/^\d{6,20}$/.test(acc)) return showErr("Nomor rekening harus 6–20 digit angka.");
+
+      const btn = document.getElementById("btn-submit-withdrawal");
+      btn.disabled = true;
+      try {
+        await postToGas({ action: "requestWithdrawal", Amount: amount, Nama_Bank: bank, Nomor_Rekening: acc, Nama_Pemilik: holder });
+        showToast("Pengajuan penarikan terkirim. Saldo dicadangkan.", "success");
+        document.getElementById("wd-account").value = "";
+        await loadMemberDashboard();
+        renderMemberArea();
+      } catch (err) {
+        showErr(err.message || "Gagal mengajukan penarikan.");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function saveMemberProfileForm(e) {
+      e.preventDefault();
+      if (!isMemberSession()) return;
+      const btn = document.getElementById("btn-save-profile");
+      btn.disabled = true;
+      try {
+        await postToGas({
+          action: "saveMemberProfile",
+          Nama_Bank: getInputValue("prof-bank"),
+          Nomor_Rekening: getInputValue("prof-account").replace(/[\s-]/g, ""),
+          Nama_Pemilik: getInputValue("prof-holder")
+        });
+        showToast("Data rekening disimpan.", "success");
+        document.getElementById("prof-account").value = "";
+        await loadMemberDashboard();
+        renderMemberArea();
+      } catch (err) {
+        showToast(err.message || "Gagal menyimpan rekening.", "error");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // --- Saldo member di checkout -------------------------------------------
+    function getCheckoutSaldoValue() {
+      if (!isMemberSession()) return 0;
+      const v = Math.floor(Number(getInputValue("checkout-saldo-input")) || 0);
+      return v > 0 ? v : 0;
+    }
+
+    function checkoutSaldoIsValid() {
+      if (!isMemberSession()) return true;
+      const v = getCheckoutSaldoValue();
+      return v <= getMemberSaldoTersedia() && v <= getCartSubtotal();
+    }
+
+    function renderCheckoutSaldoBox() {
+      const box = document.getElementById("checkout-saldo-box");
+      if (!box) return;
+      const input = document.getElementById("checkout-saldo-input");
+      if (!isMemberSession() || !state.cart.length) {
+        box.classList.add("hidden");
+        if (input) input.value = "0";
+        return;
+      }
+      box.classList.remove("hidden");
+      ensureMemberDashboard();
+
+      const cartTotal = getCartSubtotal();
+      const avail = getMemberSaldoTersedia();
+      const usable = Math.max(0, Math.min(avail, cartTotal));
+      setMemberText("checkout-saldo-available", formatRupiah(avail));
+      if (input) input.max = String(usable);
+      const maxBtn = document.getElementById("checkout-saldo-max");
+      if (maxBtn) maxBtn.disabled = usable <= 0;
+
+      const raw = Math.floor(Number(input ? input.value : 0) || 0);
+      const valid = raw >= 0 && raw <= usable;
+      const err = document.getElementById("checkout-saldo-error");
+      if (err) {
+        if (!valid && raw > 0) {
+          err.textContent = raw > avail ? "Nominal melebihi saldo tersedia." : "Nominal melebihi total harga pesanan.";
+          err.classList.remove("hidden");
+        } else {
+          err.classList.add("hidden");
+        }
+      }
+      const applied = valid ? raw : 0;
+      setMemberText("checkout-saldo-before", formatRupiah(cartTotal));
+      setMemberText("checkout-saldo-deduct", applied > 0 ? "− " + formatRupiah(applied) : formatRupiah(0));
+      setMemberText("checkout-saldo-after", formatRupiah(cartTotal - applied));
+      const drawerTotalEl = document.getElementById("drawer-total-tagihan");
+      if (drawerTotalEl) drawerTotalEl.textContent = formatRupiah(cartTotal - applied);
+    }
+
+    function updateCheckoutSaldoPreview() {
+      renderCheckoutSaldoBox();
+    }
+
+    function applyMaxCheckoutSaldo() {
+      const input = document.getElementById("checkout-saldo-input");
+      if (!input) return;
+      input.value = String(Math.max(0, Math.min(getMemberSaldoTersedia(), getCartSubtotal())));
+      renderCheckoutSaldoBox();
+    }
+
+    // --- Admin: member, penarikan, laporan ----------------------------------
+    async function loadAdminMemberData(force = false) {
+      if (!canAccessAdmin()) return;
+      if (adminMemberData && !force) {
+        renderAdminMemberPanels();
+        return;
+      }
+      if (adminMemberLoading) return;
+      adminMemberLoading = true;
+      try {
+        const json = await postToGas({ action: "adminGetMemberData" });
+        adminMemberData = json.data || null;
+        renderAdminMemberPanels();
+      } catch (err) {
+        showToast(err.message || "Gagal memuat data member.", "error");
+      } finally {
+        adminMemberLoading = false;
+      }
+    }
+
+    function setInputIfIdle(id, value) {
+      const el = document.getElementById(id);
+      if (el && document.activeElement !== el) el.value = value ?? "";
+    }
+
+    function renderAdminMemberPanels() {
+      const d = adminMemberData;
+      if (!d) return;
+      const members = Array.isArray(d.members) ? d.members : [];
+      const st = d.settings || {};
+
+      setInputIfIdle("rw-harga", st.hargaJualPerM2);
+      setInputIfIdle("rw-modal", st.modalPerM2);
+      setInputIfIdle("rw-reward", st.rewardPerM2);
+      setInputIfIdle("rw-min", st.minTarik);
+      setInputIfIdle("rw-aktif", st.aktif === false ? "FALSE" : "TRUE");
+
+      const mb = document.getElementById("admin-member-body");
+      if (mb) {
+        mb.innerHTML = members.length ? members.map((m) => `
+          <tr class="hover:bg-slate-50 align-top">
+            <td class="py-3 px-4 whitespace-nowrap"><p class="font-semibold text-slate-900 text-sm">${escapeHtml(m.Nama)}</p><p class="font-mono text-[11px] text-slate-500">${escapeHtml(m.User_ID)} · ${escapeHtml(m.No_WA)}</p></td>
+            <td class="py-3 px-4 text-right font-mono text-xs tabular-nums">${formatRupiah(m.saldoTersedia)}</td>
+            <td class="py-3 px-4 text-right font-mono text-xs tabular-nums">${formatRupiah(m.saldoTertahan)}</td>
+            <td class="py-3 px-4 text-right font-mono text-xs tabular-nums">${formatRupiah(m.penarikanProses)}</td>
+            <td class="py-3 px-4 text-right font-mono text-xs tabular-nums">${formatRupiah(m.totalReward)}</td>
+            <td class="py-3 px-4 text-xs whitespace-nowrap">${m.rekening ? `${escapeHtml(m.rekening.Nama_Bank)} ···${escapeHtml(String(m.rekening.Nomor_Rekening).slice(-4))}` : `<span class="text-slate-400">Belum diisi</span>`}</td>
+          </tr>`).join("") : `<tr><td colspan="6" class="py-10 px-4 text-center text-sm text-slate-500">Belum ada akun member.</td></tr>`;
+      }
+
+      const memberOptions = members.map((m) => `<option value="${escapeHtml(m.User_ID)}">${escapeHtml(m.Nama)} (${escapeHtml(m.User_ID)})</option>`).join("");
+      const adj = document.getElementById("adj-member");
+      if (adj) {
+        const keep = adj.value;
+        adj.innerHTML = `<option value="">Pilih akun member</option>${memberOptions}`;
+        adj.value = keep;
+      }
+      const rep = document.getElementById("rep-member");
+      if (rep) {
+        const keep = rep.value;
+        rep.innerHTML = `<option value="">Semua member</option>${memberOptions}`;
+        rep.value = keep;
+      }
+
+      const wb = document.getElementById("admin-wd-body");
+      const wds = Array.isArray(d.withdrawals) ? d.withdrawals : [];
+      if (wb) {
+        wb.innerHTML = wds.length ? wds.map((w) => {
+          const next = WD_NEXT_STATUS[w.Status] || [];
+          const actionHtml = next.length ? `
+            <div class="flex flex-col gap-2 min-w-[200px]">
+              <select class="wd-status w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg">
+                ${next.map((x) => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("")}
+              </select>
+              <input type="text" maxlength="300" placeholder="Catatan admin (opsional)" class="wd-note w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg" />
+              <input type="file" accept="image/*" class="wd-file text-[11px] text-slate-600" />
+              <button type="button" onclick="submitAdminWithdrawal(this)" class="px-3 py-1.5 text-xs font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg">Simpan Status</button>
+            </div>` : `<span class="text-xs text-slate-500">Selesai</span>`;
+          return `
+          <tr data-wd="${escapeHtml(w.Withdraw_ID)}" data-has-proof="${w.Bukti_Transfer ? "1" : ""}" class="align-top hover:bg-slate-50">
+            <td class="py-3 px-4 text-xs text-slate-600 whitespace-nowrap">${fmtMemberDate(w.Created_At)}</td>
+            <td class="py-3 px-4 font-mono text-xs whitespace-nowrap">${escapeHtml(w.Withdraw_ID)}</td>
+            <td class="py-3 px-4 text-xs"><p class="font-semibold text-slate-900">${escapeHtml(w.Nama)}</p><p class="font-mono text-[11px] text-slate-500">${escapeHtml(w.User_ID)}</p></td>
+            <td class="py-3 px-4 text-xs whitespace-nowrap">${escapeHtml(w.Bank_Name)}<p class="font-mono text-[11px] text-slate-600">${escapeHtml(w.Account_Number)}</p><p class="text-[11px] text-slate-500">a.n. ${escapeHtml(w.Account_Holder)}</p></td>
+            <td class="py-3 px-4 text-right font-mono text-xs font-semibold tabular-nums whitespace-nowrap">${formatRupiah(w.Amount)}</td>
+            <td class="py-3 px-4 text-xs">${memberStatusBadge(w.Status)}${w.Admin_Note ? `<p class="mt-1 text-[11px] text-slate-500">${escapeHtml(w.Admin_Note)}</p>` : ""}${w.Bukti_Transfer ? `<p class="mt-1 text-[11px] text-emerald-700">Bukti transfer tersimpan</p>` : ""}</td>
+            <td class="py-3 px-4">${actionHtml}</td>
+          </tr>`;
+        }).join("") : `<tr><td colspan="7" class="py-10 px-4 text-center text-sm text-slate-500">Belum ada pengajuan penarikan.</td></tr>`;
+      }
+
+      const rb = document.getElementById("admin-reward-body");
+      const rewards = Array.isArray(d.rewards) ? d.rewards : [];
+      if (rb) {
+        rb.innerHTML = rewards.length ? rewards.map((o) => `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2.5 px-3 font-mono text-xs whitespace-nowrap">${escapeHtml(o.Order_ID)}</td>
+            <td class="py-2.5 px-3 text-xs whitespace-nowrap">${fmtMemberDate(o.Tanggal)}</td>
+            <td class="py-2.5 px-3 text-xs">${escapeHtml(o.Nama)}</td>
+            <td class="py-2.5 px-3 text-xs whitespace-nowrap">${escapeHtml(o.Status_Order)} · ${escapeHtml(o.Status_Bayar)}</td>
+            <td class="py-2.5 px-3 text-right font-mono text-xs tabular-nums">${formatRupiah(o.Reward_Amount)}</td>
+            <td class="py-2.5 px-3 text-xs">${memberRewardBadge(o.Reward_Status)}</td>
+          </tr>`).join("") : `<tr><td colspan="6" class="py-8 px-3 text-center text-sm text-slate-500">Belum ada reward tercatat.</td></tr>`;
+      }
+      refreshIcons();
+    }
+
+    async function submitAdminRewardSettings(e) {
+      e.preventDefault();
+      const harga = getNumInput("rw-harga");
+      const modal = getNumInput("rw-modal");
+      const reward = getNumInput("rw-reward");
+      const minTarik = getNumInput("rw-min");
+      const aktifVal = getInputValue("rw-aktif") || "TRUE";
+      try {
+        await postToGas({
+          action: "adminSaveRewardSettings",
+          HARGA_JUAL_PER_M2: harga,
+          MODAL_PER_M2: modal,
+          REWARD_PER_M2: reward,
+          MIN_TARIK: minTarik,
+          PROGRAM_AKTIF: aktifVal
+        });
+        state.memberProgram = {
+          hargaJualPerM2: harga,
+          rewardPerM2: reward,
+          minTarik: minTarik,
+          aktif: aktifVal === "TRUE"
+        };
+        renderCatalog();
+        populateCalculatorDropdowns();
+        showToast("Pengaturan disimpan. Berlaku untuk pesanan baru.", "success");
+        await loadAdminMemberData(true);
+      } catch (err) {
+        showToast(err.message || "Gagal menyimpan pengaturan reward.", "error");
+      }
+    }
+
+    async function submitAdminAdjust(e) {
+      e.preventDefault();
+      try {
+        await postToGas({
+          action: "adminAdjustWallet",
+          User_ID: getInputValue("adj-member"),
+          Arah: getInputValue("adj-arah"),
+          Amount: getNumInput("adj-amount"),
+          Alasan: getInputValue("adj-alasan")
+        });
+        showToast("Koreksi saldo dicatat.", "success");
+        document.getElementById("admin-adjust-form").reset();
+        await loadAdminMemberData(true);
+      } catch (err) {
+        showToast(err.message || "Gagal mencatat koreksi saldo.", "error");
+      }
+    }
+
+    async function submitAdminWithdrawal(btn) {
+      const row = btn.closest("tr");
+      if (!row) return;
+      const payload = {
+        action: "adminUpdateWithdrawal",
+        Withdraw_ID: row.dataset.wd,
+        Status: row.querySelector(".wd-status").value,
+        Admin_Note: row.querySelector(".wd-note").value.trim()
+      };
+      const fileEl = row.querySelector(".wd-file");
+      const file = fileEl && fileEl.files ? fileEl.files[0] : null;
+      const hasProof = row.dataset.hasProof === "1";
+      if (payload.Status === "Berhasil" && !file && !hasProof) {
+        showToast("Status Berhasil wajib disertai bukti transfer.", "error");
+        return;
+      }
+      btn.disabled = true;
+      try {
+        if (file) {
+          const ext = String(file.name || "").split(".").pop().toLowerCase();
+          const mime = String(file.type || "").toLowerCase();
+          if (!ALLOWED_PROOF_MIMES.has(mime) || !["jpg", "jpeg", "png", "webp"].includes(ext)) {
+            throw new Error("Bukti transfer harus berupa gambar JPG, PNG, atau WebP.");
+          }
+          if (file.size > MAX_IMAGE_INPUT_BYTES) {
+            throw new Error("Ukuran gambar bukti transfer maksimal 15 MB.");
+          }
+          const opt = await compressImageFileToDataUrl(file, {
+            maxDim: 1400,
+            targetBytes: 350 * 1024,
+            initialQuality: 0.78
+          });
+          if (opt.byteSize > MAX_FILE_BYTES) {
+            throw new Error("Ukuran bukti transfer masih melebihi 2,5 MB setelah kompresi.");
+          }
+          payload.Bukti_Transfer = opt.dataUrl;
+          payload.Bukti_Transfer_Name = file.name;
+        }
+        await postToGas(payload);
+        showToast("Status penarikan diperbarui.", "success");
+        await loadAdminMemberData(true);
+      } catch (err) {
+        showToast(err.message || "Gagal memperbarui penarikan.", "error");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function runAdminReport() {
+      const json = await postToGas({
+        action: "adminGetFinancialReport",
+        Dari: getInputValue("rep-dari"),
+        Sampai: getInputValue("rep-sampai"),
+        User_ID: getInputValue("rep-member")
+      });
+      renderAdminReport(json.data || {});
+    }
+
+    async function loadAdminFinancialReport(e) {
+      e.preventDefault();
+      try {
+        await runAdminReport();
+      } catch (err) {
+        showToast(err.message || "Gagal memuat laporan.", "error");
+      }
+    }
+
+    function renderAdminReport(data) {
+      const r = data.ringkasan || {};
+      const items = [
+        ["Jumlah pesanan", r.jumlahPesanan, false],
+        ["Omzet kotor", r.omzetKotor, true],
+        ["Potongan saldo", r.potonganSaldo, true],
+        ["Omzet bersih", r.omzetBersih, true],
+        ["Modal produksi", r.modal, true],
+        ["Reward diberikan", r.rewardDiberikan, true],
+        ["Keuntungan bisnis", r.keuntunganBisnis, true],
+        ["Biaya tambahan", r.biayaTambahan, true],
+        ["Keuntungan bersih", r.keuntunganBersih, true],
+        ["Penarikan berhasil", r.penarikanBerhasil, true]
+      ];
+      const box = document.getElementById("admin-rep-summary");
+      if (box) {
+        box.innerHTML = items.map(([label, val, money]) => `
+          <div class="bg-white border border-slate-200 rounded-lg p-3">
+            <p class="text-[11px] font-medium text-slate-500">${escapeHtml(label)}</p>
+            <p class="mt-1 font-mono text-sm font-bold text-slate-900 tabular-nums">${money ? formatRupiah(val) : escapeHtml(String(val ?? 0))}</p>
+          </div>`).join("");
+      }
+      const rows = Array.isArray(data.pesanan) ? data.pesanan : [];
+      const tb = document.getElementById("admin-rep-body");
+      if (tb) {
+        tb.innerHTML = rows.length ? rows.map((o) => `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2.5 px-3 font-mono text-xs whitespace-nowrap">${escapeHtml(o.Order_ID)}</td>
+            <td class="py-2.5 px-3 text-xs whitespace-nowrap">${fmtMemberDate(o.Tanggal)}</td>
+            <td class="py-2.5 px-3 text-xs">${escapeHtml(o.Nama)}</td>
+            <td class="py-2.5 px-3 text-right font-mono text-xs tabular-nums">${formatRupiah(o.Total_Tagihan)}</td>
+            <td class="py-2.5 px-3 text-right font-mono text-xs tabular-nums">${formatRupiah(o.Saldo_Dipakai)}</td>
+            <td class="py-2.5 px-3 text-xs">${memberRewardBadge(o.Reward_Status)}</td>
+          </tr>`).join("") : `<tr><td colspan="6" class="py-8 px-3 text-center text-sm text-slate-500">Tidak ada pesanan lunas pada periode ini.</td></tr>`;
+      }
+    }
+
+    async function submitAdminExpense(e) {
+      e.preventDefault();
+      try {
+        await postToGas({ action: "adminAddExpense", Keterangan: getInputValue("ex-ket"), Jumlah: getNumInput("ex-jumlah") });
+        showToast("Biaya tambahan dicatat.", "success");
+        document.getElementById("admin-expense-form").reset();
+        await runAdminReport();
+      } catch (err) {
+        showToast(err.message || "Gagal mencatat biaya.", "error");
+      }
     }
 
     function setupDelegatedEvents() {
@@ -4827,8 +6436,6 @@
 
         if (action === "retry-init") {
           fetchInitData(true);
-        } else if (action === "load-sample-preview") {
-          enableSampleCatalogPreview();
         } else if (action === "set-category") {
           setCategoryFilter(trigger.dataset.category || "Semua");
         } else if (action === "select-product") {
@@ -4854,6 +6461,10 @@
           editFinishingInForm(trigger.dataset.id || "");
         } else if (action === "edit-user") {
           editUserInForm(trigger.dataset.id || "");
+        } else if (action === "toggle-user-status") {
+          toggleAdminUserStatus(trigger.dataset.id || "");
+        } else if (action === "revoke-user-sessions") {
+          revokeAdminUserSessions(trigger.dataset.id || "");
         } else if (action === "select-rev-month") {
           selectRevenueMonth(
             Number(trigger.dataset.month),

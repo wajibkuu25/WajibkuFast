@@ -10,7 +10,10 @@
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
 
-  <!-- Fonts: Inter (satu sistem tipografi utama) + JetBrains Mono untuk angka & kode -->
+  <!-- Preconnect ke server Apps Script & Google Fonts untuk mempercepat koneksi awal & login -->
+  <link rel="dns-prefetch" href="https://script.google.com" />
+  <link rel="preconnect" href="https://script.google.com" crossorigin />
+  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -1830,7 +1833,7 @@
 
           <div>
             <label for="login-identifier" class="block text-xs font-semibold text-slate-700 mb-1">Email, No. WhatsApp, atau ID Akun</label>
-            <input type="text" id="login-identifier" required placeholder="Contoh: budi@gmail.com atau 0857..." class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            <input type="text" id="login-identifier" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="Contoh: budi@gmail.com atau 0857..." class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
           </div>
 
           <div>
@@ -1840,16 +1843,26 @@
                 Lupa sandi?
               </button>
             </div>
-            <input type="password" id="login-password" required placeholder="Masukkan kata sandi" class="w-full px-3.5 py-2.5 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            <div class="relative">
+              <input type="password" id="login-password" name="password" autocomplete="current-password" required placeholder="Masukkan kata sandi" class="w-full pl-3.5 pr-11 py-2.5 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <button type="button" onclick="togglePasswordVisibility('login-password', this)" aria-label="Tampilkan atau sembunyikan kata sandi" class="absolute inset-y-0 right-0 px-3 inline-flex items-center justify-center text-slate-500 hover:text-slate-800">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
           </div>
 
-          <button type="submit" id="btn-submit-login" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">
+          <label class="flex items-center gap-2.5 text-xs text-slate-600 select-none cursor-pointer">
+            <input type="checkbox" id="login-remember" checked class="w-4 h-4 rounded border-slate-300 text-press-700 focus:ring-press-700" />
+            <span>Tetap masuk di perangkat ini (maks. 12 jam) &amp; ingat email/WA terakhir</span>
+          </label>
+
+          <button type="submit" id="btn-submit-login" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 disabled:opacity-60 rounded-lg transition-colors">
             <i data-lucide="log-in" class="w-4 h-4"></i>
             <span>Masuk Sekarang</span>
           </button>
 
           <p class="pt-1 text-[11px] text-slate-500 text-center">
-            Belum punya akun pelanggan? Pilih tab <strong>Daftar Member</strong>. Halaman otomatis menyesuaikan akun setelah masuk.
+            Belum punya akun pelanggan? Pilih tab <strong>Daftar Member</strong>. Pintasan cepat: <span class="font-mono">Alt+L</span>.
           </p>
         </form>
 
@@ -1905,7 +1918,7 @@
           <!-- Langkah 1: Minta OTP ke Email -->
           <div id="forgot-step-request" class="space-y-3.5">
             <p class="text-xs text-slate-600 leading-relaxed">
-              Khusus akun pelanggan. Masukkan <strong>Email Terdaftar</strong> Anda untuk menerima kode verifikasi OTP 6 digit melalui email (berlaku 10 menit).
+              Khusus akun <strong>member pelanggan aktif</strong> (bukan pesanan tamu). Masukkan <strong>Email Terdaftar</strong> Anda untuk menerima kode verifikasi OTP 6 digit melalui email (berlaku 10 menit).
             </p>
             <div>
               <label for="forgot-email" class="block text-xs font-semibold text-slate-700 mb-1">Email Terdaftar *</label>
@@ -1927,6 +1940,7 @@
             <div>
               <label for="forgot-otp" class="block text-xs font-semibold text-slate-700 mb-1">Kode OTP 6 Digit *</label>
               <input type="text" id="forgot-otp" maxlength="6" inputmode="numeric" pattern="\d{6}" placeholder="Masukkan 6 digit kode dari email" class="w-full px-3.5 py-2 text-sm font-mono tracking-widest bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <p class="mt-1 text-[11px] text-slate-500">Periksa juga folder <strong>Spam</strong> atau <strong>Promosi</strong> bila email dari <em>Wajibku Fast</em> belum terlihat di kotak masuk.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2001,6 +2015,7 @@
     const MAX_IMAGE_INPUT_BYTES = 15 * 1024 * 1024;
     const MAX_PAYLOAD_CHARS = 14 * 1024 * 1024;
     const AUTH_STORAGE_KEY = "WAJIBKU_AUTH_SESSION";
+    const LAST_LOGIN_ID_KEY = "WAJIBKU_LAST_LOGIN_ID";
 
     const ALLOWED_DESIGN_MIMES = new Set([
       "image/jpeg",
@@ -2022,7 +2037,6 @@
     (function syncApiConfigVersion() {
       try {
         localStorage.removeItem("WAJIBKU_AUTH_USER");
-        localStorage.removeItem(AUTH_STORAGE_KEY);
         if (localStorage.getItem("GAS_API_VERSION") !== API_CONFIG_VERSION) {
           localStorage.removeItem("GAS_API_URL");
           localStorage.removeItem("GAS_SHEET_URL");
@@ -2408,35 +2422,54 @@
       }
     }
 
+    function applyAdminDataPayload(data, meta) {
+      if (!data) return false;
+      state.users = Array.isArray(data.users) ? data.users : [];
+      if (Array.isArray(data.produk)) {
+        state.produk = data.produk.map(normalizeProductItem).filter((p) => p.Produk_ID);
+      }
+      if (Array.isArray(data.finishing)) {
+        state.finishing = data.finishing.map(normalizeFinishingItem).filter((f) => f.Finishing_ID);
+      }
+      state.pesanan = Array.isArray(data.pesanan) ? data.pesanan : [];
+      state.detail_pesanan = Array.isArray(data.detail_pesanan) ? data.detail_pesanan : [];
+      state.adminDataLoaded = true;
+      if (meta) {
+        if (Array.isArray(meta.statusOrderList) && meta.statusOrderList.length) {
+          state.statusOrderList = meta.statusOrderList.map((s) => String(s));
+        }
+        if (Array.isArray(meta.statusPayList) && meta.statusPayList.length) {
+          state.statusPayList = meta.statusPayList.map((s) => String(s));
+        }
+        if (meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
+          SHEET_URL = stripSharingParam(meta.spreadsheetUrl);
+          localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
+          syncSheetAnchorHref();
+        }
+      }
+      return true;
+    }
+
+    function applyMyOrdersPayload(data) {
+      if (!data) return;
+      state.pesanan = Array.isArray(data.pesanan) ? data.pesanan : [];
+      state.detail_pesanan = Array.isArray(data.detail_pesanan) ? data.detail_pesanan : [];
+      state.pesanan.forEach((o) => {
+        state.trackedOrderCache[o.Order_ID] = {
+          order: o,
+          details: state.detail_pesanan.filter((d) => d.Order_ID === o.Order_ID),
+          customer: data.user || state.currentUser
+        };
+      });
+      renderMyOrdersQuickList();
+    }
+
     async function fetchAdminData() {
       if (!state.authToken || !canAccessAdmin()) return false;
       try {
         const json = await postToGas({ action: "adminGetData" });
         if (json && json.status === "success" && json.data) {
-          state.users = Array.isArray(json.data.users) ? json.data.users : [];
-          if (Array.isArray(json.data.produk)) {
-            state.produk = json.data.produk.map(normalizeProductItem).filter((p) => p.Produk_ID);
-          }
-          if (Array.isArray(json.data.finishing)) {
-            state.finishing = json.data.finishing.map(normalizeFinishingItem).filter((f) => f.Finishing_ID);
-          }
-          state.pesanan = Array.isArray(json.data.pesanan) ? json.data.pesanan : [];
-          state.detail_pesanan = Array.isArray(json.data.detail_pesanan) ? json.data.detail_pesanan : [];
-          state.adminDataLoaded = true;
-          if (json.meta) {
-            if (Array.isArray(json.meta.statusOrderList) && json.meta.statusOrderList.length) {
-              state.statusOrderList = json.meta.statusOrderList.map((s) => String(s));
-            }
-            if (Array.isArray(json.meta.statusPayList) && json.meta.statusPayList.length) {
-              state.statusPayList = json.meta.statusPayList.map((s) => String(s));
-            }
-            if (json.meta.spreadsheetUrl && (!localStorage.getItem("GAS_SHEET_URL") || SHEET_URL === DEFAULT_SHEET_URL)) {
-              SHEET_URL = stripSharingParam(json.meta.spreadsheetUrl);
-              localStorage.setItem("GAS_SHEET_URL", SHEET_URL);
-              syncSheetAnchorHref();
-            }
-          }
-          return true;
+          return applyAdminDataPayload(json.data, json.meta);
         }
         return false;
       } catch (err) {
@@ -2453,16 +2486,7 @@
       try {
         const json = await postToGas({ action: "getMyOrders" });
         if (json && json.status === "success" && json.data) {
-          state.pesanan = Array.isArray(json.data.pesanan) ? json.data.pesanan : [];
-          state.detail_pesanan = Array.isArray(json.data.detail_pesanan) ? json.data.detail_pesanan : [];
-          state.pesanan.forEach((o) => {
-            state.trackedOrderCache[o.Order_ID] = {
-              order: o,
-              details: state.detail_pesanan.filter((d) => d.Order_ID === o.Order_ID),
-              customer: json.data.user || state.currentUser
-            };
-          });
-          renderMyOrdersQuickList();
+          applyMyOrdersPayload(json.data);
         }
       } catch (err) {
         console.warn("Sesi member tidak valid:", err);
@@ -2486,49 +2510,69 @@
         return;
       }
 
+      // Pulihkan sesi lebih awal agar pemanggilan init & data sesi berjalan paralel (2x lebih cepat)
+      restoreSession();
+      renderNavigation();
+
       const retryBtn = document.getElementById("btn-retry-init");
       if (retryBtn) {
         retryBtn.disabled = true;
         retryBtn.textContent = "Menghubungkan...";
       }
 
-      try {
-        const res = await fetch(API_URL + "?action=getInitData");
-        const json = await parseGasResponse(res);
-        if (json && json.status === "success" && json.data) {
-          state.produk = Array.isArray(json.data.produk)
-            ? json.data.produk.map(normalizeProductItem).filter((p) => p.Produk_ID)
-            : [];
-          state.finishing = Array.isArray(json.data.finishing)
-            ? json.data.finishing.map(normalizeFinishingItem).filter((f) => f.Finishing_ID)
-            : [];
-          state.memberProgram = json.data.memberProgram || null;
-          if (json.meta) {
-            if (Array.isArray(json.meta.statusOrderList) && json.meta.statusOrderList.length) {
-              state.publicOrderSteps = json.meta.statusOrderList.map((s) => String(s));
+      const initPromise = (async () => {
+        try {
+          const res = await fetch(API_URL + "?action=getInitData");
+          const json = await parseGasResponse(res);
+          if (json && json.status === "success" && json.data) {
+            state.produk = Array.isArray(json.data.produk)
+              ? json.data.produk.map(normalizeProductItem).filter((p) => p.Produk_ID)
+              : [];
+            state.finishing = Array.isArray(json.data.finishing)
+              ? json.data.finishing.map(normalizeFinishingItem).filter((f) => f.Finishing_ID)
+              : [];
+            state.memberProgram = json.data.memberProgram || null;
+            if (json.meta) {
+              if (Array.isArray(json.meta.statusOrderList) && json.meta.statusOrderList.length) {
+                state.publicOrderSteps = json.meta.statusOrderList.map((s) => String(s));
+              }
+              if (Array.isArray(json.meta.statusPayList) && json.meta.statusPayList.length) {
+                state.statusPayList = json.meta.statusPayList.map((s) => String(s));
+              }
             }
-            if (Array.isArray(json.meta.statusPayList) && json.meta.statusPayList.length) {
-              state.statusPayList = json.meta.statusPayList.map((s) => String(s));
+            state.connectionStatus = "connected";
+            state.connectionMessage = `Terhubung live ke Google Sheets & Folder Drive (${state.produk.length} produk dimuat).`;
+            if (manualRetry) {
+              showToast(`Berhasil terhubung (${state.produk.length} produk dimuat).`, "success");
             }
+          } else {
+            throw new Error(json?.message || "Respons server tidak valid");
           }
-          state.connectionStatus = "connected";
-          state.connectionMessage = `Terhubung live ke Google Sheets & Folder Drive (${state.produk.length} produk dimuat).`;
+        } catch (err) {
+          const friendlyErr = normalizeGasFetchError(err);
+          console.warn("Gagal sinkron ke Apps Script:", friendlyErr);
+          state.connectionStatus = "error";
+          state.connectionMessage = friendlyErr.message;
+          state.produk = [];
+          state.finishing = [];
           if (manualRetry) {
-            showToast(`Berhasil terhubung (${state.produk.length} produk dimuat).`, "success");
+            showToast("Masih gagal terhubung ke Apps Script. Klik 'Cek Link API' untuk melihat status deployment.", "error");
           }
+        }
+      })();
+
+      const tasks = [initPromise];
+      if (state.authToken) {
+        if (canAccessAdmin()) {
+          tasks.push(fetchAdminData());
         } else {
-          throw new Error(json?.message || "Respons server tidak valid");
+          tasks.push(fetchMyOrders());
+          tasks.push(ensureMemberDashboard(true));
         }
-      } catch (err) {
-        const friendlyErr = normalizeGasFetchError(err);
-        console.warn("Gagal sinkron ke Apps Script:", friendlyErr);
-        state.connectionStatus = "error";
-        state.connectionMessage = friendlyErr.message;
-        state.produk = [];
-        state.finishing = [];
-        if (manualRetry) {
-          showToast("Masih gagal terhubung ke Apps Script. Klik 'Cek Link API' untuk melihat status deployment.", "error");
-        }
+      }
+
+      try {
+        await Promise.allSettled(tasks);
       } finally {
         if (retryBtn) {
           retryBtn.disabled = false;
@@ -2536,15 +2580,6 @@
         }
       }
 
-      restoreSession();
-      if (state.authToken && state.connectionStatus === "connected") {
-        if (canAccessAdmin()) {
-          await fetchAdminData();
-        } else {
-          await fetchMyOrders();
-          ensureMemberDashboard(true);
-        }
-      }
       renderAll();
     }
 
@@ -2574,6 +2609,18 @@
       return Boolean(state.authToken && state.currentUser && getNormalizedRole(state.currentUser) === "Super Admin");
     }
 
+    function persistAuthSession(token, user, rememberDevice = false) {
+      const payload = JSON.stringify({ token, user });
+      try { sessionStorage.setItem(AUTH_STORAGE_KEY, payload); } catch (e) {}
+      try {
+        if (rememberDevice) {
+          localStorage.setItem(AUTH_STORAGE_KEY, payload);
+        } else {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+        }
+      } catch (e) {}
+    }
+
     function restoreSession() {
       state.authToken = null;
       state.currentUser = null;
@@ -2585,21 +2632,23 @@
       }
 
       try {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        const raw = sessionStorage.getItem(AUTH_STORAGE_KEY);
+        const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && typeof parsed.token === "string" && parsed.token.includes(".") && parsed.user && parsed.user.User_ID) {
             state.authToken = parsed.token;
             state.currentUser = parsed.user;
+            try { sessionStorage.setItem(AUTH_STORAGE_KEY, raw); } catch (err) {}
           } else {
             sessionStorage.removeItem(AUTH_STORAGE_KEY);
+            localStorage.removeItem(AUTH_STORAGE_KEY);
           }
         }
       } catch (e) {
         state.authToken = null;
         state.currentUser = null;
         try { sessionStorage.removeItem(AUTH_STORAGE_KEY); } catch (err) {}
+        try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch (err) {}
       }
 
       if (getNormalizedRole(state.currentUser) === "Admin" && state.authToken) {
@@ -2676,12 +2725,40 @@
       refreshIcons();
     }
 
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      const icon = btn?.querySelector("i");
+      if (icon) {
+        icon.setAttribute("data-lucide", show ? "eye-off" : "eye");
+        refreshIcons();
+      }
+    }
+
     function openLoginModal(subtitleText, mode = "login") {
       const subtitleEl = document.getElementById("login-modal-subtitle");
       subtitleEl.textContent = subtitleText || "Satu pintu masuk — tampilan menyesuaikan akun Anda.";
       switchAuthMode(mode);
       document.getElementById("login-modal-backdrop").classList.remove("hidden");
       refreshIcons();
+
+      if (mode === "login") {
+        const idInput = document.getElementById("login-identifier");
+        const passInput = document.getElementById("login-password");
+        try {
+          const lastId = localStorage.getItem(LAST_LOGIN_ID_KEY);
+          if (idInput && !idInput.value && lastId) idInput.value = lastId;
+        } catch (e) {}
+        setTimeout(() => {
+          if (idInput && idInput.value.trim() && passInput) {
+            passInput.focus();
+          } else if (idInput) {
+            idInput.focus();
+          }
+        }, 40);
+      }
     }
 
     function closeLoginModal() {
@@ -2692,6 +2769,7 @@
       e.preventDefault();
       const identifierRaw = document.getElementById("login-identifier").value.trim();
       const password = document.getElementById("login-password").value;
+      const rememberDevice = Boolean(document.getElementById("login-remember")?.checked);
       const errBox = document.getElementById("login-error-box");
       const btn = document.getElementById("btn-submit-login");
 
@@ -2702,12 +2780,16 @@
         return;
       }
 
-      if (btn) btn.disabled = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>Memverifikasi &amp; memuat...</span>`;
+      }
       try {
         const res = await postToGas({
           action: "login",
           identifier: identifierRaw,
-          password: password
+          password: password,
+          includeBootstrap: true
         });
         if (!res || res.status !== "success" || !res.data || !res.data.token || !res.data.user) {
           throw new Error(res?.message || "Email/No. WhatsApp atau kata sandi salah.");
@@ -2720,24 +2802,45 @@
         memberDashboard = null;
         memberDashboardAt = 0;
         adminMemberData = null;
-        sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-          token: state.authToken,
-          user: state.currentUser
-        }));
+        persistAuthSession(state.authToken, state.currentUser, rememberDevice);
+        try {
+          if (rememberDevice && identifierRaw) {
+            localStorage.setItem(LAST_LOGIN_ID_KEY, identifierRaw);
+          } else {
+            localStorage.removeItem(LAST_LOGIN_ID_KEY);
+          }
+        } catch (err) {}
 
         document.getElementById("login-form").reset();
+        const remEl = document.getElementById("login-remember");
+        if (remEl) remEl.checked = rememberDevice;
         closeLoginModal();
 
         const roleNorm = getNormalizedRole(state.currentUser);
         if (roleNorm === "Admin" || roleNorm === "Super Admin") {
-          const ok = await fetchAdminData();
+          let ok = false;
+          if (res.data.adminData) {
+            ok = applyAdminDataPayload(res.data.adminData, res.data.adminMeta);
+          } else {
+            ok = await fetchAdminData();
+          }
           if (ok) {
             switchRole("admin");
             showToast(`Masuk sebagai ${roleNorm} (${state.currentUser.Nama}).`, "success");
           }
         } else {
-          await fetchMyOrders();
-          ensureMemberDashboard(true);
+          if (res.data.myOrders) {
+            applyMyOrdersPayload(res.data.myOrders);
+          } else {
+            fetchMyOrders();
+          }
+          if (res.data.memberDashboard) {
+            memberDashboard = res.data.memberDashboard;
+            memberDashboardAt = Date.now();
+            renderCheckoutSaldoBox();
+          } else {
+            ensureMemberDashboard(true);
+          }
           switchRole("user");
           prefillCheckoutFromUser();
           showToast(`Selamat datang, ${state.currentUser.Nama}.`, "success");
@@ -2746,7 +2849,11 @@
         errBox.textContent = err.message || "Gagal login.";
         errBox.classList.remove("hidden");
       } finally {
-        if (btn) btn.disabled = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4"></i><span>Masuk Sekarang</span>`;
+          refreshIcons();
+        }
       }
     }
 
@@ -3080,7 +3187,7 @@
       } else {
         const authLinkDesktop = state.currentUser
           ? `<button type="button" onclick="logoutUser()" class="py-1 border-b-2 border-transparent text-slate-700 hover:text-rose-700 transition-colors whitespace-nowrap shrink-0">${escapeHtml(state.currentUser.Nama)} (Keluar)</button>`
-          : `<button type="button" onclick="openLoginModal()" class="py-1 border-b-2 border-transparent text-press-700 hover:text-press-800 font-semibold transition-colors whitespace-nowrap shrink-0">Masuk</button>`;
+          : `<button type="button" onclick="openLoginModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-press-50 text-press-700 hover:bg-press-100 font-semibold transition-colors whitespace-nowrap shrink-0"><i data-lucide="log-in" class="w-3.5 h-3.5"></i><span>Masuk</span></button>`;
         const authLinkMobile = state.currentUser
           ? `<button type="button" onclick="logoutUser(); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 rounded-lg">Keluar (${escapeHtml(state.currentUser.Nama)})</button>`
           : `<button type="button" onclick="openLoginModal(); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-semibold text-press-700 hover:bg-press-50 rounded-lg">Masuk Akun</button>`;
@@ -6491,12 +6598,30 @@
           Number(btn.dataset.count)
         );
       });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeLoginModal();
+          closeModal();
+          closeCartDrawer();
+        } else if (e.altKey && (e.key === "l" || e.key === "L") && !state.authToken) {
+          e.preventDefault();
+          openLoginModal();
+        }
+      });
     }
 
     // Boot Aplikasi
     document.addEventListener("DOMContentLoaded", () => {
       setupDelegatedEvents();
-      fetchInitData();
+      fetchInitData().then(() => {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const wantsLogin = params.get("login") === "1" || window.location.hash === "#login";
+          if (wantsLogin && !state.authToken) {
+            openLoginModal();
+          }
+        } catch (e) {}
+      });
     });
   </script>
 </body>

@@ -11,10 +11,11 @@
  * 3. Jika belum ada akun Super Admin, jalankan dari Editor Apps Script:
  *    `bootstrapSuperAdmin("email@domain.id", "KataSandiKuatMinimal10Karakter!")`
  *    (Tidak ada kata sandi bawaan dan kata sandi tidak pernah ditulis ke log.)
- * 4. Klik Deploy > Manage deployments > Edit > Version: New version
+ * 4. Jalankan `aktifkanIzinEmailOtp()` satu kali dari Editor Apps Script untuk
+ *    menyetujui izin MailApp, cek kuota email harian, dan kirim email uji coba.
+ * 5. Klik Deploy > Manage deployments > Edit > Version: New version
  *    - Execute as: Me (Email Anda)
  *    - Who has access: Anyone
- *    - Setujui izin MailApp saat diminta (diperlukan untuk pengiriman OTP email).
  * ============================================================================
  */
 
@@ -90,11 +91,18 @@ function getHmacSecret_() {
   return secret;
 }
 
+const HEX_BYTE_TABLE_ = (function () {
+  const t = [];
+  for (let i = 0; i < 256; i++) t.push(("0" + i.toString(16)).slice(-2));
+  return t;
+})();
+
 function bytesToHex_(bytes) {
-  return bytes.map(function (b) {
-    const unsigned = (b & 0xff);
-    return ("0" + unsigned.toString(16)).slice(-2);
-  }).join("");
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) {
+    out += HEX_BYTE_TABLE_[bytes[i] & 0xff];
+  }
+  return out;
 }
 
 function base64UrlEncodeBytes_(bytes) {
@@ -1011,6 +1019,46 @@ function setupDatabaseSheets() {
 }
 
 /**
+ * Jalankan manual 1x dari Editor Google Apps Script untuk:
+ * 1. Memicu pop-up persetujuan izin kirim email (MailApp).
+ * 2. Mengecek sisa kuota pengiriman email harian akun Google Anda.
+ * 3. Mengirim email uji coba ke email pemilik script (atau parameter emailTujuan).
+ * Setelah berhasil, lakukan Deploy > Manage deployments > Edit > New version.
+ */
+function aktifkanIzinEmailOtp(emailTujuan) {
+  const target = String(emailTujuan || Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail() || "").trim();
+  const remainingQuota = MailApp.getRemainingDailyQuota();
+  Logger.log("Sisa kuota email harian MailApp: " + remainingQuota);
+
+  if (!target || target.indexOf("@") === -1) {
+    throw new Error("Email tujuan tidak terdeteksi otomatis. Jalankan dengan parameter, contoh: aktifkanIzinEmailOtp('emailanda@gmail.com')");
+  }
+  if (remainingQuota <= 0) {
+    throw new Error("Kuota pengiriman email harian MailApp sudah habis (0 tersisa). Tunggu reset harian Google atau gunakan akun Workspace.");
+  }
+
+  MailApp.sendEmail({
+    to: target,
+    name: "Wajibku Fast",
+    subject: "[Wajibku Fast] Uji Coba Pengiriman Email OTP Berhasil",
+    body:
+      "Halo,\n\n" +
+      "Pengiriman email OTP Wajibku Fast sudah aktif dan siap digunakan.\n" +
+      "Sisa kuota email harian saat ini: " + Math.max(0, remainingQuota - 1) + " email.\n\n" +
+      "Jangan lupa lakukan Deploy > Manage deployments > Edit > Version: New version agar perubahan aktif di website.\n\n" +
+      "Salam,\nSistem Wajibku Fast"
+  });
+
+  const info = {
+    status: "ok",
+    sentTo: target,
+    remainingQuotaAfterTest: Math.max(0, remainingQuota - 1)
+  };
+  Logger.log("Uji coba email OTP berhasil: " + JSON.stringify(info));
+  return info;
+}
+
+/**
  * Jalankan manual dari Editor Apps Script untuk membuat akun Super Admin pertama.
  * Wajib menyertakan email dan customPassword kuat minimal 10 karakter.
  */
@@ -1170,16 +1218,103 @@ function doGet(e) {
 // HTTP POST (AUTENTIKASI, OTP, PELANGGAN, & OPERASI ADMIN TERPROTEKSI)
 // ============================================================================
 
+const READ_ONLY_POST_ACTIONS_ = {
+  login: true,
+  getMyOrders: true,
+  adminGetData: true,
+  getMemberDashboard: true,
+  adminGetMemberData: true,
+  adminGetFinancialReport: true,
+  trackOrder: true
+};
+
+function buildAdminBundle_(ss, role) {
+  const users = sheetToObjects_(ss, "Users").map(sanitizeUser_);
+  return {
+    data: {
+      users: users,
+      produk: sheetToObjects_(ss, "Produk").map(normalizeProductRow_).filter(function (p) { return Boolean(p.Produk_ID); }),
+      finishing: sheetToObjects_(ss, "Finishing").map(normalizeFinishingRow_).filter(function (f) { return Boolean(f.Finishing_ID); }),
+      pesanan: sheetToObjects_(ss, "Pesanan"),
+      detail_pesanan: sheetToObjects_(ss, "Detail_Pesanan")
+    },
+    meta: {
+      spreadsheetUrl: ss.getUrl(),
+      role: role,
+      statusOrderList: ALLOWED_ORDER_STATUS,
+      statusPayList: ALLOWED_PAY_STATUS,
+      maxUploadBytes: MAX_UPLOAD_BYTES
+    }
+  };
+}
+
+function buildMyOrdersBundle_(ss, userObj) {
+  const uid = String(userObj.User_ID || "").trim();
+  const myOrders = sheetToObjects_(ss, "Pesanan")
+    .filter(function (o) {
+      return String(o.User_ID || "").trim() === uid &&
+        String(o.Status_Order || "").trim() !== "Diarsipkan";
+    })
+    .map(function (o) {
+      return {
+        Order_ID: o.Order_ID,
+        Tanggal: o.Tanggal,
+        User_ID: o.User_ID,
+        Status_Order: o.Status_Order,
+        Total_Tagihan: o.Total_Tagihan,
+        Bukti_Bayar: o.Bukti_Bayar ? "Sudah diunggah" : "",
+        Status_Bayar: o.Status_Bayar,
+        Catatan: o.Catatan,
+        Saldo_Dipakai: Number(o.Saldo_Dipakai) || 0,
+        Reward_Amount: Number(o.Reward_Amount) || 0,
+        Reward_Status: o.Reward_Status || ""
+      };
+    });
+
+  const myOrderIds = {};
+  myOrders.forEach(function (o) {
+    myOrderIds[String(o.Order_ID || "").trim()] = true;
+  });
+  const myDetails = sheetToObjects_(ss, "Detail_Pesanan")
+    .filter(function (d) {
+      return Boolean(myOrderIds[String(d.Order_ID || "").trim()]);
+    })
+    .map(function (d) {
+      return {
+        Detail_ID: d.Detail_ID,
+        Order_ID: d.Order_ID,
+        Produk_ID: d.Produk_ID,
+        Panjang_m: d.Panjang_m,
+        Lebar_m: d.Lebar_m,
+        Qty: d.Qty,
+        Finishing_ID: d.Finishing_ID,
+        File_Desain: d.File_Desain ? "File terlampir" : "",
+        Keterangan_Item: d.Keterangan_Item,
+        Subtotal: d.Subtotal
+      };
+    });
+
+  return {
+    user: sanitizeUser_(userObj),
+    pesanan: myOrders,
+    detail_pesanan: myDetails
+  };
+}
+
 function doPost(e) {
   const lock = LockService.getScriptLock();
+  let hasLock = false;
   try {
-    lock.waitLock(15000);
     const body = JSON.parse(e.postData.contents);
     const action = body.action;
+    if (!READ_ONLY_POST_ACTIONS_[action]) {
+      lock.waitLock(15000);
+      hasLock = true;
+    }
     const ss = getSpreadsheet_();
 
     // ------------------------------------------------------------------------
-    // 1. LOGIN SERVER-SIDE -> Rate Limit + Status_Akun + PBKDF2 + Token_Version
+    // 1. LOGIN SERVER-SIDE -> Rate Limit + Status_Akun + PBKDF2 + Single-Roundtrip Bootstrap
     // ------------------------------------------------------------------------
     if (action === "login") {
       assertRequiredSheetsPresent_(ss, ["Users"]);
@@ -1241,17 +1376,44 @@ function doPost(e) {
 
       clearRateLimit_("login", rlKey);
       if (passCheck.needsUpgrade) {
+        lock.waitLock(15000);
+        hasLock = true;
         updateUserFields_(ss, matched.User_ID, { Password: hashPassword_(password) });
       }
 
       const token = createToken_(matched);
+      const safeUser = sanitizeUser_(matched);
+      const loginData = {
+        token: token,
+        user: safeUser
+      };
+
+      // Percepatan login: sertakan data awal sesuai role dalam 1 kali respons server
+      if (body.includeBootstrap !== false) {
+        try {
+          const roleNorm = normalizeRole_(matched.Role);
+          if (roleNorm === "Admin" || roleNorm === "Super Admin") {
+            const adminBundle = buildAdminBundle_(ss, roleNorm);
+            loginData.adminData = adminBundle.data;
+            loginData.adminMeta = adminBundle.meta;
+          } else if (!isGuestUserId_(matched.User_ID)) {
+            loginData.myOrders = buildMyOrdersBundle_(ss, matched);
+            if (ss.getSheetByName("Wallet_Accounts") && ss.getSheetByName("Wallet_Transactions")) {
+              const memDash = handleGetMemberDashboard_(ss, { user: matched });
+              if (memDash && memDash.status === "success" && memDash.data) {
+                loginData.memberDashboard = memDash.data;
+              }
+            }
+          }
+        } catch (bootErr) {
+          // Abaikan error bootstrap parsial; klien akan fallback ke pemanggilan standar
+        }
+      }
+
       return jsonResponse_({
         status: "success",
         message: "Login berhasil.",
-        data: {
-          token: token,
-          user: sanitizeUser_(matched)
-        }
+        data: loginData
       });
     }
 
@@ -1385,6 +1547,7 @@ function doPost(e) {
           });
         }
 
+        const otpKey = buildCacheKey_("otp_code", email);
         const otpCode = generateSixDigitOtp_();
         const otpSalt = Utilities.getUuid().replace(/-/g, "").slice(0, 16);
         const otpPayload = {
@@ -1394,7 +1557,7 @@ function doPost(e) {
           exp: Date.now() + OTP_TTL_SECONDS * 1000,
           attempts: 0
         };
-        cache.put(buildCacheKey_("otp_code", email), JSON.stringify(otpPayload), OTP_TTL_SECONDS);
+        cache.put(otpKey, JSON.stringify(otpPayload), OTP_TTL_SECONDS);
 
         const recipientName = String(matched.Nama || "Pelanggan").trim();
         const subject = "[Wajibku Fast] Kode OTP Reset Kata Sandi Anda";
@@ -1406,11 +1569,35 @@ function doPost(e) {
           "Jangan bagikan kode ini kepada siapa pun. Jika Anda tidak meminta reset kata sandi, abaikan email ini.\n\n" +
           "Salam,\nTim Wajibku Fast";
 
-        MailApp.sendEmail({
-          to: email,
-          subject: subject,
-          body: mailBody
-        });
+        try {
+          if (typeof MailApp.getRemainingDailyQuota === "function" && MailApp.getRemainingDailyQuota() <= 0) {
+            cache.remove(otpKey);
+            return jsonResponse_({
+              status: "error",
+              message: "Kuota pengiriman email OTP harian server sedang habis. Silakan coba lagi besok atau hubungi admin."
+            });
+          }
+          MailApp.sendEmail({
+            to: email,
+            name: "Wajibku Fast",
+            subject: subject,
+            body: mailBody
+          });
+        } catch (mailErr) {
+          cache.remove(otpKey);
+          Logger.log("Gagal mengirim email OTP ke " + email + ": " + (mailErr && mailErr.message ? mailErr.message : mailErr));
+          const errMsg = String(mailErr && mailErr.message ? mailErr.message : mailErr || "");
+          if (/permission|auth|scope|MailApp/i.test(errMsg)) {
+            return jsonResponse_({
+              status: "error",
+              message: "Pengiriman email OTP belum diizinkan di server Apps Script. Pemilik sistem perlu menjalankan aktifkanIzinEmailOtp() di Editor Apps Script lalu Deploy versi baru."
+            });
+          }
+          return jsonResponse_({
+            status: "error",
+            message: "Gagal mengirim email OTP sementara (" + errMsg + "). Silakan coba lagi atau hubungi admin."
+          });
+        }
       }
 
       return jsonResponse_({
@@ -1625,57 +1812,9 @@ function doPost(e) {
     if (action === "getMyOrders") {
       assertRequiredSheetsPresent_(ss, ["Users", "Pesanan", "Detail_Pesanan"]);
       const auth = requireRole_(ss, body, ["User", "Admin", "Super Admin"]);
-      const myOrders = sheetToObjects_(ss, "Pesanan")
-        .filter(function (o) {
-          return String(o.User_ID || "").trim() === String(auth.session.uid).trim() &&
-            String(o.Status_Order || "").trim() !== "Diarsipkan";
-        })
-        .map(function (o) {
-          return {
-            Order_ID: o.Order_ID,
-            Tanggal: o.Tanggal,
-            User_ID: o.User_ID,
-            Status_Order: o.Status_Order,
-            Total_Tagihan: o.Total_Tagihan,
-            Bukti_Bayar: o.Bukti_Bayar ? "Sudah diunggah" : "",
-            Status_Bayar: o.Status_Bayar,
-            Catatan: o.Catatan,
-            Saldo_Dipakai: Number(o.Saldo_Dipakai) || 0,
-            Reward_Amount: Number(o.Reward_Amount) || 0,
-            Reward_Status: o.Reward_Status || ""
-          };
-        });
-
-      const myOrderIds = {};
-      myOrders.forEach(function (o) {
-        myOrderIds[String(o.Order_ID || "").trim()] = true;
-      });
-      const myDetails = sheetToObjects_(ss, "Detail_Pesanan")
-        .filter(function (d) {
-          return Boolean(myOrderIds[String(d.Order_ID || "").trim()]);
-        })
-        .map(function (d) {
-          return {
-            Detail_ID: d.Detail_ID,
-            Order_ID: d.Order_ID,
-            Produk_ID: d.Produk_ID,
-            Panjang_m: d.Panjang_m,
-            Lebar_m: d.Lebar_m,
-            Qty: d.Qty,
-            Finishing_ID: d.Finishing_ID,
-            File_Desain: d.File_Desain ? "File terlampir" : "",
-            Keterangan_Item: d.Keterangan_Item,
-            Subtotal: d.Subtotal
-          };
-        });
-
       return jsonResponse_({
         status: "success",
-        data: {
-          user: sanitizeUser_(auth.user),
-          pesanan: myOrders,
-          detail_pesanan: myDetails
-        }
+        data: buildMyOrdersBundle_(ss, auth.user)
       });
     }
 
@@ -1685,24 +1824,11 @@ function doPost(e) {
     if (action === "adminGetData") {
       assertRequiredSheetsPresent_(ss, ["Users", "Produk", "Finishing", "Pesanan", "Detail_Pesanan"]);
       const auth = requireRole_(ss, body, ["Admin", "Super Admin"]);
-      const users = sheetToObjects_(ss, "Users").map(sanitizeUser_);
-      const metaObj = {
-        spreadsheetUrl: ss.getUrl(),
-        role: auth.role,
-        statusOrderList: ALLOWED_ORDER_STATUS,
-        statusPayList: ALLOWED_PAY_STATUS,
-        maxUploadBytes: MAX_UPLOAD_BYTES
-      };
+      const bundle = buildAdminBundle_(ss, auth.role);
       return jsonResponse_({
         status: "success",
-        data: {
-          users: users,
-          produk: sheetToObjects_(ss, "Produk").map(normalizeProductRow_).filter(function (p) { return Boolean(p.Produk_ID); }),
-          finishing: sheetToObjects_(ss, "Finishing").map(normalizeFinishingRow_).filter(function (f) { return Boolean(f.Finishing_ID); }),
-          pesanan: sheetToObjects_(ss, "Pesanan"),
-          detail_pesanan: sheetToObjects_(ss, "Detail_Pesanan")
-        },
-        meta: metaObj
+        data: bundle.data,
+        meta: bundle.meta
       });
     }
 
@@ -2539,7 +2665,9 @@ function doPost(e) {
   } catch (err) {
     return jsonResponse_({ status: "error", message: err.message });
   } finally {
-    try { lock.releaseLock(); } catch (e) {}
+    if (hasLock) {
+      try { lock.releaseLock(); } catch (e) {}
+    }
   }
 }
 

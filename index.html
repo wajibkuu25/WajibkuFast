@@ -1861,6 +1861,23 @@
             <span>Masuk Sekarang</span>
           </button>
 
+          <!-- Kotak Akun Uji Coba (Otomatis Tersembunyi jika SHOW_DEMO_LOGIN_ACCOUNTS = false) -->
+          <div id="demo-login-box" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-amber-700 shrink-0"></i>
+                <span>Akun Uji Coba (Klik untuk Isi)</span>
+              </div>
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-amber-800">Testing</span>
+            </div>
+            <div id="demo-login-list" class="space-y-2">
+              <!-- Populated dynamically from DEMO_LOGIN_ACCOUNTS -->
+            </div>
+            <p class="text-[10px] leading-relaxed text-amber-800">
+              Jalankan <span class="font-mono font-semibold">buatAkunUjiCoba()</span> 1x di Editor Apps Script agar akun di atas aktif di Sheet <span class="font-mono">Users</span>.
+            </p>
+          </div>
+
           <p class="pt-1 text-[11px] text-slate-500 text-center">
             Belum punya akun pelanggan? Pilih tab <strong>Daftar Member</strong>. Pintasan cepat: <span class="font-mono">Alt+L</span>.
           </p>
@@ -2016,6 +2033,31 @@
     const MAX_PAYLOAD_CHARS = 14 * 1024 * 1024;
     const AUTH_STORAGE_KEY = "WAJIBKU_AUTH_SESSION";
     const LAST_LOGIN_ID_KEY = "WAJIBKU_LAST_LOGIN_ID";
+    // Ubah ke false saat siap produksi untuk menyembunyikan panel akun uji coba di modal login
+    const SHOW_DEMO_LOGIN_ACCOUNTS = true;
+    const DEMO_LOGIN_ACCOUNTS = [
+      {
+        id: "USR-DEMO",
+        role: "Pelanggan (User)",
+        email: "member.demo@wajibkufast.id",
+        password: "MemberDemo123!",
+        accentClass: "text-emerald-700"
+      },
+      {
+        id: "ADM-DEMO",
+        role: "Admin Operasional",
+        email: "admin.demo@wajibkufast.id",
+        password: "AdminDemo123!",
+        accentClass: "text-press-700"
+      },
+      {
+        id: "SUP-DEMO",
+        role: "Super Admin",
+        email: "superadmin.demo@wajibkufast.id",
+        password: "SuperDemo123!",
+        accentClass: "text-rose-700"
+      }
+    ];
 
     const ALLOWED_DESIGN_MIMES = new Set([
       "image/jpeg",
@@ -2737,10 +2779,54 @@
       }
     }
 
+    function renderDemoLoginBox() {
+      const box = document.getElementById("demo-login-box");
+      const list = document.getElementById("demo-login-list");
+      if (!box || !list) return;
+      if (!SHOW_DEMO_LOGIN_ACCOUNTS || !Array.isArray(DEMO_LOGIN_ACCOUNTS) || !DEMO_LOGIN_ACCOUNTS.length) {
+        box.classList.add("hidden");
+        return;
+      }
+      box.classList.remove("hidden");
+      list.innerHTML = DEMO_LOGIN_ACCOUNTS.map((acc, idx) => `
+        <div class="rounded-lg bg-white border border-amber-200 px-3 py-2 flex items-center justify-between gap-2.5">
+          <div class="min-w-0 flex-1 space-y-0.5">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] font-bold ${acc.accentClass || "text-slate-800"}">${escapeHtml(acc.role)}</span>
+              <span class="text-[10px] font-mono text-slate-400">${escapeHtml(acc.id)}</span>
+            </div>
+            <div class="text-[11px] font-mono text-slate-700 truncate select-all">User: ${escapeHtml(acc.email)}</div>
+            <div class="text-[11px] font-mono text-slate-700 truncate select-all">Pass: ${escapeHtml(acc.password)}</div>
+          </div>
+          <button
+            type="button"
+            onclick="fillDemoLogin(${idx})"
+            class="shrink-0 px-2.5 py-1.5 text-[11px] font-semibold text-press-700 bg-press-50 hover:bg-press-100 border border-press-200 rounded-md transition-colors"
+          >
+            Isi
+          </button>
+        </div>
+      `).join("");
+    }
+
+    function fillDemoLogin(idx) {
+      const acc = DEMO_LOGIN_ACCOUNTS[idx];
+      if (!acc) return;
+      const idInput = document.getElementById("login-identifier");
+      const passInput = document.getElementById("login-password");
+      const errBox = document.getElementById("login-error-box");
+      if (errBox) errBox.classList.add("hidden");
+      if (idInput) idInput.value = acc.email;
+      if (passInput) passInput.value = acc.password;
+      document.getElementById("btn-submit-login")?.focus();
+      showToast(`Akun uji coba ${acc.role} diisi. Klik Masuk Sekarang.`, "info");
+    }
+
     function openLoginModal(subtitleText, mode = "login") {
       const subtitleEl = document.getElementById("login-modal-subtitle");
       subtitleEl.textContent = subtitleText || "Satu pintu masuk — tampilan menyesuaikan akun Anda.";
       switchAuthMode(mode);
+      renderDemoLoginBox();
       document.getElementById("login-modal-backdrop").classList.remove("hidden");
       refreshIcons();
 

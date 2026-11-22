@@ -1059,6 +1059,129 @@ function aktifkanIzinEmailOtp(emailTujuan) {
 }
 
 /**
+ * Daftar akun uji coba khusus testing (hanya dibuat jika pemilik menjalankan
+ * fungsi `buatAkunUjiCoba()` secara manual di Editor Apps Script).
+ */
+const DEMO_TRIAL_ACCOUNTS_ = [
+  {
+    User_ID: "USR-DEMO",
+    Nama: "Pelanggan Uji Coba",
+    No_WA: "'6281200001001",
+    Email: "member.demo@wajibkufast.id",
+    Role: "User",
+    Alamat: "Jl. Uji Coba No. 1",
+    PasswordPlain: "MemberDemo123!"
+  },
+  {
+    User_ID: "ADM-DEMO",
+    Nama: "Admin Uji Coba",
+    No_WA: "'6281200001002",
+    Email: "admin.demo@wajibkufast.id",
+    Role: "Admin",
+    Alamat: "Kantor Operasional",
+    PasswordPlain: "AdminDemo123!"
+  },
+  {
+    User_ID: "SUP-DEMO",
+    Nama: "Super Admin Uji Coba",
+    No_WA: "'6281200001003",
+    Email: "superadmin.demo@wajibkufast.id",
+    Role: "Super Admin",
+    Alamat: "Kantor Pusat",
+    PasswordPlain: "SuperDemo123!"
+  }
+];
+
+/**
+ * Jalankan manual 1x dari Editor Apps Script untuk membuat/mengaktifkan
+ * 3 akun uji coba (User, Admin, Super Admin) yang ditampilkan di modal login.
+ * Tidak mengubah akun Super Admin utama (SUP-001).
+ */
+function buatAkunUjiCoba() {
+  const ss = getSpreadsheet_();
+  ensureSheetsInitialized_(ss);
+  const existingUsers = sheetToObjects_(ss, "Users");
+  const summary = [];
+
+  DEMO_TRIAL_ACCOUNTS_.forEach(function (acc) {
+    const emailLower = acc.Email.toLowerCase();
+    const normWa = normalizeWa_(acc.No_WA);
+    const hashed = hashPassword_(acc.PasswordPlain);
+    const found = existingUsers.find(function (u) {
+      return (
+        String(u.User_ID || "").trim().toUpperCase() === acc.User_ID ||
+        String(u.Email || "").trim().toLowerCase() === emailLower
+      );
+    });
+
+    if (found) {
+      updateUserFields_(ss, found.User_ID, {
+        Nama: acc.Nama,
+        No_WA: acc.No_WA,
+        Email: emailLower,
+        Role: acc.Role,
+        Alamat: acc.Alamat,
+        Password: hashed,
+        Status_Akun: "Aktif",
+        Token_Version: normalizeTokenVersion_(found.Token_Version) + 1
+      });
+      summary.push({ userId: found.User_ID, role: acc.Role, email: emailLower, action: "updated" });
+    } else {
+      appendObjectRow_(ss, "Users", {
+        User_ID: acc.User_ID,
+        Nama: acc.Nama,
+        No_WA: acc.No_WA,
+        Email: emailLower,
+        Role: acc.Role,
+        Alamat: acc.Alamat,
+        Password: hashed,
+        Status_Akun: "Aktif",
+        Token_Version: 1
+      });
+      summary.push({ userId: acc.User_ID, role: acc.Role, email: emailLower, action: "created" });
+    }
+
+    clearRateLimit_("login", emailLower);
+    clearRateLimit_("login", normWa);
+    clearRateLimit_("login", acc.User_ID.toLowerCase());
+  });
+
+  Logger.log("Akun uji coba siap digunakan: " + JSON.stringify(summary));
+  return summary;
+}
+
+/**
+ * Jalankan manual dari Editor Apps Script saat selesai uji coba / siap produksi.
+ * Menonaktifkan seluruh akun uji coba (USR-DEMO, ADM-DEMO, SUP-DEMO) dan mencabut sesinya.
+ */
+function hapusAkunUjiCoba() {
+  const ss = getSpreadsheet_();
+  const existingUsers = sheetToObjects_(ss, "Users");
+  const disabled = [];
+
+  DEMO_TRIAL_ACCOUNTS_.forEach(function (acc) {
+    const emailLower = acc.Email.toLowerCase();
+    const found = existingUsers.find(function (u) {
+      return (
+        String(u.User_ID || "").trim().toUpperCase() === acc.User_ID ||
+        String(u.Email || "").trim().toLowerCase() === emailLower
+      );
+    });
+    if (found) {
+      updateUserFields_(ss, found.User_ID, {
+        Status_Akun: "Nonaktif",
+        Password: "",
+        Token_Version: normalizeTokenVersion_(found.Token_Version) + 1
+      });
+      disabled.push(found.User_ID);
+    }
+  });
+
+  Logger.log("Akun uji coba dinonaktifkan: " + JSON.stringify(disabled));
+  return { disabled: disabled };
+}
+
+/**
  * Jalankan manual dari Editor Apps Script untuk membuat akun Super Admin pertama.
  * Wajib menyertakan email dan customPassword kuat minimal 10 karakter.
  */

@@ -1592,6 +1592,111 @@ const DEMO_TRIAL_ACCOUNTS_ = [
 ];
 
 /**
+ * Jalankan manual 1x dari Editor Apps Script untuk MERESET SEMUA AKUN LOGIN
+ * di sheet `Users` menjadi tepat 3 akun standar sesuai panel Login:
+ * - USR-DEMO (Pelanggan / User)  : member.demo@wajibkufast.id
+ * - ADM-DEMO (Admin Operasional) : admin.demo@wajibkufast.id
+ * - SUP-DEMO (Super Admin)       : superadmin.demo@wajibkufast.id
+ *
+ * Baris pesanan tamu (GUEST-*) tetap dipertahankan tanpa password agar riwayat
+ * pesanan tamu tidak rusak. Semua sesi lama otomatis dicabut dan password
+ * disimpan dalam bentuk hash PBKDF2-HMAC-SHA256 (tidak pernah plaintext).
+ */
+function resetSemuaLogin() {
+  const ss = getSpreadsheet_();
+  ensureSheetsInitialized_(ss);
+  ensureSheetColumns_(ss, "Users", SCHEMA_HEADERS.Users);
+
+  const sheet = ss.getSheetByName("Users");
+  if (!sheet) throw new Error("Tab Users tidak ditemukan.");
+
+  const headers = SCHEMA_HEADERS.Users.slice();
+  const existingUsers = sheetToObjects_(ss, "Users");
+  const preservedGuests = [];
+  let removedLoginCount = 0;
+
+  existingUsers.forEach(function (u) {
+    const uid = String(u.User_ID || "").trim();
+    if (uid.toUpperCase().startsWith("GUEST-")) {
+      preservedGuests.push({
+        User_ID: uid,
+        Nama: String(u.Nama || "").trim(),
+        No_WA: String(u.No_WA || "").trim() ? ("'" + normalizeWa_(u.No_WA)) : "",
+        Email: String(u.Email || "").trim().toLowerCase(),
+        Role: "User",
+        Alamat: String(u.Alamat || "").trim(),
+        Password: "",
+        Status_Akun: "Aktif",
+        Token_Version: 1,
+        OTP_Token: "",
+        OTP_Expires_At: ""
+      });
+    } else if (uid || String(u.Email || "").trim()) {
+      removedLoginCount++;
+    }
+  });
+
+  const resetRows = DEMO_TRIAL_ACCOUNTS_.map(function (acc) {
+    const emailLower = acc.Email.toLowerCase();
+    const normWa = normalizeWa_(acc.No_WA);
+    clearRateLimit_("login", emailLower);
+    clearRateLimit_("login", normWa);
+    clearRateLimit_("login", acc.User_ID.toLowerCase());
+    clearRateLimit_("otp_req", emailLower);
+    clearRateLimit_("otp_reg", emailLower);
+
+    return {
+      User_ID: acc.User_ID,
+      Nama: acc.Nama,
+      No_WA: acc.No_WA,
+      Email: emailLower,
+      Role: acc.Role,
+      Alamat: acc.Alamat,
+      Password: hashPassword_(acc.PasswordPlain),
+      Status_Akun: "Aktif",
+      Token_Version: 1,
+      OTP_Token: "",
+      OTP_Expires_At: ""
+    };
+  });
+
+  const allFinalObjects = resetRows.concat(preservedGuests);
+  const matrix = [headers].concat(
+    allFinalObjects.map(function (obj) {
+      return headers.map(function (h) {
+        return obj.hasOwnProperty(h) ? obj[h] : "";
+      });
+    })
+  );
+
+  // Bersihkan seluruh isi sheet Users lalu tulis ulang header + 3 akun login bersih (+ tamu lama)
+  if (typeof sheet.clearContents === "function") {
+    sheet.clearContents();
+  }
+  const writeRange = sheet.getRange(1, 1, matrix.length, headers.length);
+  writeRange.setValues(matrix);
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setFontWeight("bold");
+  headerRange.setBackground("#F1F5F9");
+  sheet.setFrozenRows(1);
+
+  // Rotasi HMAC secret agar seluruh token sesi lama langsung tidak berlaku
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty("AUTH_HMAC_SECRET", Utilities.getUuid() + "-" + Utilities.getUuid() + "-" + String(Date.now()));
+
+  const result = {
+    status: "ok",
+    removedOldLogins: removedLoginCount,
+    preservedGuestRows: preservedGuests.length,
+    activeLogins: resetRows.map(function (r) {
+      return { userId: r.User_ID, role: r.Role, email: r.Email };
+    })
+  };
+  Logger.log("Reset semua login selesai: " + JSON.stringify(result));
+  return result;
+}
+
+/**
  * Jalankan manual 1x dari Editor Apps Script untuk membuat/mengaktifkan
  * 3 akun uji coba (User, Admin, Super Admin) yang ditampilkan di modal login.
  * Tidak mengubah akun Super Admin utama (SUP-001).
@@ -1599,6 +1704,7 @@ const DEMO_TRIAL_ACCOUNTS_ = [
 function buatAkunUjiCoba() {
   const ss = getSpreadsheet_();
   ensureSheetsInitialized_(ss);
+  ensureSheetColumns_(ss, "Users", SCHEMA_HEADERS.Users);
   const existingUsers = sheetToObjects_(ss, "Users");
   const summary = [];
 
@@ -1622,7 +1728,9 @@ function buatAkunUjiCoba() {
         Alamat: acc.Alamat,
         Password: hashed,
         Status_Akun: "Aktif",
-        Token_Version: normalizeTokenVersion_(found.Token_Version) + 1
+        Token_Version: normalizeTokenVersion_(found.Token_Version) + 1,
+        OTP_Token: "",
+        OTP_Expires_At: ""
       });
       summary.push({ userId: found.User_ID, role: acc.Role, email: emailLower, action: "updated" });
     } else {
@@ -1635,7 +1743,9 @@ function buatAkunUjiCoba() {
         Alamat: acc.Alamat,
         Password: hashed,
         Status_Akun: "Aktif",
-        Token_Version: 1
+        Token_Version: 1,
+        OTP_Token: "",
+        OTP_Expires_At: ""
       });
       summary.push({ userId: acc.User_ID, role: acc.Role, email: emailLower, action: "created" });
     }

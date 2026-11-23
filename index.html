@@ -197,6 +197,9 @@
       html.dark .text-press-700 { color: #60A5FA; }
       html.dark .text-press-800 { color: #93C5FD; }
       html.dark .hover\:text-press-700:hover { color: #93C5FD; }
+      html.dark .group:hover .group-hover\:text-white { color: #FFFFFF; }
+      html.dark .cta-light-btn { background-color: #FFFFFF; color: #0F172A; }
+      html.dark .cta-light-btn:hover { background-color: #F1F5F9; }
       html.dark .text-rose-600 { color: #FB7185; }
       html.dark .text-rose-700 { color: #FDA4AF; }
       html.dark .text-rose-800 { color: #FECDD3; }
@@ -295,6 +298,21 @@
         page-break-inside: avoid;
       }
     }
+    /* ---------------------------------------------------------------
+       LANDING PAGE POLISH
+       --------------------------------------------------------------- */
+    section[id], main [id] { scroll-margin-top: 84px; }
+    .lift { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+    .lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--c-border-strong); }
+    .fade-up { animation: fade-up 0.6s ease-out both; }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .fade-up { animation: none; }
+      .lift:hover { transform: none; }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
@@ -303,25 +321,25 @@
   <!-- TOP BAR (3-Zone Contract: Wordmark — Single-Line Nav — Primary CTA)   -->
   <!-- ===================================================================== -->
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-8">
       <!-- Zone 1: Brand Wordmark -->
-      <a href="#katalog" onclick="handleBrandClick(event)" class="font-display text-xl font-bold tracking-tight text-slate-900 whitespace-nowrap shrink-0">
+      <a href="#beranda" onclick="handleBrandClick(event)" class="font-display text-lg sm:text-xl font-bold tracking-tight text-slate-900 whitespace-nowrap shrink-0">
         Wajibku Fast
       </a>
 
       <!-- Zone 2: Navigation Links (Desktop - Rendered dynamically by Role) -->
-      <nav id="desktop-nav" class="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
+      <nav id="desktop-nav" class="hidden md:flex items-center gap-5 lg:gap-7 text-sm font-medium text-slate-600">
         <!-- Populated dynamically by renderNavigation() -->
       </nav>
 
       <!-- Zone 3: Single Primary Action + Theme Toggle + Mobile Menu Trigger -->
-      <div class="flex items-center gap-2 shrink-0">
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <button type="button" onclick="toggleTheme()" aria-label="Ganti tema terang atau gelap" title="Ganti tema terang / gelap" class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors shrink-0">
           <i data-lucide="moon" class="theme-icon-light w-4 h-4"></i>
           <i data-lucide="sun" class="theme-icon-dark w-4 h-4"></i>
         </button>
 
-        <button type="button" id="header-primary-btn" onclick="handleHeaderPrimaryAction()" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors whitespace-nowrap shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-700">
+        <button type="button" id="header-primary-btn" onclick="handleHeaderPrimaryAction()" class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors whitespace-nowrap shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-700">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
           <span id="header-primary-label">Keranjang (0)</span>
         </button>
@@ -348,136 +366,153 @@
   <!-- ===================================================================== -->
   <main id="view-user" class="flex-1">
 
-    <!-- Hero Section -->
-    <section class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14 space-y-10">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
-          <div class="lg:col-span-6 flex flex-col justify-center">
-            <p class="text-xs font-medium text-slate-500 tracking-wide mb-3">
-              Jasa Percetakan Digital &amp; Offset · Satuan hingga Partai Besar
-            </p>
-            <h1 class="font-display text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight text-slate-900 leading-[1.12] text-balance">
-              Percetakan spanduk, stiker, brosur, dan dokumen dengan harga langsung terlihat.
+    <!-- ===================== HERO ===================== -->
+    <section id="beranda" class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+          <div class="lg:col-span-6 fade-up">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-press-50 text-press-700 text-xs font-semibold tracking-wide">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+              Percetakan Digital &amp; Offset
+            </span>
+            <h1 class="font-display mt-5 text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 leading-[1.08] text-balance">
+              Solusi Percetakan Profesional untuk Setiap Kebutuhan Bisnis Anda.
             </h1>
-            <p class="mt-4 text-base text-slate-600 max-w-xl leading-relaxed">
-              Pilih bahan cetak, hitung biaya otomatis berdasarkan ukuran atau jumlah, unggah file desain siap cetak, dan pantau proses produksi hingga siap diambil.
+            <p class="mt-5 text-base sm:text-lg text-slate-600 max-w-xl leading-relaxed">
+              Dari spanduk, stiker, brosur hingga kebutuhan dokumen. Nikmati proses pemesanan yang mudah, harga transparan, dan hasil cetak berkualitas.
             </p>
-            <div class="mt-7 flex flex-wrap items-center gap-3.5">
-              <a href="#kalkulator" class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors whitespace-nowrap shrink-0">
-                <i data-lucide="calculator" class="w-4 h-4"></i>
-                <span>Hitung Harga &amp; Pesan</span>
+            <div class="mt-8 flex flex-col sm:flex-row gap-3">
+              <a href="#kalkulator" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg shadow-sm transition-colors whitespace-nowrap">
+                <span>Pesan Sekarang</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
               </a>
-              <a href="#katalog" class="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap shrink-0">
+              <a href="#katalog" class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap">
                 <i data-lucide="layers" class="w-4 h-4"></i>
-                <span>Lihat Katalog Cetak</span>
+                <span>Lihat Katalog</span>
               </a>
             </div>
-
-            <!-- 4 Langkah Singkat -->
-            <div class="mt-8 pt-6 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-              <div>
-                <span class="font-mono font-semibold text-press-700 tabular-nums">01</span>
-                <p class="font-semibold text-slate-900 mt-0.5">Pilih Bahan</p>
-                <p class="text-slate-500 mt-0.5">Banner, stiker, kertas</p>
-              </div>
-              <div>
-                <span class="font-mono font-semibold text-press-700 tabular-nums">02</span>
-                <p class="font-semibold text-slate-900 mt-0.5">Atur Ukuran</p>
-                <p class="text-slate-500 mt-0.5">Luas m² atau lembar</p>
-              </div>
-              <div>
-                <span class="font-mono font-semibold text-press-700 tabular-nums">03</span>
-                <p class="font-semibold text-slate-900 mt-0.5">Kirim Desain</p>
-                <p class="text-slate-500 mt-0.5">PDF, JPG, AI, CDR</p>
-              </div>
-              <div>
-                <span class="font-mono font-semibold text-press-700 tabular-nums">04</span>
-                <p class="font-semibold text-slate-900 mt-0.5">Pantau Order</p>
-                <p class="text-slate-500 mt-0.5">Cek status selesai</p>
-              </div>
-            </div>
+            <ul class="mt-9 pt-7 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-5 text-sm">
+              <li class="flex items-start gap-3">
+                <i data-lucide="receipt" class="w-4 h-4 mt-0.5 text-press-700 shrink-0"></i>
+                <span class="text-slate-700 font-medium">Harga transparan sebelum checkout</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <i data-lucide="zap" class="w-4 h-4 mt-0.5 text-press-700 shrink-0"></i>
+                <span class="text-slate-700 font-medium">Pesan dan unggah desain online</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <i data-lucide="shield-check" class="w-4 h-4 mt-0.5 text-press-700 shrink-0"></i>
+                <span class="text-slate-700 font-medium">Pantau status pesanan kapan saja</span>
+              </li>
+            </ul>
           </div>
 
           <!-- Visual Utama Studio Percetakan -->
-          <div class="lg:col-span-6 relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 min-h-[280px] sm:min-h-[340px]">
+          <div class="lg:col-span-6 relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 min-h-[300px] sm:min-h-[400px] shadow-md fade-up">
             <img
               src="/assets/images/hero_print_studio_1794676643750.jpg"
               alt="Studio produksi percetakan digital Wajibku Fast dengan mesin cetak spanduk, brosur, kartu nama, dan stiker vinyl"
-              referrerPolicy="no-referrer"
+              referrerpolicy="no-referrer"
+              loading="eager"
               onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
               class="w-full h-full object-cover lg:absolute lg:inset-0"
             />
-            <div class="hidden w-full h-full min-h-[280px] bg-gradient-to-br from-slate-800 via-slate-900 to-press-900 flex flex-col items-center justify-center p-8 text-center text-white">
+            <div class="hidden w-full h-full min-h-[300px] sm:min-h-[400px] bg-gradient-to-br from-slate-800 via-slate-900 to-press-900 flex flex-col items-center justify-center p-8 text-center text-white">
               <i data-lucide="printer" class="w-12 h-12 text-press-100 mb-3"></i>
               <p class="font-display text-lg font-bold">Studio Percetakan Wajibku Fast</p>
               <p class="text-xs text-slate-300 mt-1 max-w-xs">Mesin Large Format, Stiker Vinyl A3+, dan Cetak Offset Dokumen</p>
             </div>
             <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent p-5 sm:p-6 text-white">
-              <p class="text-xs font-medium text-press-100">Produksi Cetak Dalam 1 Tempat</p>
-              <p class="font-display text-base sm:text-lg font-bold mt-0.5">Spanduk Large Format · Stiker Vinyl A3+ · Brosur &amp; Kartu Nama</p>
+              <p class="text-xs font-semibold uppercase tracking-widest text-press-100">Produksi Cetak Dalam 1 Tempat</p>
+              <p class="font-display text-base sm:text-lg font-bold mt-1">Spanduk Large Format · Stiker Vinyl A3+ · Brosur &amp; Kartu Nama</p>
             </div>
           </div>
         </div>
+      </div>
+    </section>
 
-        <!-- 3 Layanan Cetak Utama (Visual Showcase) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <button type="button" onclick="jumpToCatalogCategory('Outdoor')" class="group text-left bg-slate-50 border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 transition-colors">
-            <div class="aspect-[4/3] w-full bg-slate-200 overflow-hidden relative">
-              <img
-                src="/assets/images/service_banner_outdoor_1794676644117.jpg"
-                alt="Cetak spanduk outdoor flexi dan X-banner dengan finishing mata ayam"
-                referrerPolicy="no-referrer"
-                onerror="this.style.display='none';"
-                class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
-              />
-            </div>
-            <div class="p-4 flex items-center justify-between gap-3">
-              <div>
-                <p class="font-display text-sm font-bold text-slate-900">Spanduk &amp; X-Banner</p>
-                <p class="text-xs text-slate-600 mt-0.5">Hitung per meter persegi atau per set</p>
-              </div>
-              <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-400 group-hover:text-press-700 shrink-0"></i>
-            </div>
-          </button>
-
-          <button type="button" onclick="jumpToCatalogCategory('Stiker')" class="group text-left bg-slate-50 border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 transition-colors">
-            <div class="aspect-[4/3] w-full bg-slate-200 overflow-hidden relative">
-              <img
-                src="/assets/images/service_sticker_label_1794676644075.jpg"
-                alt="Cetak stiker vinyl label kemasan custom dan cutting pola"
-                referrerPolicy="no-referrer"
-                onerror="this.style.display='none';"
-                class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
-              />
-            </div>
-            <div class="p-4 flex items-center justify-between gap-3">
-              <div>
-                <p class="font-display text-sm font-bold text-slate-900">Stiker &amp; Label Kemasan</p>
-                <p class="text-xs text-slate-600 mt-0.5">Vinyl tahan air, laminasi &amp; cutting pola</p>
-              </div>
-              <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-400 group-hover:text-press-700 shrink-0"></i>
-            </div>
-          </button>
-
-          <button type="button" onclick="jumpToCatalogCategory('Dokumen')" class="group text-left bg-slate-50 border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 transition-colors">
-            <div class="aspect-[4/3] w-full bg-slate-200 overflow-hidden relative">
-              <img
-                src="/assets/images/service_offset_print_1794676644833.jpg"
-                alt="Cetak brosur, kartu nama, dan dokumen kertas Concorde"
-                referrerPolicy="no-referrer"
-                onerror="this.style.display='none';"
-                class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
-              />
-            </div>
-            <div class="p-4 flex items-center justify-between gap-3">
-              <div>
-                <p class="font-display text-sm font-bold text-slate-900">Brosur, Kartu &amp; Dokumen</p>
-                <p class="text-xs text-slate-600 mt-0.5">Cetak A3+, sertifikat, dan media promosi</p>
-              </div>
-              <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-400 group-hover:text-press-700 shrink-0"></i>
-            </div>
-          </button>
+    <!-- ===================== KEUNGGULAN ===================== -->
+    <section aria-labelledby="keunggulan-title" class="bg-slate-50 border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+        <div class="max-w-2xl mb-10">
+          <p class="text-xs font-semibold uppercase tracking-widest text-press-700">Kenapa Wajibku Fast</p>
+          <h2 id="keunggulan-title" class="font-display mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 text-balance">Seluruh proses pemesanan cetak dalam satu platform</h2>
         </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <article class="lift bg-white border border-slate-200 rounded-xl p-6">
+            <span class="w-11 h-11 flex items-center justify-center rounded-lg bg-press-50 text-press-700"><i data-lucide="receipt" class="w-5 h-5"></i></span>
+            <h3 class="font-display mt-5 text-base font-bold text-slate-900">Harga Transparan</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Rincian biaya tampil sebelum checkout, lengkap dengan ukuran, jumlah, dan finishing yang dipilih.</p>
+          </article>
+          <article class="lift bg-white border border-slate-200 rounded-xl p-6">
+            <span class="w-11 h-11 flex items-center justify-center rounded-lg bg-press-50 text-press-700"><i data-lucide="zap" class="w-5 h-5"></i></span>
+            <h3 class="font-display mt-5 text-base font-bold text-slate-900">Proses Pesan Mudah</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Pilih produk, atur spesifikasi, unggah desain, lalu selesaikan pesanan dari satu halaman.</p>
+          </article>
+          <article class="lift bg-white border border-slate-200 rounded-xl p-6">
+            <span class="w-11 h-11 flex items-center justify-center rounded-lg bg-press-50 text-press-700"><i data-lucide="layers" class="w-5 h-5"></i></span>
+            <h3 class="font-display mt-5 text-base font-bold text-slate-900">Pilihan Produk Cetak</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Katalog memuat bahan cetak yang tersedia saat ini dan dapat dicari berdasarkan nama atau kategori.</p>
+          </article>
+          <article class="lift bg-white border border-slate-200 rounded-xl p-6">
+            <span class="w-11 h-11 flex items-center justify-center rounded-lg bg-press-50 text-press-700"><i data-lucide="search" class="w-5 h-5"></i></span>
+            <h3 class="font-display mt-5 text-base font-bold text-slate-900">Lacak Pesanan</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Cek status pesanan dengan ID pesanan dan 4 digit terakhir nomor WhatsApp Anda.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== LAYANAN UNGGULAN ===================== -->
+    <section id="layanan" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+      <div class="max-w-2xl mb-10">
+        <p class="text-xs font-semibold uppercase tracking-widest text-press-700">Layanan</p>
+        <h2 class="font-display mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 text-balance">Pilih jenis cetakan sesuai kebutuhan Anda</h2>
+        <p class="mt-2 text-sm sm:text-base text-slate-600">Setiap kategori langsung membuka produk yang tersedia di katalog.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <button type="button" onclick="jumpToCatalogCategory('Outdoor')" class="group lift text-left bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">
+            <div class="absolute inset-0 flex items-center justify-center text-press-700"><i data-lucide="printer" class="w-10 h-10"></i></div>
+            <img src="/assets/images/service_banner_outdoor_1794676644117.jpg" alt="Cetak spanduk outdoor flexi dan X-banner dengan finishing mata ayam" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';" class="relative w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          </div>
+          <div class="p-5 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="font-display text-base font-bold text-slate-900">Spanduk &amp; X-Banner</h3>
+              <p class="mt-1 text-sm text-slate-600 leading-relaxed">Hitung per meter persegi atau per set, dengan pilihan finishing mata ayam.</p>
+            </div>
+            <span class="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-press-50 text-press-700 group-hover:bg-press-700 group-hover:text-white transition-colors"><i data-lucide="arrow-up-right" class="w-4 h-4"></i></span>
+          </div>
+        </button>
+
+        <button type="button" onclick="jumpToCatalogCategory('Stiker')" class="group lift text-left bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">
+            <div class="absolute inset-0 flex items-center justify-center text-press-700"><i data-lucide="printer" class="w-10 h-10"></i></div>
+            <img src="/assets/images/service_sticker_label_1794676644075.jpg" alt="Cetak stiker vinyl label kemasan custom dan cutting pola" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';" class="relative w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          </div>
+          <div class="p-5 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="font-display text-base font-bold text-slate-900">Stiker &amp; Label Kemasan</h3>
+              <p class="mt-1 text-sm text-slate-600 leading-relaxed">Vinyl tahan air, laminasi, dan cutting pola sesuai bentuk yang Anda inginkan.</p>
+            </div>
+            <span class="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-press-50 text-press-700 group-hover:bg-press-700 group-hover:text-white transition-colors"><i data-lucide="arrow-up-right" class="w-4 h-4"></i></span>
+          </div>
+        </button>
+
+        <button type="button" onclick="jumpToCatalogCategory('Dokumen')" class="group lift text-left bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden">
+            <div class="absolute inset-0 flex items-center justify-center text-press-700"><i data-lucide="printer" class="w-10 h-10"></i></div>
+            <img src="/assets/images/service_offset_print_1794676644833.jpg" alt="Cetak brosur, kartu nama, dan dokumen kertas" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';" class="relative w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          </div>
+          <div class="p-5 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="font-display text-base font-bold text-slate-900">Brosur, Kartu &amp; Dokumen</h3>
+              <p class="mt-1 text-sm text-slate-600 leading-relaxed">Cetak brosur, kartu nama, dan dokumen kertas untuk kebutuhan promosi maupun administrasi.</p>
+            </div>
+            <span class="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-press-50 text-press-700 group-hover:bg-press-700 group-hover:text-white transition-colors"><i data-lucide="arrow-up-right" class="w-4 h-4"></i></span>
+          </div>
+        </button>
       </div>
     </section>
 
@@ -521,6 +556,58 @@
       <!-- Product Grid -->
       <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Populated dynamically -->
+      </div>
+    </section>
+
+    <!-- ===================== CARA PEMESANAN ===================== -->
+    <section id="cara-pesan" class="bg-slate-50 border-t border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+        <div class="max-w-2xl mb-12">
+          <p class="text-xs font-semibold uppercase tracking-widest text-press-700">Cara Pemesanan</p>
+          <h2 class="font-display mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 text-balance">Lima langkah sederhana untuk memesan cetakan</h2>
+        </div>
+        <ol class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-4">
+          <li class="relative bg-white border border-slate-200 rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-press-700 text-white"><i data-lucide="package" class="w-5 h-5"></i></span>
+              <span class="font-mono text-xs font-semibold text-slate-400 tabular-nums">01</span>
+            </div>
+            <h3 class="font-display mt-5 text-base font-bold text-slate-900">Pilih Produk</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Pilih bahan cetak dari katalog atau dari kategori layanan.</p>
+          </li>
+          <li class="relative bg-white border border-slate-200 rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-press-700 text-white"><i data-lucide="ruler" class="w-5 h-5"></i></span>
+              <span class="font-mono text-xs font-semibold text-slate-400 tabular-nums">02</span>
+            </div>
+            <h3 class="font-display mt-5 text-base font-bold text-slate-900">Masukkan Ukuran / Jumlah</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Isi panjang dan lebar untuk produk per meter, atau jumlah cetak untuk produk satuan.</p>
+          </li>
+          <li class="relative bg-white border border-slate-200 rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-press-700 text-white"><i data-lucide="upload" class="w-5 h-5"></i></span>
+              <span class="font-mono text-xs font-semibold text-slate-400 tabular-nums">03</span>
+            </div>
+            <h3 class="font-display mt-5 text-base font-bold text-slate-900">Unggah Desain</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Lampirkan file desain maksimal 2,5 MB, atau kirim menyusul jika belum siap.</p>
+          </li>
+          <li class="relative bg-white border border-slate-200 rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-press-700 text-white"><i data-lucide="shopping-cart" class="w-5 h-5"></i></span>
+              <span class="font-mono text-xs font-semibold text-slate-400 tabular-nums">04</span>
+            </div>
+            <h3 class="font-display mt-5 text-base font-bold text-slate-900">Masukkan Keranjang</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Tambahkan beberapa item sekaligus dalam satu keranjang belanja.</p>
+          </li>
+          <li class="relative bg-white border border-slate-200 rounded-xl p-6">
+            <div class="flex items-center justify-between">
+              <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-press-700 text-white"><i data-lucide="receipt" class="w-5 h-5"></i></span>
+              <span class="font-mono text-xs font-semibold text-slate-400 tabular-nums">05</span>
+            </div>
+            <h3 class="font-display mt-5 text-base font-bold text-slate-900">Checkout &amp; Pantau</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Selesaikan checkout, lalu pantau status pesanan memakai ID pesanan Anda.</p>
+          </li>
+        </ol>
       </div>
     </section>
 
@@ -692,9 +779,28 @@
         </div>
       </div>
     </section>
+
+    <!-- ===================== CALL TO ACTION ===================== -->
+    <section class="bg-slate-900 text-white border-t border-slate-800">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-16 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div class="max-w-xl">
+          <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-balance">Siap Mencetak Kebutuhan Anda?</h2>
+          <p class="mt-2 text-sm sm:text-base text-slate-300">Hitung estimasi biaya secara langsung, lalu lanjutkan ke keranjang dan checkout.</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 shrink-0">
+          <a href="#kalkulator" class="cta-light-btn inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-slate-900 bg-white hover:bg-slate-100 rounded-lg transition-colors whitespace-nowrap">
+            <span>Mulai Pesan Sekarang</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </a>
+          <a href="#" data-wa-link target="_blank" rel="noopener noreferrer" class="hidden inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white border border-slate-600 hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+            <span>Tanya via WhatsApp</span>
+          </a>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- ===================================================================== -->
   <!-- ===================================================================== -->
   <!-- VIEW 3: AREA MEMBER — BANNER MEMBER REWARDS                           -->
   <!-- ===================================================================== -->
@@ -1614,11 +1720,45 @@
   <!-- ===================================================================== -->
   <!-- FOOTER                                                                -->
   <!-- ===================================================================== -->
-  <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-      <p>Wajibku Fast · Sistem Pemesanan Percetakan Digital &amp; Offset</p>
-      <div id="footer-access-links" class="flex items-center gap-5">
-        <!-- Populated dynamically by Role -->
+  <footer class="bg-white border-t border-slate-200 pt-12 pb-8 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div>
+          <p class="font-display text-lg font-bold text-slate-900">Wajibku Fast</p>
+          <p class="mt-3 text-sm text-slate-600 leading-relaxed">Sistem pemesanan percetakan digital &amp; offset. Hitung harga, kirim desain, dan lacak pesanan dalam satu platform.</p>
+        </div>
+        <nav aria-label="Navigasi footer">
+          <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Navigasi</p>
+          <ul class="mt-4 space-y-2.5 text-sm text-slate-700">
+            <li><a href="#beranda" onclick="navigateCustomerSection('beranda'); return false;" class="hover:text-press-700 transition-colors">Beranda</a></li>
+            <li><a href="#layanan" onclick="navigateCustomerSection('layanan'); return false;" class="hover:text-press-700 transition-colors">Layanan</a></li>
+            <li><a href="#katalog" onclick="navigateCustomerSection('katalog'); return false;" class="hover:text-press-700 transition-colors">Katalog</a></li>
+            <li><a href="#cara-pesan" onclick="navigateCustomerSection('cara-pesan'); return false;" class="hover:text-press-700 transition-colors">Cara Pemesanan</a></li>
+            <li><a href="#lacak" onclick="navigateCustomerSection('lacak'); return false;" class="hover:text-press-700 transition-colors">Lacak Pesanan</a></li>
+          </ul>
+        </nav>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Layanan</p>
+          <ul class="mt-4 space-y-2.5 text-sm text-slate-700">
+            <li>Spanduk &amp; X-Banner</li>
+            <li>Stiker &amp; Label Kemasan</li>
+            <li>Brosur, Kartu &amp; Dokumen</li>
+          </ul>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Kontak</p>
+          <p class="mt-4 text-sm text-slate-700 leading-relaxed">Pemesanan dilakukan melalui website ini.</p>
+          <a href="#" data-wa-link target="_blank" rel="noopener noreferrer" class="hidden mt-4 inline-flex items-center gap-2 text-sm font-semibold text-press-700 hover:text-press-800 transition-colors">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+            <span>Hubungi via WhatsApp</span>
+          </a>
+        </div>
+      </div>
+      <div class="mt-10 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <p>&copy; 2026 Wajibku Fast. Hak cipta dilindungi.</p>
+        <div id="footer-access-links" class="flex items-center gap-5">
+          <!-- Populated dynamically by Role -->
+        </div>
       </div>
     </div>
   </footer>
@@ -2063,6 +2203,9 @@
     const MAX_PAYLOAD_CHARS = 14 * 1024 * 1024;
     const AUTH_STORAGE_KEY = "WAJIBKU_AUTH_SESSION";
     const LAST_LOGIN_ID_KEY = "WAJIBKU_LAST_LOGIN_ID";
+    // Nomor WhatsApp toko, format internasional tanpa + (contoh: 6281234567890).
+    // Kosongkan untuk menyembunyikan tombol WhatsApp di beranda dan footer.
+    const CONTACT_WA_NUMBER = "";
     // Ubah ke false saat siap produksi untuk menyembunyikan panel akun uji coba di modal login
     const SHOW_DEMO_LOGIN_ACCOUNTS = true;
     const DEMO_LOGIN_ACCOUNTS = [
@@ -3420,6 +3563,9 @@
           <button type="button" onclick="navigateCustomerSection('kalkulator')" id="nav-kalkulator" class="nav-link py-1 border-b-2 border-transparent hover:text-slate-900 transition-colors whitespace-nowrap shrink-0">
             Kalkulator Order
           </button>
+          <button type="button" onclick="navigateCustomerSection('cara-pesan')" id="nav-cara-pesan" class="nav-link py-1 border-b-2 border-transparent hover:text-slate-900 transition-colors whitespace-nowrap shrink-0">
+            Cara Pemesanan
+          </button>
           <button type="button" onclick="navigateCustomerSection('lacak')" id="nav-lacak" class="nav-link py-1 border-b-2 border-transparent hover:text-slate-900 transition-colors whitespace-nowrap shrink-0">
             Lacak Pesanan
           </button>
@@ -3429,6 +3575,7 @@
         mobileHtml = `
           <button type="button" onclick="navigateCustomerSection('katalog'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Katalog Produk</button>
           <button type="button" onclick="navigateCustomerSection('kalkulator'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Kalkulator &amp; Pemesanan</button>
+          <button type="button" onclick="navigateCustomerSection('cara-pesan'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Cara Pemesanan</button>
           <button type="button" onclick="navigateCustomerSection('lacak'); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Lacak Pesanan</button>
           ${isMemberSession() ? `<button type="button" onclick="showMemberView(); toggleMobileMenu(false);" class="w-full text-left px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg">Saldo Member</button>` : ""}
           ${authLinkMobile}
@@ -3457,7 +3604,7 @@
       return true;
     }
 
-    async function switchRole(role) {
+    async function switchRole(role, skipScrollTop = false) {
       if (role === "admin") {
         if (!canAccessAdmin()) {
           openLoginModal("Masuk dengan akun pengelola untuk membuka Dashboard.");
@@ -3491,16 +3638,18 @@
       }
 
       renderNavigation();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (!skipScrollTop) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
       refreshIcons();
     }
 
     function navigateCustomerSection(sectionId) {
       if (!canAccessLayanan()) return;
       if (state.role !== "user" || memberViewOpen) {
-        switchRole("user");
+        switchRole("user", true);
       }
-      ["nav-katalog", "nav-kalkulator", "nav-lacak", "nav-member"].forEach((id) => {
+      ["nav-katalog", "nav-kalkulator", "nav-cara-pesan", "nav-lacak", "nav-member"].forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
         if (id === "nav-" + sectionId) {
@@ -3608,31 +3757,23 @@
       grid.innerHTML = items.map((p) => {
         const displayPrice = getEffectiveProductPrice(p);
         return `
-        <article class="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col justify-between transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
-          <div>
-            <div class="aspect-[4/3] w-full bg-slate-100 border-b border-slate-200 overflow-hidden">
-              ${getProductMediaHtml(p)}
-            </div>
-            <div class="p-5">
-              <p class="text-xs text-slate-500 truncate">
-                ${escapeHtml(p.Kategori)} · ${escapeHtml(p.Tipe_Hitung)}
-              </p>
-              <h3 class="font-display text-base font-bold text-slate-900 mt-1.5 leading-snug">
-                ${escapeHtml(p.Nama_Produk)}
-              </h3>
-              <div class="mt-3 flex items-baseline gap-1.5">
-                <span class="font-mono text-lg font-bold text-slate-900 tabular-nums">${formatRupiah(displayPrice)}</span>
-                <span class="text-xs text-slate-500">/ ${escapeHtml(p.Satuan)}</span>
-              </div>
-              <p class="mt-1 text-xs text-slate-500 tabular-nums">
-                Min. order: ${Number(p.Min_Order)} ${escapeHtml(p.Satuan)}
-              </p>
+        <article class="lift group bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col">
+          <div class="relative aspect-[4/3] w-full bg-slate-100 border-b border-slate-200 overflow-hidden">
+            ${getProductMediaHtml(p)}
+            <span class="absolute top-3 left-3 inline-flex items-center px-2.5 py-1 rounded-md bg-white/95 text-slate-800 text-[11px] font-semibold shadow-sm">${escapeHtml(p.Kategori)}</span>
+          </div>
+          <div class="flex flex-col flex-1 p-5">
+            <h3 class="font-display text-base font-bold text-slate-900 leading-snug line-clamp-2">${escapeHtml(p.Nama_Produk)}</h3>
+            <p class="mt-1 text-xs text-slate-500 tabular-nums">${escapeHtml(p.Tipe_Hitung)} · Min. order ${Number(p.Min_Order)} ${escapeHtml(p.Satuan)}</p>
+            <div class="mt-auto pt-4 flex items-baseline gap-1.5">
+              <span class="font-mono text-lg font-bold text-slate-900 tabular-nums">${formatRupiah(displayPrice)}</span>
+              <span class="text-xs text-slate-500">/ ${escapeHtml(p.Satuan)}</span>
             </div>
           </div>
           <div class="px-5 pb-5">
-            <button type="button" data-action="select-product" data-id="${escapeHtml(p.Produk_ID)}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-slate-900 hover:bg-press-700 rounded-lg transition-colors whitespace-nowrap">
-              <span>Pilih &amp; Hitung Harga</span>
-              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            <button type="button" data-action="select-product" data-id="${escapeHtml(p.Produk_ID)}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors whitespace-nowrap">
+              <span>Pilih &amp; Hitung</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </button>
           </div>
         </article>
@@ -6840,6 +6981,13 @@
     // Boot Aplikasi
     document.addEventListener("DOMContentLoaded", () => {
       setupDelegatedEvents();
+      const waDigits = String(CONTACT_WA_NUMBER || "").replace(/\D/g, "");
+      if (waDigits) {
+        document.querySelectorAll("[data-wa-link]").forEach((a) => {
+          a.href = "https://wa.me/" + waDigits;
+          a.classList.remove("hidden");
+        });
+      }
       fetchInitData().then(() => {
         try {
           const params = new URLSearchParams(window.location.search);

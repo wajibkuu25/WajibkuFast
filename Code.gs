@@ -44,7 +44,7 @@ const PUBLIC_ORDER_STEPS = ["Menunggu Bayar", "Diproses", "Selesai", "Diambil"];
 const ALLOWED_ORDER_STATUS = ["Menunggu Bayar", "Diproses", "Selesai", "Diambil", "Diarsipkan"];
 const ALLOWED_PAY_STATUS = ["Belum Bayar", "Menunggu Verifikasi", "Lunas"];
 const ALLOWED_USER_ROLES = ["User", "Admin", "Super Admin"];
-const ALLOWED_ACCOUNT_STATUS = ["Aktif", "Nonaktif"];
+const ALLOWED_ACCOUNT_STATUS = ["Aktif", "Nonaktif", "Menunggu Verifikasi"];
 const ALLOWED_PRODUCT_STATUS = ["Tersedia", "Habis", "Arsip"];
 const ALLOWED_FINISHING_STATUS = ["Tersedia", "Arsip"];
 
@@ -64,7 +64,7 @@ const ALLOWED_UPLOAD_MIME_MAP = {
  * Definisi Header 5 Tab Wajib (Case-Sensitive, penambahan kolom bersifat non-destruktif)
  */
 const SCHEMA_HEADERS = {
-  Users: ["User_ID", "Nama", "No_WA", "Email", "Role", "Alamat", "Password", "Status_Akun", "Token_Version"],
+  Users: ["User_ID", "Nama", "No_WA", "Email", "Role", "Alamat", "Password", "Status_Akun", "Token_Version", "OTP_Token", "OTP_Expires_At"],
   Produk: ["Produk_ID", "Nama_Produk", "Kategori", "Tipe_Hitung", "Harga_Dasar", "Satuan", "Min_Order", "Status"],
   Finishing: ["Finishing_ID", "Nama_Finishing", "Tipe_Biaya", "Tambahan_Harga", "Keterangan", "Status"],
   Pesanan: ["Order_ID", "Tanggal", "User_ID", "Status_Order", "Total_Tagihan", "Bukti_Bayar", "Status_Bayar", "Catatan", "Harga_Kotor", "Saldo_Dipakai", "Saldo_Status", "Harga_Per_M2", "Modal_Per_M2", "Reward_Per_M2", "Reward_Amount", "Reward_Status", "Reward_Ref"],
@@ -210,6 +210,9 @@ function normalizeAccountStatus_(statusVal) {
   const s = String(statusVal || "").trim().toLowerCase();
   if (s === "nonaktif" || s === "inactive" || s === "disabled" || s === "arsip") {
     return "Nonaktif";
+  }
+  if (s === "menunggu verifikasi" || s === "pending" || s === "unverified") {
+    return "Menunggu Verifikasi";
   }
   return "Aktif";
 }
@@ -399,9 +402,505 @@ function generateSixDigitOtp_() {
   return String(100000 + num);
 }
 
-function hashOtpCode_(otp, salt) {
-  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, "otp:" + salt + ":" + otp);
+function hashOtpCode_(otp, salt, purposeOpt) {
+  const purpose = String(purposeOpt || "reset").trim().toLowerCase();
+  const digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    "otp:" + purpose + ":" + salt + ":" + otp
+  );
   return bytesToHex_(digest);
+}
+
+function createSheetOtpRecord_(otpCode, purpose) {
+  const cleanPurpose = String(purpose || "reset").trim().toLowerCase();
+  const salt = Utilities.getUuid().replace(/-/g, "").slice(0, 16);
+  const expiresAt = Date.now() + OTP_TTL_SECONDS * 1000; // Berlaku tepat 10 menit
+  const tokenObj = {
+    purpose: cleanPurpose,
+    salt: salt,
+    hash: hashOtpCode_(otpCode, salt, cleanPurpose),
+    attempts: 0
+  };
+  return {
+    tokenJson: JSON.stringify(tokenObj),
+    expiresAt: expiresAt
+  };
+}
+
+function parseSheetOtpExpiryMs_(rawExp) {
+  if (rawExp === null || rawExp === undefined || rawExp === "") return 0;
+  if (rawExp instanceof Date) return rawExp.getTime();
+  const asNum = Number(String(rawExp).replace(/^'/, "").trim());
+  if (Number.isFinite(asNum) && asNum > 0) return asNum;
+  const parsed = Date.parse(String(rawExp));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseSheetOtpRecord_(userRow) {
+  if (!userRow) return null;
+  const rawToken = String(userRow.OTP_Token || "").trim();
+  const expMs = parseSheetOtpExpiryMs_(userRow.OTP_Expires_At);
+  if (!rawToken || !expMs) return null;
+  try {
+    const parsed = JSON.parse(rawToken);
+    if (!parsed || !parsed.salt || !parsed.hash || !parsed.purpose) return null;
+    return {
+      purpose: String(parsed.purpose).trim().toLowerCase(),
+      salt: String(parsed.salt),
+      hash: String(parsed.hash),
+      attempts: Math.max(0, Math.floor(Number(parsed.attempts) || 0)),
+      exp: expMs
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearUserOtpInSheet_(ss, userId) {
+  return updateUserFields_(ss, userId, {
+    OTP_Token: "",
+    OTP_Expires_At: ""
+  });
+}
+
+function sendOtpEmailViaMailApp_(email, recipientName, otpCode, purpose) {
+  const cleanName = String(recipientName || "Pelanggan").trim();
+  const isRegister = String(purpose || "").toLowerCase() === "register";
+  const subject = isRegister
+    ? "[Wajibku Fast] Kode OTP Verifikasi Pendaftaran Akun"
+    : "[Wajibku Fast] Kode OTP Reset Kata Sandi Anda";
+  const mailBody = isRegister
+    ? "Halo " + cleanName + ",\n\n" +
+      "Terima kasih telah mendaftar sebagai member Wajibku Fast.\n" +
+      "Masukkan kode OTP berikut untuk mengaktifkan akun Anda:\n\n" +
+      "Kode OTP Pendaftaran: " + otpCode + "\n" +
+      "Masa berlaku: 10 menit (maksimal " + OTP_MAX_ATTEMPTS + " kali percobaan).\n\n" +
+      "Jangan bagikan kode ini kepada siapa pun. Jika Anda tidak melakukan pendaftaran ini, abaikan email ini.\n\n" +
+      "Salam,\nTim Wajibku Fast"
+    : "Halo " + cleanName + ",\n\n" +
+      "Kami menerima permintaan untuk mengatur ulang kata sandi akun Wajibku Fast Anda.\n\n" +
+      "Kode OTP Anda: " + otpCode + "\n" +
+      "Masa berlaku: 10 menit (maksimal " + OTP_MAX_ATTEMPTS + " kali percobaan).\n\n" +
+      "Jangan bagikan kode ini kepada siapa pun. Jika Anda tidak meminta reset kata sandi, abaikan email ini.\n\n" +
+      "Salam,\nTim Wajibku Fast";
+
+  try {
+    if (typeof MailApp.getRemainingDailyQuota === "function" && MailApp.getRemainingDailyQuota() <= 0) {
+      return {
+        ok: false,
+        message: "Kuota pengiriman email OTP harian server sedang habis. Silakan coba lagi besok atau hubungi admin."
+      };
+    }
+    MailApp.sendEmail({
+      to: email,
+      name: "Wajibku Fast",
+      subject: subject,
+      body: mailBody
+    });
+    return { ok: true };
+  } catch (mailErr) {
+    const errMsg = String(mailErr && mailErr.message ? mailErr.message : mailErr || "");
+    Logger.log("Gagal mengirim email OTP (" + purpose + ") ke " + email + ": " + errMsg);
+    if (/permission|auth|scope|MailApp/i.test(errMsg)) {
+      return {
+        ok: false,
+        message: "Pengiriman email OTP belum diizinkan di server Apps Script. Pemilik sistem perlu menjalankan aktifkanIzinEmailOtp() di Editor Apps Script lalu Deploy versi baru."
+      };
+    }
+    return {
+      ok: false,
+      message: "Gagal mengirim email OTP sementara (" + errMsg + "). Silakan coba lagi atau hubungi admin."
+    };
+  }
+}
+
+/**
+ * Validasi kode OTP 6 digit terhadap token sementara yang tersimpan di sheet `Users`
+ * (kolom OTP_Token & OTP_Expires_At, masa berlaku 10 menit, maksimal 5 percobaan).
+ */
+function validateSheetOtpForUser_(ss, matchedUser, otpInput, expectedPurpose) {
+  const otpRecord = parseSheetOtpRecord_(matchedUser);
+  if (!otpRecord || otpRecord.purpose !== expectedPurpose) {
+    return {
+      ok: false,
+      message: "Kode OTP tidak ditemukan atau sudah kedaluwarsa. Silakan kirim ulang kode OTP."
+    };
+  }
+
+  if (Date.now() > otpRecord.exp) {
+    clearUserOtpInSheet_(ss, matchedUser.User_ID);
+    return {
+      ok: false,
+      message: "Kode OTP sudah kedaluwarsa (melebihi 10 menit). Silakan minta kode OTP baru."
+    };
+  }
+
+  if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
+    clearUserOtpInSheet_(ss, matchedUser.User_ID);
+    return {
+      ok: false,
+      message: "Batas percobaan kode OTP tercapai. Silakan kirim ulang kode OTP baru."
+    };
+  }
+
+  const expectedHash = hashOtpCode_(otpInput, otpRecord.salt, expectedPurpose);
+  if (!constantTimeEqual_(expectedHash, otpRecord.hash)) {
+    const nextAttempts = otpRecord.attempts + 1;
+    if (nextAttempts >= OTP_MAX_ATTEMPTS) {
+      clearUserOtpInSheet_(ss, matchedUser.User_ID);
+      return {
+        ok: false,
+        message: "Kode OTP salah dan batas percobaan tercapai. Silakan minta kode OTP baru."
+      };
+    }
+    const updatedToken = JSON.stringify({
+      purpose: otpRecord.purpose,
+      salt: otpRecord.salt,
+      hash: otpRecord.hash,
+      attempts: nextAttempts
+    });
+    updateUserFields_(ss, matchedUser.User_ID, {
+      OTP_Token: updatedToken,
+      OTP_Expires_At: otpRecord.exp
+    });
+    return {
+      ok: false,
+      message: "Kode OTP tidak cocok. Sisa percobaan: " + (OTP_MAX_ATTEMPTS - nextAttempts) + "."
+    };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Langkah 1 Pendaftaran Member: simpan akun sementara (Menunggu Verifikasi) + token OTP 10 menit
+ * di sheet `Users`, lalu kirim kode OTP 6 digit ke email via MailApp.
+ */
+function requestRegistrationOtp(ss, body) {
+  assertRequiredSheetsPresent_(ss, ["Users"]);
+  ensureSheetColumns_(ss, "Users", ["Status_Akun", "Token_Version", "OTP_Token", "OTP_Expires_At"]);
+  const usr = body.user || body;
+  const nama = String(usr.Nama || "").trim();
+  const email = String(usr.Email || usr.email || "").trim().toLowerCase();
+  const normWa = normalizeWa_(usr.No_WA);
+  const password = String(usr.Password || usr.password || "");
+  const alamat = String(usr.Alamat || "").trim();
+
+  if (!nama || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !normWa || normWa.length < 10) {
+    return {
+      status: "error",
+      message: "Nama lengkap, Nomor WhatsApp valid, dan Email aktif wajib diisi."
+    };
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return {
+      status: "error",
+      message: "Kata sandi minimal " + MIN_PASSWORD_LENGTH + " karakter."
+    };
+  }
+
+  const rlCheck = checkRateLimit_("otp_reg", email, RL_OTP_MAX);
+  if (rlCheck.blocked) {
+    return {
+      status: "error",
+      message: "Terlalu banyak permintaan kode OTP pendaftaran untuk email ini. Coba lagi dalam 15 menit."
+    };
+  }
+
+  const existingUsers = sheetToObjects_(ss, "Users");
+  const nowMs = Date.now();
+  let pendingSameEmail = null;
+
+  for (let i = 0; i < existingUsers.length; i++) {
+    const u = existingUsers[i];
+    if (String(u.User_ID || "").trim().toUpperCase().startsWith("GUEST-")) continue;
+    const uEmail = String(u.Email || "").trim().toLowerCase();
+    const uNormWa = normalizeWa_(u.No_WA);
+    const uStatus = normalizeAccountStatus_(u.Status_Akun);
+
+    if (uStatus !== "Menunggu Verifikasi") {
+      if ((uEmail && uEmail === email) || (uNormWa && uNormWa === normWa)) {
+        return {
+          status: "error",
+          message: "Email atau Nomor WhatsApp sudah terdaftar. Silakan masuk atau gunakan Lupa Sandi."
+        };
+      }
+      continue;
+    }
+
+    if (uEmail && uEmail === email) {
+      pendingSameEmail = u;
+    } else if (uNormWa && uNormWa === normWa) {
+      const otherExp = parseSheetOtpExpiryMs_(u.OTP_Expires_At);
+      if (otherExp && nowMs <= otherExp) {
+        return {
+          status: "error",
+          message: "Nomor WhatsApp ini sedang dalam proses verifikasi pendaftaran lain. Coba lagi setelah 10 menit."
+        };
+      }
+    }
+  }
+
+  recordRateLimitAttempt_("otp_reg", email, RL_WINDOW_SECONDS);
+
+  const otpCode = generateSixDigitOtp_();
+  const otpSheetData = createSheetOtpRecord_(otpCode, "register");
+  const hashedPass = hashPassword_(password);
+  let targetUserId = "";
+
+  if (pendingSameEmail) {
+    targetUserId = String(pendingSameEmail.User_ID);
+    updateUserFields_(ss, targetUserId, {
+      Nama: nama,
+      No_WA: "'" + normWa,
+      Email: email,
+      Role: "User",
+      Alamat: alamat,
+      Password: hashedPass,
+      Status_Akun: "Menunggu Verifikasi",
+      OTP_Token: otpSheetData.tokenJson,
+      OTP_Expires_At: otpSheetData.expiresAt
+    });
+  } else {
+    targetUserId = generateUniqueEntityId_(existingUsers, "User_ID", "USR");
+    appendObjectRow_(ss, "Users", {
+      User_ID: targetUserId,
+      Nama: nama,
+      No_WA: "'" + normWa,
+      Email: email,
+      Role: "User",
+      Alamat: alamat,
+      Password: hashedPass,
+      Status_Akun: "Menunggu Verifikasi",
+      Token_Version: 1,
+      OTP_Token: otpSheetData.tokenJson,
+      OTP_Expires_At: otpSheetData.expiresAt
+    });
+  }
+
+  const mailRes = sendOtpEmailViaMailApp_(email, nama, otpCode, "register");
+  if (!mailRes.ok) {
+    clearUserOtpInSheet_(ss, targetUserId);
+    return {
+      status: "error",
+      message: mailRes.message
+    };
+  }
+
+  return {
+    status: "success",
+    message: "Kode OTP 6 digit telah dikirim ke " + email + " (berlaku 10 menit). Masukkan kode tersebut untuk mengaktifkan akun.",
+    data: {
+      email: email,
+      ttlSeconds: OTP_TTL_SECONDS
+    }
+  };
+}
+
+/**
+ * Langkah 2 Pendaftaran Member: validasi kode OTP 6 digit terhadap token sementara
+ * di sheet `Users` (masa berlaku 10 menit), aktifkan akun, dan terbitkan token sesi.
+ */
+function verifyRegistrationOtp(ss, body) {
+  assertRequiredSheetsPresent_(ss, ["Users"]);
+  ensureSheetColumns_(ss, "Users", ["Status_Akun", "Token_Version", "OTP_Token", "OTP_Expires_At"]);
+  const email = String(body.email || body.Email || "").trim().toLowerCase();
+  const otpInput = String(body.otp || "").replace(/\D/g, "");
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { status: "error", message: "Alamat email tidak valid." };
+  }
+  if (!/^\d{6}$/.test(otpInput)) {
+    return { status: "error", message: "Masukkan kode OTP 6 digit angka yang valid." };
+  }
+
+  const existingUsers = sheetToObjects_(ss, "Users");
+  const matched = existingUsers.find(function (u) {
+    if (String(u.User_ID || "").trim().toUpperCase().startsWith("GUEST-")) return false;
+    const uEmail = String(u.Email || "").trim().toLowerCase();
+    return Boolean(uEmail && uEmail === email && normalizeAccountStatus_(u.Status_Akun) === "Menunggu Verifikasi");
+  });
+
+  if (!matched) {
+    return {
+      status: "error",
+      message: "Pendaftaran tidak ditemukan atau akun sudah aktif. Silakan masuk atau ulangi pendaftaran."
+    };
+  }
+
+  const otpCheck = validateSheetOtpForUser_(ss, matched, otpInput, "register");
+  if (!otpCheck.ok) {
+    return { status: "error", message: otpCheck.message };
+  }
+
+  const normWa = normalizeWa_(matched.No_WA);
+  const activeConflict = existingUsers.find(function (u) {
+    if (String(u.User_ID || "").trim() === String(matched.User_ID || "").trim()) return false;
+    if (String(u.User_ID || "").trim().toUpperCase().startsWith("GUEST-")) return false;
+    if (normalizeAccountStatus_(u.Status_Akun) === "Menunggu Verifikasi") return false;
+    const uEmail = String(u.Email || "").trim().toLowerCase();
+    const uNormWa = normalizeWa_(u.No_WA);
+    return (uEmail && uEmail === email) || (normWa && uNormWa && uNormWa === normWa);
+  });
+
+  if (activeConflict) {
+    clearUserOtpInSheet_(ss, matched.User_ID);
+    return {
+      status: "error",
+      message: "Email atau Nomor WhatsApp sudah terdaftar pada akun aktif lain."
+    };
+  }
+
+  updateUserFields_(ss, matched.User_ID, {
+    Status_Akun: "Aktif",
+    OTP_Token: "",
+    OTP_Expires_At: ""
+  });
+
+  clearRateLimit_("otp_reg", email);
+  clearRateLimit_("login", email);
+  if (normWa) clearRateLimit_("login", normWa);
+
+  const activatedMember = Object.assign({}, matched, {
+    Status_Akun: "Aktif",
+    OTP_Token: "",
+    OTP_Expires_At: ""
+  });
+  const safeMember = sanitizeUser_(activatedMember);
+  const token = createToken_(safeMember);
+
+  return {
+    status: "success",
+    message: "Verifikasi berhasil! Akun member Anda telah aktif.",
+    data: {
+      token: token,
+      user: safeMember
+    }
+  };
+}
+
+/**
+ * Langkah 1 Lupa Sandi Pelanggan: simpan token OTP 10 menit di sheet `Users`
+ * lalu kirim kode OTP 6 digit via MailApp.
+ */
+function requestPasswordResetOtp(ss, body) {
+  assertRequiredSheetsPresent_(ss, ["Users"]);
+  ensureSheetColumns_(ss, "Users", ["Status_Akun", "Token_Version", "OTP_Token", "OTP_Expires_At"]);
+  const email = String(body.email || body.Email || "").trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return {
+      status: "error",
+      message: "Masukkan alamat email yang valid."
+    };
+  }
+
+  const rlCheck = checkRateLimit_("otp_req", email, RL_OTP_MAX);
+  if (rlCheck.blocked) {
+    return {
+      status: "error",
+      message: "Terlalu banyak permintaan kode OTP untuk email ini. Coba lagi dalam 15 menit."
+    };
+  }
+  recordRateLimitAttempt_("otp_req", email, RL_WINDOW_SECONDS);
+
+  const neutralMessage = "Jika email terdaftar sebagai akun pelanggan aktif, kode OTP 6 digit telah dikirim ke kotak masuk Anda (berlaku 10 menit).";
+  const existingUsers = sheetToObjects_(ss, "Users");
+  const matched = existingUsers.find(function (u) {
+    const uId = String(u.User_ID || "").trim().toUpperCase();
+    if (uId.startsWith("GUEST-")) return false;
+    const uEmail = String(u.Email || "").trim().toLowerCase();
+    return Boolean(uEmail && uEmail === email);
+  });
+
+  // Hanya kirim OTP untuk akun Role === "User" yang Aktif (tanpa membocorkan status akun ke luar)
+  if (matched && normalizeRole_(matched.Role) === "User" && normalizeAccountStatus_(matched.Status_Akun) === "Aktif") {
+    const otpCode = generateSixDigitOtp_();
+    const otpSheetData = createSheetOtpRecord_(otpCode, "reset");
+    updateUserFields_(ss, matched.User_ID, {
+      OTP_Token: otpSheetData.tokenJson,
+      OTP_Expires_At: otpSheetData.expiresAt
+    });
+
+    const mailRes = sendOtpEmailViaMailApp_(email, matched.Nama || "Pelanggan", otpCode, "reset");
+    if (!mailRes.ok) {
+      clearUserOtpInSheet_(ss, matched.User_ID);
+      return {
+        status: "error",
+        message: mailRes.message
+      };
+    }
+  }
+
+  return {
+    status: "success",
+    message: neutralMessage,
+    data: {
+      ttlSeconds: OTP_TTL_SECONDS
+    }
+  };
+}
+
+/**
+ * Langkah 2 Lupa Sandi Pelanggan: validasi kode OTP 6 digit terhadap token sementara
+ * yang tersimpan di sheet `Users` (kolom OTP_Token & OTP_Expires_At, berlaku 10 menit),
+ * lalu perbarui kata sandi dan cabut sesi lama.
+ */
+function verifyPasswordResetOtp(ss, body) {
+  assertRequiredSheetsPresent_(ss, ["Users"]);
+  ensureSheetColumns_(ss, "Users", ["Status_Akun", "Token_Version", "OTP_Token", "OTP_Expires_At"]);
+  const email = String(body.email || body.Email || "").trim().toLowerCase();
+  const otpInput = String(body.otp || "").replace(/\D/g, "");
+  const newPassword = String(body.newPassword || body.Password || "");
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { status: "error", message: "Alamat email tidak valid." };
+  }
+  if (!/^\d{6}$/.test(otpInput)) {
+    return { status: "error", message: "Masukkan kode OTP 6 digit angka yang valid." };
+  }
+  if (newPassword.length < MIN_PASSWORD_LENGTH) {
+    return {
+      status: "error",
+      message: "Kata sandi baru minimal " + MIN_PASSWORD_LENGTH + " karakter."
+    };
+  }
+
+  const existingUsers = sheetToObjects_(ss, "Users");
+  const matched = existingUsers.find(function (u) {
+    const uId = String(u.User_ID || "").trim().toUpperCase();
+    if (uId.startsWith("GUEST-")) return false;
+    const uEmail = String(u.Email || "").trim().toLowerCase();
+    return Boolean(uEmail && uEmail === email);
+  });
+
+  if (!matched || normalizeRole_(matched.Role) !== "User" || normalizeAccountStatus_(matched.Status_Akun) !== "Aktif") {
+    return {
+      status: "error",
+      message: "Kode OTP tidak ditemukan atau sudah kedaluwarsa. Silakan kirim ulang kode OTP."
+    };
+  }
+
+  const otpCheck = validateSheetOtpForUser_(ss, matched, otpInput, "reset");
+  if (!otpCheck.ok) {
+    return { status: "error", message: otpCheck.message };
+  }
+
+  const nextVer = normalizeTokenVersion_(matched.Token_Version) + 1;
+  updateUserFields_(ss, matched.User_ID, {
+    Password: hashPassword_(newPassword),
+    Token_Version: nextVer,
+    OTP_Token: "",
+    OTP_Expires_At: ""
+  });
+
+  clearRateLimit_("otp_req", email);
+  clearRateLimit_("login", email);
+  if (matched.No_WA) clearRateLimit_("login", normalizeWa_(matched.No_WA));
+
+  return {
+    status: "success",
+    message: "Kata sandi berhasil diperbarui dan sesi lama telah dicabut. Silakan masuk dengan sandi baru."
+  };
 }
 
 // ============================================================================
@@ -763,7 +1262,7 @@ function appendObjectRow_(ss, sheetName, dataObj) {
 }
 
 function updateUserFields_(ss, userId, updatesObj) {
-  ensureSheetColumns_(ss, "Users", ["Status_Akun", "Token_Version"]);
+  ensureSheetColumns_(ss, "Users", ["Status_Akun", "Token_Version", "OTP_Token", "OTP_Expires_At"]);
   const sheet = ss.getSheetByName("Users");
   if (!sheet) return false;
   const values = sheet.getDataRange().getValues();
@@ -1474,7 +1973,15 @@ function doPost(e) {
         return jsonResponse_({ status: "error", message: "Email/No. WhatsApp atau kata sandi salah." });
       }
 
-      if (normalizeAccountStatus_(matched.Status_Akun) !== "Aktif") {
+      const accStatus = normalizeAccountStatus_(matched.Status_Akun);
+      if (accStatus === "Menunggu Verifikasi") {
+        recordRateLimitAttempt_("login", rlKey, RL_WINDOW_SECONDS);
+        return jsonResponse_({
+          status: "error",
+          message: "Akun belum diverifikasi. Silakan selesaikan verifikasi kode OTP 6 digit pada tab Daftar Member."
+        });
+      }
+      if (accStatus !== "Aktif") {
         recordRateLimitAttempt_("login", rlKey, RL_WINDOW_SECONDS);
         return jsonResponse_({
           status: "error",
@@ -1555,75 +2062,25 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // 2. REGISTER MEMBER (Role: "User", Min 8 Karakter, UUID Anti-Tabrakan)
+    // 2. REGISTRASI MEMBER 2 LANGKAH (OTP 6 DIGIT VIA MAILAPP + SHEET USERS)
     // ------------------------------------------------------------------------
     if (action === "registerMember") {
-      assertRequiredSheetsPresent_(ss, ["Users"]);
-      ensureSheetColumns_(ss, "Users", ["Status_Akun", "Token_Version"]);
-      const usr = body.user || body;
-      const nama = String(usr.Nama || "").trim();
-      const email = String(usr.Email || "").trim().toLowerCase();
-      const normWa = normalizeWa_(usr.No_WA);
-      const password = String(usr.Password || "");
-      const alamat = String(usr.Alamat || "").trim();
-
-      if (!nama || !email || email.indexOf("@") === -1 || !normWa || normWa.length < 10) {
-        return jsonResponse_({
-          status: "error",
-          message: "Nama lengkap, Nomor WhatsApp valid, dan Email aktif wajib diisi."
-        });
-      }
-      if (password.length < MIN_PASSWORD_LENGTH) {
-        return jsonResponse_({
-          status: "error",
-          message: "Kata sandi minimal " + MIN_PASSWORD_LENGTH + " karakter."
-        });
-      }
-
-      const existingUsers = sheetToObjects_(ss, "Users");
-      const duplicate = existingUsers.find(function (u) {
-        // Abaikan baris GUEST- (checkout tamu terisolasi) agar member tetap bisa mendaftar
-        if (String(u.User_ID || "").trim().toUpperCase().startsWith("GUEST-")) return false;
-        const uEmail = String(u.Email || "").trim().toLowerCase();
-        const uNormWa = normalizeWa_(u.No_WA);
-        return (uEmail && uEmail === email) || (uNormWa && uNormWa === normWa);
-      });
-
-      if (duplicate) {
-        return jsonResponse_({
-          status: "error",
-          message: "Email atau Nomor WhatsApp sudah terdaftar. Silakan masuk atau gunakan Lupa Sandi."
-        });
-      }
-
-      const newUserId = generateUniqueEntityId_(existingUsers, "User_ID", "USR");
-      const newMember = {
-        User_ID: newUserId,
-        Nama: nama,
-        No_WA: "'" + normWa,
-        Email: email,
-        Role: "User",
-        Alamat: alamat,
-        Password: hashPassword_(password),
-        Status_Akun: "Aktif",
-        Token_Version: 1
-      };
-
-      appendObjectRow_(ss, "Users", newMember);
-      const safeMember = sanitizeUser_(newMember);
-      const token = createToken_(safeMember);
       return jsonResponse_({
-        status: "success",
-        message: "Pendaftaran member berhasil!",
-        data: {
-          token: token,
-          user: safeMember
-        }
+        status: "error",
+        message: "Pendaftaran member kini memerlukan verifikasi kode OTP 6 digit melalui email. Muat ulang halaman lalu daftar melalui langkah OTP."
       });
     }
 
+    if (action === "requestRegistrationOtp") {
+      return jsonResponse_(requestRegistrationOtp(ss, body));
+    }
+
+    if (action === "verifyRegistrationOtp") {
+      return jsonResponse_(verifyRegistrationOtp(ss, body));
+    }
+
     // ------------------------------------------------------------------------
-    // 2B. LUPA SANDI PELANGGAN 2 LANGKAH (OTP 6 DIGIT VIA MAILAPP)
+    // 2B. LUPA SANDI PELANGGAN 2 LANGKAH (OTP 6 DIGIT VIA MAILAPP + SHEET USERS)
     // ------------------------------------------------------------------------
     if (action === "forgotPassword") {
       return jsonResponse_({
@@ -1633,205 +2090,11 @@ function doPost(e) {
     }
 
     if (action === "requestPasswordResetOtp") {
-      assertRequiredSheetsPresent_(ss, ["Users"]);
-      const email = String(body.email || body.Email || "").trim().toLowerCase();
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return jsonResponse_({
-          status: "error",
-          message: "Masukkan alamat email yang valid."
-        });
-      }
-
-      const rlCheck = checkRateLimit_("otp_req", email, RL_OTP_MAX);
-      if (rlCheck.blocked) {
-        return jsonResponse_({
-          status: "error",
-          message: "Terlalu banyak permintaan kode OTP untuk email ini. Coba lagi dalam 15 menit."
-        });
-      }
-      recordRateLimitAttempt_("otp_req", email, RL_WINDOW_SECONDS);
-
-      const neutralMessage = "Jika email terdaftar sebagai akun pelanggan aktif, kode OTP 6 digit telah dikirim ke kotak masuk Anda (berlaku 10 menit).";
-      const existingUsers = sheetToObjects_(ss, "Users");
-      const matched = existingUsers.find(function (u) {
-        const uId = String(u.User_ID || "").trim().toUpperCase();
-        if (uId.startsWith("GUEST-")) return false;
-        const uEmail = String(u.Email || "").trim().toLowerCase();
-        return Boolean(uEmail && uEmail === email);
-      });
-
-      // Hanya kirim OTP untuk akun Role === "User" yang Aktif (tanpa membocorkan status akun ke luar)
-      if (matched && normalizeRole_(matched.Role) === "User" && normalizeAccountStatus_(matched.Status_Akun) === "Aktif") {
-        const cache = getScriptCacheSafe_();
-        if (!cache) {
-          return jsonResponse_({
-            status: "error",
-            message: "Layanan cache OTP tidak tersedia sementara."
-          });
-        }
-
-        const otpKey = buildCacheKey_("otp_code", email);
-        const otpCode = generateSixDigitOtp_();
-        const otpSalt = Utilities.getUuid().replace(/-/g, "").slice(0, 16);
-        const otpPayload = {
-          uid: String(matched.User_ID),
-          salt: otpSalt,
-          hash: hashOtpCode_(otpCode, otpSalt),
-          exp: Date.now() + OTP_TTL_SECONDS * 1000,
-          attempts: 0
-        };
-        cache.put(otpKey, JSON.stringify(otpPayload), OTP_TTL_SECONDS);
-
-        const recipientName = String(matched.Nama || "Pelanggan").trim();
-        const subject = "[Wajibku Fast] Kode OTP Reset Kata Sandi Anda";
-        const mailBody =
-          "Halo " + recipientName + ",\n\n" +
-          "Kami menerima permintaan untuk mengatur ulang kata sandi akun Wajibku Fast Anda.\n\n" +
-          "Kode OTP Anda: " + otpCode + "\n" +
-          "Masa berlaku: 10 menit (maksimal 5 kali percobaan).\n\n" +
-          "Jangan bagikan kode ini kepada siapa pun. Jika Anda tidak meminta reset kata sandi, abaikan email ini.\n\n" +
-          "Salam,\nTim Wajibku Fast";
-
-        try {
-          if (typeof MailApp.getRemainingDailyQuota === "function" && MailApp.getRemainingDailyQuota() <= 0) {
-            cache.remove(otpKey);
-            return jsonResponse_({
-              status: "error",
-              message: "Kuota pengiriman email OTP harian server sedang habis. Silakan coba lagi besok atau hubungi admin."
-            });
-          }
-          MailApp.sendEmail({
-            to: email,
-            name: "Wajibku Fast",
-            subject: subject,
-            body: mailBody
-          });
-        } catch (mailErr) {
-          cache.remove(otpKey);
-          Logger.log("Gagal mengirim email OTP ke " + email + ": " + (mailErr && mailErr.message ? mailErr.message : mailErr));
-          const errMsg = String(mailErr && mailErr.message ? mailErr.message : mailErr || "");
-          if (/permission|auth|scope|MailApp/i.test(errMsg)) {
-            return jsonResponse_({
-              status: "error",
-              message: "Pengiriman email OTP belum diizinkan di server Apps Script. Pemilik sistem perlu menjalankan aktifkanIzinEmailOtp() di Editor Apps Script lalu Deploy versi baru."
-            });
-          }
-          return jsonResponse_({
-            status: "error",
-            message: "Gagal mengirim email OTP sementara (" + errMsg + "). Silakan coba lagi atau hubungi admin."
-          });
-        }
-      }
-
-      return jsonResponse_({
-        status: "success",
-        message: neutralMessage,
-        data: {
-          ttlSeconds: OTP_TTL_SECONDS
-        }
-      });
+      return jsonResponse_(requestPasswordResetOtp(ss, body));
     }
 
     if (action === "verifyPasswordResetOtp") {
-      assertRequiredSheetsPresent_(ss, ["Users"]);
-      const email = String(body.email || body.Email || "").trim().toLowerCase();
-      const otpInput = String(body.otp || "").replace(/\D/g, "");
-      const newPassword = String(body.newPassword || body.Password || "");
-
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return jsonResponse_({ status: "error", message: "Alamat email tidak valid." });
-      }
-      if (!/^\d{6}$/.test(otpInput)) {
-        return jsonResponse_({ status: "error", message: "Masukkan kode OTP 6 digit angka yang valid." });
-      }
-      if (newPassword.length < MIN_PASSWORD_LENGTH) {
-        return jsonResponse_({
-          status: "error",
-          message: "Kata sandi baru minimal " + MIN_PASSWORD_LENGTH + " karakter."
-        });
-      }
-
-      const cache = getScriptCacheSafe_();
-      const otpKey = buildCacheKey_("otp_code", email);
-      const rawOtp = cache ? cache.get(otpKey) : null;
-      if (!rawOtp) {
-        return jsonResponse_({
-          status: "error",
-          message: "Kode OTP tidak ditemukan atau sudah kedaluwarsa. Silakan kirim ulang kode OTP."
-        });
-      }
-
-      let otpRecord = null;
-      try {
-        otpRecord = JSON.parse(rawOtp);
-      } catch (e) {
-        if (cache) cache.remove(otpKey);
-        return jsonResponse_({ status: "error", message: "Kode OTP tidak valid. Silakan kirim ulang." });
-      }
-
-      if (!otpRecord || !otpRecord.exp || Date.now() > Number(otpRecord.exp)) {
-        if (cache) cache.remove(otpKey);
-        return jsonResponse_({
-          status: "error",
-          message: "Kode OTP sudah kedaluwarsa. Silakan minta kode OTP baru."
-        });
-      }
-
-      const attempts = Number(otpRecord.attempts) || 0;
-      if (attempts >= OTP_MAX_ATTEMPTS) {
-        if (cache) cache.remove(otpKey);
-        return jsonResponse_({
-          status: "error",
-          message: "Batas percobaan kode OTP tercapai. Silakan kirim ulang kode OTP baru."
-        });
-      }
-
-      const expectedHash = hashOtpCode_(otpInput, otpRecord.salt);
-      if (!constantTimeEqual_(expectedHash, otpRecord.hash)) {
-        const nextAttempts = attempts + 1;
-        if (nextAttempts >= OTP_MAX_ATTEMPTS) {
-          if (cache) cache.remove(otpKey);
-          return jsonResponse_({
-            status: "error",
-            message: "Kode OTP salah dan batas percobaan tercapai. Silakan minta kode OTP baru."
-          });
-        }
-        otpRecord.attempts = nextAttempts;
-        const remainingSec = Math.max(10, Math.ceil((Number(otpRecord.exp) - Date.now()) / 1000));
-        if (cache) cache.put(otpKey, JSON.stringify(otpRecord), remainingSec);
-        return jsonResponse_({
-          status: "error",
-          message: "Kode OTP tidak cocok. Sisa percobaan: " + (OTP_MAX_ATTEMPTS - nextAttempts) + "."
-        });
-      }
-
-      const existingUsers = sheetToObjects_(ss, "Users");
-      const matched = existingUsers.find(function (u) {
-        return String(u.User_ID || "").trim() === String(otpRecord.uid).trim();
-      });
-
-      if (!matched || normalizeRole_(matched.Role) !== "User" || normalizeAccountStatus_(matched.Status_Akun) !== "Aktif") {
-        if (cache) cache.remove(otpKey);
-        return jsonResponse_({
-          status: "error",
-          message: "Akun pelanggan tidak dapat direset. Hubungi pengelola."
-        });
-      }
-
-      const nextVer = normalizeTokenVersion_(matched.Token_Version) + 1;
-      updateUserFields_(ss, matched.User_ID, {
-        Password: hashPassword_(newPassword),
-        Token_Version: nextVer
-      });
-
-      if (cache) cache.remove(otpKey);
-      clearRateLimit_("login", email);
-      if (matched.No_WA) clearRateLimit_("login", normalizeWa_(matched.No_WA));
-
-      return jsonResponse_({
-        status: "success",
-        message: "Kata sandi berhasil diperbarui dan sesi lama telah dicabut. Silakan masuk dengan sandi baru."
-      });
+      return jsonResponse_(verifyPasswordResetOtp(ss, body));
     }
 
     // ------------------------------------------------------------------------

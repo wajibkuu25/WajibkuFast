@@ -1500,7 +1500,7 @@
         <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs text-slate-600 space-y-2">
           <p class="font-semibold text-slate-800">Checklist 11 Tab Sheet (5 Inti + 6 Banner Member Rewards) — Dapat dibuat otomatis via tombol Inisialisasi:</p>
           <ul class="list-disc pl-5 space-y-1 font-mono">
-            <li>Users: User_ID, Nama, No_WA, Email, Role, Alamat, Password, Status_Akun, Token_Version</li>
+            <li>Users: User_ID, Nama, No_WA, Email, Role, Alamat, Password, Status_Akun, Token_Version, OTP_Token, OTP_Expires_At</li>
             <li>Produk: Produk_ID, Nama_Produk, Kategori, Tipe_Hitung, Harga_Dasar, Satuan, Min_Order, Status</li>
             <li>Finishing: Finishing_ID, Nama_Finishing, Tipe_Biaya, Tambahan_Harga, Keterangan, Status</li>
             <li>Pesanan: Order_ID, Tanggal, User_ID, Status_Order, Total_Tagihan, Bukti_Bayar, Status_Bayar, Catatan (+ kolom Harga_Kotor, Saldo_Dipakai, Reward)</li>
@@ -1883,48 +1883,78 @@
           </p>
         </form>
 
-        <!-- Form Registrasi Member Mandiri -->
-        <form id="register-form" onsubmit="handleRegisterSubmit(event)" class="hidden p-6 space-y-3.5">
+        <!-- Form Registrasi Member Mandiri 2 Langkah (Verifikasi OTP 6 Digit via Email) -->
+        <form id="register-form" onsubmit="handleRegisterSubmit(event)" novalidate class="hidden p-6 space-y-3.5">
           <div id="register-error-box" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs font-medium text-rose-700"></div>
+          <div id="register-info-box" class="hidden p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-800"></div>
 
-          <div>
-            <label for="reg-nama" class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap *</label>
-            <input type="text" id="reg-nama" required placeholder="Nama Anda atau nama usaha" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+          <!-- Langkah 1: Isi Data & Kirim OTP ke Email -->
+          <div id="register-step-request" class="space-y-3.5">
+            <div>
+              <label for="reg-nama" class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap *</label>
+              <input type="text" id="reg-nama" required placeholder="Nama Anda atau nama usaha" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="reg-wa" class="block text-xs font-semibold text-slate-700 mb-1">No. WhatsApp Aktif *</label>
+                <input type="tel" id="reg-wa" required placeholder="0812xxxxxxxx" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+              <div>
+                <label for="reg-email" class="block text-xs font-semibold text-slate-700 mb-1">Email Aktif *</label>
+                <input type="email" id="reg-email" required placeholder="nama@email.com" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+            </div>
+
+            <div>
+              <label for="reg-alamat" class="block text-xs font-semibold text-slate-700 mb-1">Alamat Lengkap (Opsional)</label>
+              <input type="text" id="reg-alamat" placeholder="Alamat pengiriman hasil cetak" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="reg-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi *</label>
+                <input type="password" id="reg-password" required minlength="8" placeholder="Min. 8 karakter" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+              <div>
+                <label for="reg-password-confirm" class="block text-xs font-semibold text-slate-700 mb-1">Ulangi Sandi *</label>
+                <input type="password" id="reg-password-confirm" required minlength="8" placeholder="Ketik ulang sandi" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              </div>
+            </div>
+
+            <button type="submit" id="btn-request-reg-otp" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 disabled:opacity-60 rounded-lg transition-colors">
+              <i data-lucide="mail" class="w-4 h-4"></i>
+              <span>Kirim Kode OTP Pendaftaran</span>
+            </button>
+
+            <p class="text-[11px] text-slate-500 text-center">Kode OTP 6 digit (berlaku 10 menit) akan dikirim ke email Anda untuk mengaktifkan akun member.</p>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label for="reg-wa" class="block text-xs font-semibold text-slate-700 mb-1">No. WhatsApp Aktif *</label>
-              <input type="tel" id="reg-wa" required placeholder="0812xxxxxxxx" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+          <!-- Langkah 2: Verifikasi OTP 6 Digit Pendaftaran -->
+          <div id="register-step-verify" class="hidden space-y-3.5">
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-center justify-between gap-2">
+              <span class="truncate">Email: <strong id="reg-target-email" class="font-mono"></strong></span>
+              <button type="button" onclick="resetRegisterStep()" class="text-press-700 font-semibold hover:underline shrink-0">Ubah Data</button>
             </div>
+
             <div>
-              <label for="reg-email" class="block text-xs font-semibold text-slate-700 mb-1">Email Aktif *</label>
-              <input type="email" id="reg-email" required placeholder="nama@email.com" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <label for="reg-otp" class="block text-xs font-semibold text-slate-700 mb-1">Kode OTP 6 Digit *</label>
+              <input type="text" id="reg-otp" maxlength="6" inputmode="numeric" pattern="\d{6}" placeholder="Masukkan 6 digit kode dari email" class="w-full px-3.5 py-2 text-sm font-mono tracking-widest bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
+              <p class="mt-1 text-[11px] text-slate-500">Periksa juga folder <strong>Spam</strong> atau <strong>Promosi</strong> bila email dari <em>Wajibku Fast</em> belum terlihat di kotak masuk.</p>
+            </div>
+
+            <button type="submit" id="btn-submit-register" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 disabled:opacity-60 rounded-lg transition-colors">
+              <i data-lucide="user-check" class="w-4 h-4"></i>
+              <span>Verifikasi &amp; Aktifkan Akun</span>
+            </button>
+
+            <div class="flex items-center justify-between text-xs pt-1">
+              <span class="text-slate-500">Belum menerima kode?</span>
+              <button type="button" id="btn-resend-reg-otp" onclick="resendRegisterOtp()" class="font-semibold text-press-700 hover:underline">
+                Kirim Ulang OTP
+              </button>
             </div>
           </div>
-
-          <div>
-            <label for="reg-alamat" class="block text-xs font-semibold text-slate-700 mb-1">Alamat Lengkap (Opsional)</label>
-            <input type="text" id="reg-alamat" placeholder="Alamat pengiriman hasil cetak" class="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label for="reg-password" class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi *</label>
-              <input type="password" id="reg-password" required minlength="8" placeholder="Min. 8 karakter" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-            </div>
-            <div>
-              <label for="reg-password-confirm" class="block text-xs font-semibold text-slate-700 mb-1">Ulangi Sandi *</label>
-              <input type="password" id="reg-password-confirm" required minlength="8" placeholder="Ketik ulang sandi" class="w-full px-3.5 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-press-700" />
-            </div>
-          </div>
-
-          <button type="submit" id="btn-submit-register" class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-press-700 hover:bg-press-800 rounded-lg transition-colors">
-            <i data-lucide="user-plus" class="w-4 h-4"></i>
-            <span>Daftar Jadi Member</span>
-          </button>
-
-          <p class="text-[11px] text-slate-500 text-center">Akun baru otomatis terdaftar sebagai member pelanggan.</p>
         </form>
 
         <!-- Form Lupa Password 2 Langkah (Khusus Pelanggan / User — OTP Email) -->
@@ -2116,6 +2146,9 @@
       pendingDelete: null,
       connectionStatus: "idle", // "idle" | "connected" | "error"
       connectionMessage: "",
+      registerStep: "request", // "request" | "verify"
+      registerEmail: "",
+      registerDraft: null,
       forgotStep: "request", // "request" | "verify"
       forgotEmail: "",
       editingProductId: null,
@@ -2444,7 +2477,7 @@
         throw new Error("URL Web App Apps Script (/exec) belum terkonfigurasi.");
       }
       const bodyPayload = { ...payload };
-      const publicActions = ["login", "registerMember", "requestPasswordResetOtp", "verifyPasswordResetOtp", "trackOrder"];
+      const publicActions = ["login", "registerMember", "requestRegistrationOtp", "verifyRegistrationOtp", "requestPasswordResetOtp", "verifyPasswordResetOtp", "trackOrder"];
       if (state.authToken && !publicActions.includes(bodyPayload.action) && !bodyPayload.token) {
         bodyPayload.token = state.authToken;
       }
@@ -2702,6 +2735,23 @@
       }
     }
 
+    function resetRegisterStep() {
+      state.registerStep = "request";
+      state.registerEmail = "";
+      state.registerDraft = null;
+      const stepReq = document.getElementById("register-step-request");
+      const stepVer = document.getElementById("register-step-verify");
+      const errReg = document.getElementById("register-error-box");
+      const infoReg = document.getElementById("register-info-box");
+      if (stepReq) stepReq.classList.remove("hidden");
+      if (stepVer) stepVer.classList.add("hidden");
+      if (errReg) errReg.classList.add("hidden");
+      if (infoReg) infoReg.classList.add("hidden");
+      const otpInput = document.getElementById("reg-otp");
+      if (otpInput) otpInput.value = "";
+      refreshIcons();
+    }
+
     function resetForgotStep() {
       state.forgotStep = "request";
       state.forgotEmail = "";
@@ -2732,11 +2782,13 @@
       const titleEl = document.getElementById("auth-modal-title");
       const errLogin = document.getElementById("login-error-box");
       const errReg = document.getElementById("register-error-box");
+      const infoReg = document.getElementById("register-info-box");
       const errForgot = document.getElementById("forgot-error-box");
       const infoForgot = document.getElementById("forgot-info-box");
 
       if (errLogin) errLogin.classList.add("hidden");
       if (errReg) errReg.classList.add("hidden");
+      if (infoReg) infoReg.classList.add("hidden");
       if (errForgot) errForgot.classList.add("hidden");
       if (infoForgot) infoForgot.classList.add("hidden");
 
@@ -2754,6 +2806,7 @@
         regForm?.classList.remove("hidden");
         if (titleEl) titleEl.textContent = "Daftar Member Baru";
         if (tabReg) tabReg.className = activeCls;
+        resetRegisterStep();
       } else if (mode === "forgot") {
         forgotForm?.classList.remove("hidden");
         if (titleEl) titleEl.textContent = "Lupa Sandi Pelanggan";
@@ -2943,36 +2996,122 @@
       }
     }
 
+    async function requestRegistrationOtpClient(draftUser) {
+      const errBox = document.getElementById("register-error-box");
+      const infoBox = document.getElementById("register-info-box");
+      const reqBtn = document.getElementById("btn-request-reg-otp");
+      const resendBtn = document.getElementById("btn-resend-reg-otp");
+
+      if (errBox) errBox.classList.add("hidden");
+      if (infoBox) infoBox.classList.add("hidden");
+
+      if (!isApiConfigured()) {
+        if (errBox) {
+          errBox.textContent = "Pendaftaran member membutuhkan koneksi aktif ke Google Apps Script Web App (/exec).";
+          errBox.classList.remove("hidden");
+        }
+        return false;
+      }
+      if (!draftUser || !draftUser.Nama || !draftUser.No_WA || draftUser.No_WA.length < 10 || !draftUser.Email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draftUser.Email)) {
+        if (errBox) {
+          errBox.textContent = "Nama lengkap, Nomor WhatsApp valid, dan Email aktif wajib diisi.";
+          errBox.classList.remove("hidden");
+        }
+        return false;
+      }
+      if (!draftUser.Password || draftUser.Password.length < 8) {
+        if (errBox) {
+          errBox.textContent = "Kata sandi minimal 8 karakter.";
+          errBox.classList.remove("hidden");
+        }
+        return false;
+      }
+
+      if (reqBtn) reqBtn.disabled = true;
+      if (resendBtn) resendBtn.disabled = true;
+      try {
+        const res = await postToGas({
+          action: "requestRegistrationOtp",
+          user: draftUser
+        });
+        if (!res || res.status !== "success") {
+          throw new Error(res?.message || "Gagal mengirim kode OTP pendaftaran.");
+        }
+        state.registerDraft = draftUser;
+        state.registerEmail = draftUser.Email;
+        state.registerStep = "verify";
+        const targetEl = document.getElementById("reg-target-email");
+        if (targetEl) targetEl.textContent = draftUser.Email;
+        document.getElementById("register-step-request")?.classList.add("hidden");
+        document.getElementById("register-step-verify")?.classList.remove("hidden");
+        if (infoBox) {
+          infoBox.textContent = res.message || "Kode OTP 6 digit telah dikirim ke email Anda (berlaku 10 menit).";
+          infoBox.classList.remove("hidden");
+        }
+        document.getElementById("reg-otp")?.focus();
+        refreshIcons();
+        return true;
+      } catch (err) {
+        console.warn("Gagal mengirim OTP pendaftaran:", err);
+        if (errBox) {
+          errBox.textContent = err?.message || "Gagal mengirim kode OTP pendaftaran. Coba beberapa saat lagi.";
+          errBox.classList.remove("hidden");
+        }
+        return false;
+      } finally {
+        if (reqBtn) reqBtn.disabled = false;
+        if (resendBtn) resendBtn.disabled = false;
+      }
+    }
+
+    async function resendRegisterOtp() {
+      if (!state.registerDraft) {
+        resetRegisterStep();
+        return;
+      }
+      await requestRegistrationOtpClient(state.registerDraft);
+    }
+
     async function handleRegisterSubmit(e) {
       e.preventDefault();
-      const nama = document.getElementById("reg-nama").value.trim();
-      const rawWa = document.getElementById("reg-wa").value.trim();
-      const normWa = formatWaNumber(rawWa);
-      const email = document.getElementById("reg-email").value.trim().toLowerCase();
-      const alamat = document.getElementById("reg-alamat").value.trim();
-      const password = document.getElementById("reg-password").value;
-      const confirmPass = document.getElementById("reg-password-confirm").value;
       const errBox = document.getElementById("register-error-box");
+      const infoBox = document.getElementById("register-info-box");
+      if (errBox) errBox.classList.add("hidden");
 
-      errBox.classList.add("hidden");
-      if (!isApiConfigured()) {
-        errBox.textContent = "Pendaftaran member membutuhkan koneksi aktif ke Google Apps Script Web App (/exec).";
-        errBox.classList.remove("hidden");
+      if (state.registerStep !== "verify") {
+        const nama = document.getElementById("reg-nama").value.trim();
+        const rawWa = document.getElementById("reg-wa").value.trim();
+        const normWa = formatWaNumber(rawWa);
+        const email = document.getElementById("reg-email").value.trim().toLowerCase();
+        const alamat = document.getElementById("reg-alamat").value.trim();
+        const password = document.getElementById("reg-password").value;
+        const confirmPass = document.getElementById("reg-password-confirm").value;
+
+        if (password !== confirmPass) {
+          if (errBox) {
+            errBox.textContent = "Konfirmasi kata sandi tidak cocok.";
+            errBox.classList.remove("hidden");
+          }
+          return;
+        }
+
+        await requestRegistrationOtpClient({
+          Nama: nama,
+          No_WA: normWa,
+          Email: email,
+          Alamat: alamat,
+          Password: password
+        });
         return;
       }
-      if (!nama || !normWa || normWa.length < 10 || !email) {
-        errBox.textContent = "Nama lengkap, Nomor WhatsApp valid, dan Email aktif wajib diisi.";
-        errBox.classList.remove("hidden");
-        return;
-      }
-      if (password.length < 8) {
-        errBox.textContent = "Kata sandi minimal 8 karakter.";
-        errBox.classList.remove("hidden");
-        return;
-      }
-      if (password !== confirmPass) {
-        errBox.textContent = "Konfirmasi kata sandi tidak cocok.";
-        errBox.classList.remove("hidden");
+
+      const email = state.registerEmail || (document.getElementById("reg-email")?.value || "").trim().toLowerCase();
+      const otp = (document.getElementById("reg-otp")?.value || "").replace(/\D/g, "");
+      if (!email || !/^\d{6}$/.test(otp)) {
+        if (errBox) {
+          errBox.textContent = "Masukkan kode OTP 6 digit angka dari email Anda.";
+          errBox.classList.remove("hidden");
+        }
         return;
       }
 
@@ -2981,17 +3120,12 @@
 
       try {
         const res = await postToGas({
-          action: "registerMember",
-          user: {
-            Nama: nama,
-            No_WA: normWa,
-            Email: email,
-            Alamat: alamat,
-            Password: password
-          }
+          action: "verifyRegistrationOtp",
+          Email: email,
+          otp: otp
         });
         if (!res || res.status !== "success" || !res.data || !res.data.token || !res.data.user) {
-          throw new Error(res?.message || "Gagal mendaftar.");
+          throw new Error(res?.message || "Verifikasi kode OTP gagal.");
         }
         state.authToken = res.data.token;
         state.currentUser = res.data.user;
@@ -3000,21 +3134,22 @@
         memberDashboard = null;
         memberDashboardAt = 0;
         adminMemberData = null;
-        sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-          token: state.authToken,
-          user: state.currentUser
-        }));
+        persistAuthSession(state.authToken, state.currentUser, false);
         document.getElementById("register-form").reset();
+        resetRegisterStep();
+        if (infoBox) infoBox.classList.add("hidden");
         closeLoginModal();
         ensureMemberDashboard(true);
         switchRole("user");
         prefillCheckoutFromUser();
         renderMyOrdersQuickList();
-        showToast(`Pendaftaran berhasil! Selamat datang, ${state.currentUser.Nama}.`, "success");
+        showToast(`Pendaftaran & verifikasi berhasil! Selamat datang, ${state.currentUser.Nama}.`, "success");
       } catch (err) {
-        console.warn("Gagal mendaftar:", err);
-        errBox.textContent = err?.message || "Gagal menghubungi server pendaftaran. Coba beberapa saat lagi.";
-        errBox.classList.remove("hidden");
+        console.warn("Gagal verifikasi OTP pendaftaran:", err);
+        if (errBox) {
+          errBox.textContent = err?.message || "Gagal memverifikasi kode OTP. Coba beberapa saat lagi.";
+          errBox.classList.remove("hidden");
+        }
       } finally {
         if (btn) btn.disabled = false;
       }
@@ -5412,16 +5547,22 @@
         const roleNorm = getNormalizedRole(u);
         const isCurrent = state.currentUser && state.currentUser.User_ID === u.User_ID;
         const isProtected = isProtectedSuperAdminClient(u);
-        const isActive = u.Status_Akun !== "Nonaktif";
+        const isPending = u.Status_Akun === "Menunggu Verifikasi";
+        const isActive = u.Status_Akun === "Aktif" || (!isPending && u.Status_Akun !== "Nonaktif");
         const roleColor = roleNorm === "Super Admin"
           ? "text-press-700 font-semibold"
           : roleNorm === "Admin"
             ? "text-emerald-700 font-semibold"
             : "text-slate-700";
-        const statusColor = isActive ? "text-emerald-700 font-semibold" : "text-rose-700 font-semibold";
+        const statusColor = isActive
+          ? "text-emerald-700 font-semibold"
+          : isPending
+            ? "text-amber-700 font-semibold"
+            : "text-rose-700 font-semibold";
+        const statusLabel = isActive ? "Aktif" : (isPending ? "Menunggu OTP" : "Nonaktif");
         const passLabel = u.Has_Password === false ? "Belum ada sandi" : "PBKDF2-SHA256";
         return `
-          <tr class="hover:bg-slate-50/80 transition-colors ${!isActive ? "opacity-70" : ""}">
+          <tr class="hover:bg-slate-50/80 transition-colors ${!isActive ? "opacity-75" : ""}">
             <td class="py-3 px-4 font-mono text-xs font-semibold text-slate-700">${escapeHtml(u.User_ID)}</td>
             <td class="py-3 px-4">
               <p class="font-semibold text-slate-900">
@@ -5432,7 +5573,7 @@
               <p class="text-xs text-slate-500 font-mono">${escapeHtml(u.Email || "-")} · ${escapeHtml(u.No_WA || "-")}</p>
             </td>
             <td class="py-3 px-4 text-xs">
-              <p class="${roleColor}">${escapeHtml(roleNorm)} · <span class="${statusColor}">${isActive ? "Aktif" : "Nonaktif"}</span></p>
+              <p class="${roleColor}">${escapeHtml(roleNorm)} · <span class="${statusColor}">${statusLabel}</span></p>
               <p class="text-[11px] text-slate-500">${passLabel}</p>
             </td>
             <td class="py-3 px-4 text-right whitespace-nowrap">
